@@ -71,8 +71,6 @@ services:
         condition: service_healthy
     networks:
       - ubpd_network
-    volumes:
-      - ./backend:/app  # Solo en desarrollo — comentar en producción
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
@@ -112,7 +110,7 @@ services:
       dockerfile: Dockerfile
     container_name: ubpd_celery_beat
     restart: unless-stopped
-    command: celery -A app.celery_app beat --loglevel=info --scheduler celery.schedulers.DatabaseScheduler
+    command: celery -A app.celery_app beat --loglevel=info
     env_file:
       - .env
     environment:
@@ -169,7 +167,7 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "9001:9001"  # Consola Web de MinIO (solo acceso interno a red)
+      - "127.0.0.1:9001:9001"  # Consola MinIO — solo desde el servidor (SSH tunnel si se necesita remotamente)
     networks:
       - ubpd_network
     healthcheck:
