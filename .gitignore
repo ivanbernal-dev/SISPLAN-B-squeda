@@ -1,0 +1,40 @@
+# Variables de entorno — NUNCA commitear
+.env
+.env.local
+.env.production
+
+# Certificados SSL
+nginx/certs/
+
+# Dependencias Node
+frontend/node_modules/
+frontend/dist/
+
+# Caché Python
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/.venv/
+backend/venv/
+
+# Migraciones generadas (opcional, depende del equipo)
+# backend/alembic/versions/
+
+# Archivos temporales de Docker
+*.tar
+*.tar.gz
+
+# Backups de base de datos
+backups/
+*.sql.gz
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# macOS
+.DS_Store
+
+# Wheels Python (vendor)
+vendor/

@@ -1,0 +1,43 @@
+# ============================================================
+# UBPD Backend — Dependencias Python
+# Instalar con: pip install -r requirements.txt
+# ============================================================
+
+# ─── Framework Web ────────────────────────────────────────
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+
+# ─── Base de Datos ────────────────────────────────────────
+sqlalchemy[asyncio]==2.0.27
+asyncpg==0.29.0          # Driver PostgreSQL async
+alembic==1.13.1          # Migraciones
+
+# ─── Autenticación / Seguridad ───────────────────────────
+python-jose[cryptography]==3.3.0   # JWT
+passlib[bcrypt]==1.7.4             # Hash de contraseñas
+python-multipart==0.0.9            # Form data / uploads
+
+# ─── Validación / Serialización ──────────────────────────
+pydantic==2.6.1
+pydantic-settings==2.2.1
+
+# ─── Almacenamiento MinIO ────────────────────────────────
+minio==7.2.5
+
+# ─── Celery — Task Queue ─────────────────────────────────
+celery[redis]==5.3.6
+redis==5.0.1
+
+# ─── Parseo de Markdown para Templates ──────────────────
+markdown==3.5.2
+python-frontmatter==1.1.0   # Metadata en Markdown
+
+# ─── Exportación Excel ───────────────────────────────────
+openpyxl==3.1.2
+
+# ─── HTTP Client (requests internas) ────────────────────
+httpx==0.26.0
+
+# ─── Utilidades ──────────────────────────────────────────
+python-dateutil==2.8.2
+pytz==2024.1
