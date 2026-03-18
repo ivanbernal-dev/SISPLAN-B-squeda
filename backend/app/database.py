@@ -69,4 +69,15 @@ async def init_db() -> None:
     )
 
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        # checkfirst=True evita recrear tablas existentes.
+        # Los ENUM types de PostgreSQL pueden causar IntegrityError si ya existen
+        # (SQLAlchemy no tiene IF NOT EXISTS para tipos). Se captura y se ignora.
+        try:
+            await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+        except Exception as exc:
+            err = str(exc)
+            if "already exists" in err or "UniqueViolation" in err:
+                # Tipos enum ya presentes — la BD está inicializada, continuar
+                pass
+            else:
+                raise

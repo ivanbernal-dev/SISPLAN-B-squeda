@@ -77,12 +77,16 @@ async def _create_initial_admin() -> None:
             password_hash=hash_password(settings.INITIAL_ADMIN_PASSWORD),
             requires_password_change=False,
         )
-        db.add(admin)
-        await db.commit()
-        logger.info(
-            "Usuario administrador inicial creado: %s",
-            settings.INITIAL_ADMIN_USERNAME,
-        )
+        try:
+            db.add(admin)
+            await db.commit()
+            logger.info(
+                "Usuario administrador inicial creado: %s",
+                settings.INITIAL_ADMIN_USERNAME,
+            )
+        except Exception:
+            await db.rollback()
+            logger.debug("Admin ya existía (creado por otro proceso al mismo tiempo).")
 
 
 async def _seed_indicators() -> None:

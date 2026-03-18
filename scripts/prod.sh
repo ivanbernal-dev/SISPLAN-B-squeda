@@ -101,7 +101,66 @@ case "$CMD" in
 
     ps|status)
         header "Estado de los servicios:"
-        $COMPOSE ps
+        echo ""
+
+        # Lista de servicios esperados
+        EXPECTED="nginx frontend backend celery celery-beat postgres redis minio"
+
+        # Obtener estado de todos los contenedores en JSON
+        PS_JSON=$($COMPOSE ps --format json 2>/dev/null)
+
+        running=0; starting=0; failed=0
+
+        for svc in $EXPECTED; do
+            # Normalizar guiones a guiones bajos para buscar en el nombre del contenedor
+            svc_search=$(echo "$svc" | tr '-' '_')
+
+            # Extraer estado del servicio (compatible con Docker Compose v2)
+            STATUS=$(echo "$PS_JSON" | python3 -c "
+import sys, json
+data = sys.stdin.read().strip()
+try:
+    rows = json.loads(data) if data.startswith('[') else [json.loads(l) for l in data.splitlines() if l.strip()]
+except:
+    rows = []
+svc = '$svc_search'
+for r in rows:
+    name = (r.get('Name','') or r.get('Service','')).replace('-','_')
+    if svc in name:
+        health = r.get('Health','')
+        state  = r.get('State','') or r.get('Status','')
+        if health:
+            print(state + ' (' + health + ')')
+        else:
+            print(state)
+        sys.exit(0)
+print('ausente')
+" 2>/dev/null)
+
+            # Clasificar y mostrar con color + formato alineado
+            case "$STATUS" in
+                *exited*|*dead*|*"exit "*|ausente)
+                    printf "  ${RED}✗${NC}  %-16s ${RED}%s${NC}\n" "$svc" "$STATUS"
+                    failed=$((failed+1))
+                    ;;
+                *"health: starting"*|*starting*|*created*)
+                    printf "  ${YELLOW}◐${NC}  %-16s ${YELLOW}%s${NC}\n" "$svc" "$STATUS"
+                    starting=$((starting+1))
+                    ;;
+                *healthy*|*running*|*up*)
+                    printf "  ${GREEN}✓${NC}  %-16s ${GREEN}%s${NC}\n" "$svc" "$STATUS"
+                    running=$((running+1))
+                    ;;
+                *)
+                    printf "  ${YELLOW}?${NC}  %-16s ${YELLOW}%s${NC}\n" "$svc" "${STATUS:-desconocido}"
+                    starting=$((starting+1))
+                    ;;
+            esac
+        done
+
+        echo ""
+        echo -e "  ${GREEN}✓ Activos: ${running}${NC}  ${YELLOW}◐ Iniciando: ${starting}${NC}  ${RED}✗ Fallidos: ${failed}${NC}"
+
         show_urls
         warn "Logs en disco: ./logs/backend/app.log  |  ./logs/nginx/access.log"
         ;;
