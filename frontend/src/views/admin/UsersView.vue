@@ -119,7 +119,9 @@
                 </span>
               </td>
               <td class="px-6 py-4 hidden md:table-cell">
-                <span class="font-cuerpo text-sm text-gray-400">—</span>
+                <span class="font-cuerpo text-sm" :class="user.dependency_id ? 'text-ubpd-gris' : 'text-gray-400'">
+                  {{ dependencyName(user.dependency_id) }}
+                </span>
               </td>
               <td class="px-6 py-4">
                 <span
@@ -132,6 +134,7 @@
               </td>
               <td class="px-6 py-4">
                 <div class="flex items-center justify-end gap-1.5">
+                  <!-- Editar -->
                   <button
                     @click="openEditModal(user)"
                     class="p-2 rounded-lg text-gray-400 hover:text-ubpd-teal hover:bg-ubpd-teal/10 transition"
@@ -142,6 +145,18 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>
+                  <!-- Resetear contraseña -->
+                  <button
+                    @click="confirmReset(user)"
+                    class="p-2 rounded-lg text-gray-400 hover:text-ubpd-lila hover:bg-ubpd-lila/10 transition"
+                    :aria-label="`Resetear contraseña de ${user.nombre_completo}`"
+                    title="Resetear contraseña"
+                  >
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                  </button>
+                  <!-- Activar / Desactivar -->
                   <button
                     @click="confirmToggle(user)"
                     class="p-2 rounded-lg transition"
@@ -220,18 +235,92 @@
       @saved="handleUserSaved"
     />
 
+    <!-- Modal: confirmar activar/desactivar -->
     <ConfirmModal
-      v-model="showConfirm"
+      :is-open="showConfirm"
       :title="confirmData.activo ? 'Desactivar usuario' : 'Activar usuario'"
       :message="confirmData.activo
         ? `¿Desea desactivar la cuenta de ${confirmData.nombre}? El usuario no podrá ingresar al sistema.`
         : `¿Desea activar la cuenta de ${confirmData.nombre}?`"
-      :confirm-label="confirmData.activo ? 'Desactivar' : 'Activar'"
-      :variant="confirmData.activo ? 'danger' : 'confirm'"
+      :confirm-text="confirmData.activo ? 'Desactivar' : 'Activar'"
+      :confirm-variant="confirmData.activo ? 'danger' : 'success'"
       :loading="confirmLoading"
       @confirm="handleToggleUser"
       @cancel="showConfirm = false"
     />
+
+    <!-- Modal: confirmar reset de contraseña -->
+    <ConfirmModal
+      :is-open="showResetConfirm"
+      title="Resetear contraseña"
+      :message="`¿Generar una nueva contraseña temporal para ${resetData.nombre}? La contraseña actual quedará inválida.`"
+      confirm-text="Resetear"
+      confirm-variant="danger"
+      :loading="resetLoading"
+      @confirm="handleResetPassword"
+      @cancel="showResetConfirm = false"
+    />
+
+    <!-- Modal: mostrar nueva contraseña temporal -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
+          v-if="showResetResult"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showResetResult = false" />
+          <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full z-10 overflow-hidden">
+            <!-- Header -->
+            <div class="bg-ubpd-lila px-6 py-4">
+              <h2 class="font-subtitulo font-bold text-white text-lg">Nueva contraseña temporal</h2>
+              <p class="font-cuerpo text-white/75 text-sm mt-0.5">Guárdala antes de cerrar esta ventana</p>
+            </div>
+            <!-- Cuerpo -->
+            <div class="px-6 py-5 space-y-4">
+              <div class="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <p class="font-cuerpo text-xs text-amber-800">
+                  Entrega esta contraseña al usuario <strong>{{ resetData.nombre }}</strong>.
+                  No podrá recuperarse después de cerrar.
+                </p>
+              </div>
+              <div>
+                <label class="block font-cuerpo font-medium text-sm text-ubpd-gris mb-1.5">Contraseña temporal</label>
+                <div class="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-gray-50">
+                  <code class="flex-1 font-mono text-sm text-ubpd-gris select-all tracking-wide">{{ resetData.newPassword }}</code>
+                  <button
+                    type="button"
+                    @click="copyResetPassword"
+                    class="p-1.5 rounded-md text-ubpd-lila hover:bg-ubpd-lila/10 transition"
+                    :title="resetCopied ? 'Copiado' : 'Copiar'"
+                  >
+                    <svg v-if="!resetCopied" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <svg v-else class="w-4 h-4 text-ubpd-verde" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </button>
+                </div>
+                <p class="mt-1.5 font-cuerpo text-xs text-gray-500">El usuario deberá cambiarla en su próximo ingreso.</p>
+              </div>
+              <button
+                type="button"
+                @click="showResetResult = false"
+                class="w-full px-5 py-2.5 rounded-lg bg-ubpd-lila text-white font-cuerpo font-semibold text-sm
+                       hover:opacity-90 transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -259,11 +348,18 @@ interface UserListResponse {
   items: User[]
 }
 
-const { get, del, patch } = useApi()
+interface Dependency {
+  id: string
+  nombre: string
+  codigo: string
+}
+
+const { get, post, del, patch } = useApi()
 const notifications = useNotificationsStore()
 
 const loading = ref(true)
 const users = ref<User[]>([])
+const dependencies = ref<Dependency[]>([])
 const page = ref(1)
 const pageSize = 15
 
@@ -276,11 +372,22 @@ const showConfirm = ref(false)
 const confirmLoading = ref(false)
 const confirmData = reactive({ id: '', nombre: '', activo: true })
 
+// Reset de contraseña
+const showResetConfirm = ref(false)
+const showResetResult = ref(false)
+const resetLoading = ref(false)
+const resetCopied = ref(false)
+const resetData = reactive({ id: '', nombre: '', newPassword: '' })
+
 async function loadUsers() {
   loading.value = true
   try {
-    const data = await get<UserListResponse>('/admin/users')
-    users.value = data.items
+    const [usersData, depsData] = await Promise.all([
+      get<UserListResponse>('/admin/users'),
+      get<Dependency[]>('/admin/dependencies').catch(() => [] as Dependency[]),
+    ])
+    users.value = usersData.items
+    dependencies.value = depsData
   } catch {
     notifications.error('No se pudo cargar la lista de usuarios')
   } finally {
@@ -318,6 +425,12 @@ const paginationInfo = computed(() => {
   const to = Math.min(page.value * pageSize, filteredUsers.value.length)
   return { from, to }
 })
+
+function dependencyName(id: string | null): string {
+  if (!id) return '—'
+  const dep = dependencies.value.find((d) => d.id === id)
+  return dep ? dep.nombre : '—'
+}
 
 function initials(name: string): string {
   return name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
@@ -378,6 +491,39 @@ async function handleToggleUser() {
     notifications.error('No se pudo actualizar el estado del usuario')
   } finally {
     confirmLoading.value = false
+  }
+}
+
+function confirmReset(user: User) {
+  resetData.id = user.id
+  resetData.nombre = user.nombre_completo
+  resetData.newPassword = ''
+  showResetConfirm.value = true
+}
+
+async function handleResetPassword() {
+  resetLoading.value = true
+  try {
+    interface ResetResponse { id: string; username: string; temp_password: string }
+    const result = await post<ResetResponse>(`/admin/users/${resetData.id}/reset-password`, {})
+    resetData.newPassword = result.temp_password
+    showResetConfirm.value = false
+    showResetResult.value = true
+    resetCopied.value = false
+  } catch {
+    notifications.error('No se pudo resetear la contraseña')
+  } finally {
+    resetLoading.value = false
+  }
+}
+
+async function copyResetPassword() {
+  try {
+    await navigator.clipboard.writeText(resetData.newPassword)
+    resetCopied.value = true
+    setTimeout(() => { resetCopied.value = false }, 2000)
+  } catch {
+    notifications.error('No se pudo copiar al portapapeles')
   }
 }
 

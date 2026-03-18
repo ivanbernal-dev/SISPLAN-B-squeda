@@ -160,7 +160,7 @@ export function useApi() {
     get:      apiGet,
     post:     apiPost,
     patch:    apiPatch,
-    delete:   apiDelete,
+    del:      apiDelete,   // 'delete' es palabra reservada; usar 'del' como alias
     postForm: apiPostForm,
     client:   apiClient,
   }

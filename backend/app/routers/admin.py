@@ -137,6 +137,40 @@ async def get_user(
     return UserResponse.model_validate(user)
 
 
+@router.post("/users/{user_id}/reset-password", response_model=UserCreateResponse)
+async def reset_user_password(
+    request: Request,
+    user_id: uuid.UUID,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserCreateResponse:
+    """Genera una nueva contraseña temporal para el usuario indicado."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    temp_password = _generate_temp_password()
+    user.password_hash = hash_password(temp_password)
+    user.requires_password_change = True
+    user.updated_at = datetime.now(timezone.utc)
+
+    await _log_audit(
+        db,
+        accion="USER_RESET_PASSWORD",
+        usuario_id=current_user.id,
+        entidad_tipo="usuario",
+        entidad_id=user.id,
+        ip=get_client_ip(request),
+    )
+    return UserCreateResponse(
+        id=user.id,
+        username=user.username,
+        requires_password_change=True,
+        temp_password=temp_password,
+    )
+
+
 @router.patch("/users/{user_id}", response_model=UserResponse)
 async def update_user(
     request: Request,

@@ -17,10 +17,12 @@
           <div class="bg-ubpd-teal rounded-t-2xl px-6 py-4 flex items-center justify-between">
             <div>
               <h2 class="font-subtitulo font-bold text-white text-lg">
-                {{ isEditing ? 'Editar Usuario' : 'Nuevo Usuario' }}
+                {{ isEditing ? 'Editar Usuario' : (createdPassword ? 'Usuario creado' : 'Nuevo Usuario') }}
               </h2>
               <p class="font-cuerpo text-white/75 text-sm mt-0.5">
-                {{ isEditing ? 'Actualice los datos del usuario' : 'Complete los datos para registrar un nuevo usuario' }}
+                {{ isEditing
+                  ? 'Actualice los datos del usuario'
+                  : (createdPassword ? 'Guarda la contraseña temporal antes de cerrar' : 'Complete los datos para registrar un nuevo usuario') }}
               </p>
             </div>
             <button @click="handleClose" class="text-white/80 hover:text-white transition" aria-label="Cerrar">
@@ -30,8 +32,58 @@
             </button>
           </div>
 
-          <!-- Formulario -->
-          <form class="px-6 py-5 space-y-4" @submit.prevent="handleSubmit" novalidate>
+          <!-- ── Panel de éxito: contraseña temporal ── -->
+          <div v-if="createdPassword" class="px-6 py-5 space-y-4">
+            <div class="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p class="font-cuerpo text-xs text-green-800">
+                El usuario ha sido creado. Entrega la siguiente contraseña temporal —
+                <strong>no podrá recuperarse</strong> después de cerrar esta ventana.
+              </p>
+            </div>
+
+            <!-- Contraseña -->
+            <div>
+              <label class="block font-cuerpo font-medium text-sm text-ubpd-gris mb-1.5">
+                Contraseña temporal
+              </label>
+              <div class="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 bg-gray-50">
+                <code class="flex-1 font-mono text-sm text-ubpd-gris select-all tracking-wide">{{ createdPassword }}</code>
+                <button
+                  type="button"
+                  @click="copyPassword"
+                  class="p-1.5 rounded-md text-ubpd-teal hover:bg-ubpd-teal/10 transition"
+                  :title="copied ? 'Copiado' : 'Copiar contraseña'"
+                >
+                  <svg v-if="!copied" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <svg v-else class="w-4 h-4 text-ubpd-verde" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
+              </div>
+              <p class="mt-1.5 font-cuerpo text-xs text-gray-500">
+                El usuario deberá cambiarla en su primer ingreso al sistema.
+              </p>
+            </div>
+
+            <div class="pt-1">
+              <button
+                type="button"
+                @click="handleClose"
+                class="w-full px-5 py-2.5 rounded-lg bg-ubpd-teal text-white font-cuerpo font-semibold text-sm
+                       hover:bg-[#346d7a] transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+
+          <!-- ── Formulario ── -->
+          <form v-else class="px-6 py-5 space-y-4" @submit.prevent="handleSubmit" novalidate>
             <!-- Nombre completo -->
             <div>
               <label for="nombre_completo" class="block font-cuerpo font-medium text-sm text-ubpd-gris mb-1.5">
@@ -183,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted, computed } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { useNotificationsStore } from '@/stores/notifications'
 
@@ -199,6 +251,14 @@ interface UserData {
   email: string
   role: string
   dependency_id: string | null
+  activo?: boolean
+}
+
+interface UserCreateResponse {
+  id: string
+  username: string
+  requires_password_change: boolean
+  temp_password: string
 }
 
 interface Props {
@@ -221,6 +281,10 @@ const notifications = useNotificationsStore()
 const loading = ref(false)
 const loadingDeps = ref(false)
 const dependencies = ref<Dependency[]>([])
+
+// Estado del panel de contraseña temporal
+const createdPassword = ref<string | null>(null)
+const copied = ref(false)
 
 const form = reactive<UserData>({
   nombre_completo: '',
@@ -283,6 +347,8 @@ function resetForm() {
   form.role = ''
   form.dependency_id = null
   Object.keys(errors).forEach((k) => (errors[k as keyof typeof errors] = ''))
+  createdPassword.value = null
+  copied.value = false
 }
 
 function validate(): boolean {
@@ -317,26 +383,42 @@ async function handleSubmit() {
   loading.value = true
 
   try {
-    let saved: UserData
     if (isEditing.value && props.editData?.id) {
-      saved = await patch<UserData>(`/admin/users/${props.editData.id}`, {
+      // Edición: PATCH → retorna UserResponse completo
+      const saved = await patch<UserData>(`/admin/users/${props.editData.id}`, {
         nombre_completo: form.nombre_completo,
         email: form.email,
         role: form.role,
         dependency_id: form.dependency_id,
       })
       notifications.success('Usuario actualizado exitosamente')
+      emit('saved', saved)
+      handleClose()
     } else {
-      saved = await post<UserData>('/admin/users', { ...form })
-      notifications.success('Usuario creado. Se generó una contraseña temporal.')
+      // Creación: POST → retorna UserCreateResponse (sin datos completos)
+      const created = await post<UserCreateResponse>('/admin/users', { ...form })
+      // Obtener usuario completo para actualizar la tabla
+      const fullUser = await get<UserData>(`/admin/users/${created.id}`)
+      emit('saved', fullUser)
+      // Mostrar panel con contraseña temporal (no cierra automáticamente)
+      createdPassword.value = created.temp_password
     }
-    emit('saved', saved)
-    handleClose()
   } catch (err: unknown) {
     const axiosErr = err as { response?: { data?: { detail?: string } } }
     notifications.error(axiosErr?.response?.data?.detail || 'Error al guardar el usuario')
   } finally {
     loading.value = false
+  }
+}
+
+async function copyPassword() {
+  if (!createdPassword.value) return
+  try {
+    await navigator.clipboard.writeText(createdPassword.value)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch {
+    notifications.error('No se pudo copiar al portapapeles')
   }
 }
 
