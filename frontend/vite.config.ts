@@ -15,12 +15,10 @@ export default defineConfig({
     },
   },
 
-  // Servidor de desarrollo (solo para desarrollo local con internet)
   server: {
     host: '0.0.0.0',
     port: 5173,
     proxy: {
-      // Proxy al backend durante desarrollo
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,

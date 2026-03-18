@@ -1,5 +1,4 @@
 {
-  "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
@@ -10,6 +9,7 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "jsx": "preserve",
+    "jsxImportSource": "vue",
 
     /* Strict TypeScript */
     "strict": true,

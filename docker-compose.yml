@@ -1,15 +1,18 @@
-version: "3.9"
-
 # ============================================================
 # UBPD — Sistema de Gestión de Formularios y Estadísticas
-# Red Local (Air-Gapped) | Docker Compose
+# Entorno único: intranet / producción
+#
+# Para activar opciones de desarrollo, descomentar las secciones
+# marcadas con "# [DEV]" y reiniciar el servicio correspondiente.
+#
+# Gestión: ./scripts/prod.sh [start|stop|restart|logs|ps|shell|...]
 # ============================================================
 
 services:
 
-  # ──────────────────────────────────────────────
-  # NGINX — Reverse Proxy (Punto de Entrada Único)
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
+  # NGINX — Reverse Proxy y punto de entrada único (HTTP→HTTPS)
+  # ──────────────────────────────────────────────────────────
   nginx:
     image: nginx:1.25-alpine
     container_name: ubpd_nginx
@@ -21,7 +24,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/certs:/etc/nginx/certs:ro
-      - ./logs/nginx:/var/log/nginx  # Logs de acceso y errores de nginx
+      - ./logs/nginx:/var/log/nginx
     depends_on:
       - frontend
       - backend
@@ -33,9 +36,9 @@ services:
       timeout: 10s
       retries: 3
 
-  # ──────────────────────────────────────────────
-  # FRONTEND — Vue.js (Build estático servido por Nginx)
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
+  # FRONTEND — Vue.js (build estático servido por Nginx)
+  # ──────────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
@@ -46,11 +49,11 @@ services:
     restart: unless-stopped
     networks:
       - ubpd_network
-    # No expone puertos directamente — todo pasa por nginx
+    # No expone puertos — todo el tráfico pasa por nginx
 
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
   # BACKEND — FastAPI (Python)
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -61,7 +64,7 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - MINIO_ENDPOINT=minio:9000
     depends_on:
       postgres:
@@ -71,9 +74,20 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      - ./logs/backend:/app/logs  # Logs de FastAPI: app.log, errors.log, access.log
+      - ./logs/backend:/app/logs
+      # [DEV] Montar código para hot-reload (descomentar + reiniciar):
+      # - ./backend:/app
     networks:
       - ubpd_network
+    # [DEV] Exponer API directamente para /api/docs sin pasar por nginx:
+    # ports:
+    #   - "8000:8000"
+    #
+    # [DEV] Activar hot-reload (descomentar junto con el volumen de código):
+    # command: >
+    #   uvicorn app.main:app
+    #   --host 0.0.0.0 --port 8000
+    #   --reload --log-level debug
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 30s
@@ -81,9 +95,9 @@ services:
       retries: 5
       start_period: 20s
 
-  # ──────────────────────────────────────────────
-  # CELERY — Worker de Tareas Asíncronas (Pipelines)
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
+  # CELERY — Worker de Tareas Asíncronas
+  # ──────────────────────────────────────────────────────────
   celery:
     build:
       context: ./backend
@@ -95,20 +109,22 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - MINIO_ENDPOINT=minio:9000
     depends_on:
       - backend
       - redis
       - postgres
     volumes:
-      - ./logs/backend:/app/logs  # Logs de Celery: celery_worker.log, celery_tasks.log
+      - ./logs/backend:/app/logs
+      # [DEV] Montar código para ver cambios sin rebuild:
+      # - ./backend:/app
     networks:
       - ubpd_network
 
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
   # CELERY BEAT — Scheduler de Tareas Periódicas
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
   celery-beat:
     build:
       context: ./backend
@@ -120,18 +136,20 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       - celery
       - redis
     volumes:
-      - ./logs/backend:/app/logs  # Beat comparte el mismo directorio de logs
+      - ./logs/backend:/app/logs
+      # [DEV] Montar código para ver cambios sin rebuild:
+      # - ./backend:/app
     networks:
       - ubpd_network
 
-  # ──────────────────────────────────────────────
-  # POSTGRESQL — Base de Datos Principal
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
+  # POSTGRESQL — Base de Datos
+  # ──────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: ubpd_postgres
@@ -145,12 +163,12 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro  # Scripts de inicialización
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     networks:
       - ubpd_network
-    # Puerto NO expuesto al host en producción
+    # [DEV] Exponer para TablePlus / DBeaver / psql local:
     # ports:
-    #   - "5432:5432"   # Descomentar solo para desarrollo/debug
+    #   - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -158,9 +176,9 @@ services:
       retries: 5
       start_period: 10s
 
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
   # MINIO — Almacenamiento de Archivos (S3-compatible)
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
   minio:
     image: minio/minio:latest
     container_name: ubpd_minio
@@ -174,7 +192,10 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "127.0.0.1:9001:9001"  # Consola MinIO — solo desde el servidor (SSH tunnel si se necesita remotamente)
+      # Consola MinIO — accesible solo desde el servidor (SSH tunnel para acceso remoto)
+      - "127.0.0.1:9001:9001"
+      # [DEV] API MinIO accesible directamente desde el host:
+      # - "9000:9000"
     networks:
       - ubpd_network
     healthcheck:
@@ -184,9 +205,9 @@ services:
       retries: 3
       start_period: 15s
 
-  # ──────────────────────────────────────────────
-  # REDIS — Caché y Broker de Celery
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
+  # REDIS — Broker de Celery y Caché
+  # ──────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: ubpd_redis
@@ -196,15 +217,18 @@ services:
       - redis_data:/data
     networks:
       - ubpd_network
+    # [DEV] Exponer para redis-cli / RedisInsight local:
+    # ports:
+    #   - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
 
-# ──────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────
 # VOLÚMENES — Persistencia de Datos
-# ──────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────
 volumes:
   postgres_data:
     driver: local
@@ -216,9 +240,9 @@ volumes:
     driver: local
     name: ubpd_redis_data
 
-# ──────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────
 # RED INTERNA
-# ──────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────
 networks:
   ubpd_network:
     driver: bridge

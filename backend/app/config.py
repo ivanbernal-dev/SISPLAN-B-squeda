@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     LOG_DIR: str = "/app/logs"
     LOG_LEVEL: str = "INFO"  # DEBUG | INFO | WARNING | ERROR
 
+    # ── Opciones de trabajo ────────────────────────────────────
+    # Habilita el reset de BD via ./scripts/prod.sh reset-db
+    # NUNCA dejar en true en producción real
+    ALLOW_DB_RESET: bool = False
+
     # ── Celery / Pipeline ──────────────────────────────────────
     STATS_RECALC_INTERVAL_SECONDS: int = 600  # 10 minutos
 

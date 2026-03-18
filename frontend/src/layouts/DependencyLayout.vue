@@ -33,7 +33,7 @@
             class="nav-link"
             :class="{ 'nav-link-active': isActive('/dependencia/inbox') || isActive('/dependencia/forms') }"
           >
-            <PhInboxIn :size="18" aria-hidden="true" class="shrink-0" />
+            <PhTray :size="18" aria-hidden="true" class="shrink-0" />
             <span class="hidden sm:inline">Mis Trámites</span>
           </RouterLink>
 
@@ -78,7 +78,7 @@
             class="flex items-center gap-2 py-2 text-sm text-ubpd-gris"
             @click="mobileMenuOpen = false"
           >
-            <PhInboxIn :size="18" />Mis Trámites
+            <PhTray :size="18" />Mis Trámites
           </RouterLink>
           <RouterLink
             to="/dependencia/templates"
@@ -110,7 +110,7 @@ import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useNotificationsStore } from '../stores/notifications'
 import {
-  PhInboxIn,
+  PhTray,
   PhGridFour,
   PhSignOut,
   PhList,

@@ -3,7 +3,7 @@
 **Unidad de Búsqueda de Personas Dadas por Desaparecidas**
 
 Sistema para diligenciar, validar y publicar estadísticas de formularios de la
-Línea Estratégica No. 1. Funciona exclusivamente en **red intranet** (sin internet).
+Línea Estratégica No. 1. Funciona en red intranet con un único entorno Docker.
 
 ---
 
@@ -11,48 +11,45 @@ Línea Estratégica No. 1. Funciona exclusivamente en **red intranet** (sin inte
 
 | Documento | Contenido |
 |-----------|-----------|
-| [`CONFIGURACION.md`](CONFIGURACION.md) | Requisitos, certificados SSL, variables `.env`, logging |
-| [`EJECUCION.md`](EJECUCION.md) | Levantar con Docker, desarrollo local, air-gapped, tests, manual de usuario, operaciones |
+| [`CONFIGURACION.md`](CONFIGURACION.md) | Instalación, `.env`, SSL, logging, opciones de trabajo |
+| [`EJECUCION.md`](EJECUCION.md) | Comandos del script, despliegue, manual de usuario, operaciones |
 
 ---
 
 ## Inicio rápido
 
 ```bash
-# 1. Generar certificado SSL con la IP del servidor
-./scripts/generate-ssl.sh 192.168.1.100
+# 1. Instalar (una sola vez)
+chmod +x scripts/*.sh
+./scripts/install.sh
+nano .env                     # editar SERVER_IP, SECRET_KEY, contraseñas
 
-# 2. Configurar variables de entorno
-cp .env.example .env && nano .env
+# 2. Construir y arrancar
+./scripts/prod.sh build
+./scripts/prod.sh start
 
-# 3. Construir y levantar
-docker compose build
-docker compose up -d
-
-# 4. Verificar
-docker compose ps
-curl -k https://192.168.1.100/api/health
+# 3. Verificar
+./scripts/prod.sh status
 ```
 
 ---
 
-## Tecnologías
+## Script de gestión
+
+```bash
+./scripts/prod.sh [start|stop|restart|build|rebuild|logs|ps|shell|migrate|backup|test]
+```
+
+---
+
+## Stack
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | Vue 3 + Vite + Pinia + ECharts |
-| Backend | FastAPI + SQLAlchemy 2.0 async |
-| Base de datos | PostgreSQL 16 (JSONB para formularios dinámicos) |
+| Frontend | Vue 3 · Vite · Pinia · ECharts |
+| Backend | FastAPI · SQLAlchemy 2.0 async |
+| Base de datos | PostgreSQL 16 |
 | Archivos | MinIO (S3-compatible) |
 | Tareas | Celery + Redis |
-| Proxy | Nginx con SSL autofirmado |
+| Proxy | Nginx · SSL autofirmado |
 | Contenedores | Docker Compose (8 servicios) |
-
-## Roles
-
-| Rol | Descripción |
-|-----|-------------|
-| `admin` | Gestión completa del sistema |
-| `validator` | Aprueba o devuelve formularios |
-| `dependency_user` | Diligencia formularios de su dependencia |
-| Público | Ve estadísticas sin autenticarse |
