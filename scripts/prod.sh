@@ -51,7 +51,7 @@ check_prerequisites() {
     local ok=true
     [ ! -f ".env" ] && { echo -e "${RED}[ERROR]${NC} No existe .env — ejecuta: ./scripts/install.sh"; ok=false; }
     [ ! -f "nginx/certs/server.crt" ] && { echo -e "${RED}[ERROR]${NC} Sin certificado SSL — ejecuta: ./scripts/generate-ssl.sh <IP>"; ok=false; }
-    [ "$ok" = false ] && exit 1
+    if [ "$ok" = false ]; then exit 1; fi
 }
 
 show_urls() {

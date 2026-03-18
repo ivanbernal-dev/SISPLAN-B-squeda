@@ -119,15 +119,15 @@
                 </span>
               </td>
               <td class="px-6 py-4 hidden md:table-cell">
-                <span class="font-cuerpo text-sm text-gray-500">{{ user.dependency_name || '—' }}</span>
+                <span class="font-cuerpo text-sm text-gray-400">—</span>
               </td>
               <td class="px-6 py-4">
                 <span
                   class="inline-flex items-center gap-1.5 font-cuerpo text-xs font-medium px-2.5 py-1 rounded-full"
-                  :class="user.is_active ? 'bg-ubpd-verde/10 text-ubpd-verde' : 'bg-gray-100 text-gray-500'"
+                  :class="user.activo ? 'bg-ubpd-verde/10 text-ubpd-verde' : 'bg-gray-100 text-gray-500'"
                 >
-                  <span class="w-1.5 h-1.5 rounded-full" :class="user.is_active ? 'bg-ubpd-verde' : 'bg-gray-400'" />
-                  {{ user.is_active ? 'Activo' : 'Inactivo' }}
+                  <span class="w-1.5 h-1.5 rounded-full" :class="user.activo ? 'bg-ubpd-verde' : 'bg-gray-400'" />
+                  {{ user.activo ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
               <td class="px-6 py-4">
@@ -145,13 +145,13 @@
                   <button
                     @click="confirmToggle(user)"
                     class="p-2 rounded-lg transition"
-                    :class="user.is_active
+                    :class="user.activo
                       ? 'text-gray-400 hover:text-ubpd-naranja hover:bg-orange-50'
                       : 'text-gray-400 hover:text-ubpd-verde hover:bg-ubpd-verde/10'"
-                    :aria-label="user.is_active ? `Desactivar ${user.nombre_completo}` : `Activar ${user.nombre_completo}`"
-                    :title="user.is_active ? 'Desactivar' : 'Activar'"
+                    :aria-label="user.activo ? `Desactivar ${user.nombre_completo}` : `Activar ${user.nombre_completo}`"
+                    :title="user.activo ? 'Desactivar' : 'Activar'"
                   >
-                    <svg v-if="user.is_active" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg v-if="user.activo" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
                     <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -222,12 +222,12 @@
 
     <ConfirmModal
       v-model="showConfirm"
-      :title="confirmData.is_active ? 'Desactivar usuario' : 'Activar usuario'"
-      :message="confirmData.is_active
+      :title="confirmData.activo ? 'Desactivar usuario' : 'Activar usuario'"
+      :message="confirmData.activo
         ? `¿Desea desactivar la cuenta de ${confirmData.nombre}? El usuario no podrá ingresar al sistema.`
         : `¿Desea activar la cuenta de ${confirmData.nombre}?`"
-      :confirm-label="confirmData.is_active ? 'Desactivar' : 'Activar'"
-      :variant="confirmData.is_active ? 'danger' : 'confirm'"
+      :confirm-label="confirmData.activo ? 'Desactivar' : 'Activar'"
+      :variant="confirmData.activo ? 'danger' : 'confirm'"
       :loading="confirmLoading"
       @confirm="handleToggleUser"
       @cancel="showConfirm = false"
@@ -249,11 +249,17 @@ interface User {
   email: string
   role: string
   dependency_id: string | null
-  dependency_name?: string
-  is_active: boolean
+  activo: boolean
 }
 
-const { get, del } = useApi()
+interface UserListResponse {
+  total: number
+  page: number
+  size: number
+  items: User[]
+}
+
+const { get, del, patch } = useApi()
 const notifications = useNotificationsStore()
 
 const loading = ref(true)
@@ -268,13 +274,13 @@ const selectedUser = ref<User | null>(null)
 
 const showConfirm = ref(false)
 const confirmLoading = ref(false)
-const confirmData = reactive({ id: '', nombre: '', is_active: true })
+const confirmData = reactive({ id: '', nombre: '', activo: true })
 
 async function loadUsers() {
   loading.value = true
   try {
-    const data = await get<User[]>('/admin/users')
-    users.value = data
+    const data = await get<UserListResponse>('/admin/users')
+    users.value = data.items
   } catch {
     notifications.error('No se pudo cargar la lista de usuarios')
   } finally {
@@ -294,8 +300,8 @@ const filteredUsers = computed(() => {
       || u.username.toLowerCase().includes(filters.search.toLowerCase())
     const matchRole = !filters.role || u.role === filters.role
     const matchStatus = !filters.status
-      || (filters.status === 'active' && u.is_active)
-      || (filters.status === 'inactive' && !u.is_active)
+      || (filters.status === 'active' && u.activo)
+      || (filters.status === 'inactive' && !u.activo)
     return matchSearch && matchRole && matchStatus
   })
 })
@@ -348,18 +354,24 @@ function openEditModal(user: User) {
 function confirmToggle(user: User) {
   confirmData.id = user.id
   confirmData.nombre = user.nombre_completo
-  confirmData.is_active = user.is_active
+  confirmData.activo = user.activo
   showConfirm.value = true
 }
 
 async function handleToggleUser() {
   confirmLoading.value = true
   try {
-    await del(`/admin/users/${confirmData.id}`)
+    if (confirmData.activo) {
+      // Desactivar: DELETE /admin/users/{id}
+      await del(`/admin/users/${confirmData.id}`)
+    } else {
+      // Reactivar: PATCH /admin/users/{id} con activo: true
+      await patch(`/admin/users/${confirmData.id}`, { activo: true })
+    }
     const idx = users.value.findIndex((u) => u.id === confirmData.id)
-    if (idx !== -1) users.value[idx].is_active = !confirmData.is_active
+    if (idx !== -1) users.value[idx].activo = !confirmData.activo
     notifications.success(
-      confirmData.is_active ? 'Usuario desactivado' : 'Usuario activado'
+      confirmData.activo ? 'Usuario desactivado' : 'Usuario activado'
     )
     showConfirm.value = false
   } catch {

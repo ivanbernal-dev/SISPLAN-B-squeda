@@ -33,21 +33,23 @@ gen_secret_key() {
 
 gen_password() {
     local length="${1:-20}"
-    # Letras + dígitos + caracteres seguros para contraseñas (evita comillas y $)
+    # Letras + dígitos + caracteres seguros para contraseñas
+    # EXCLUYE: # (comentario en .env), % (reservado en URLs), $, ", ', \, ` (interpolación shell)
     python3 -c "
 import secrets, string
-chars = string.ascii_letters + string.digits + '@#%!_'
+special = '@!_-'
+chars = string.ascii_letters + string.digits + special
 # Asegurar al menos 1 mayúscula, 1 minúscula, 1 número, 1 especial
 pwd = [
     secrets.choice(string.ascii_uppercase),
     secrets.choice(string.ascii_lowercase),
     secrets.choice(string.digits),
-    secrets.choice('@#%!_'),
+    secrets.choice(special),
 ]
 pwd += [secrets.choice(chars) for _ in range($length - 4)]
 secrets.SystemRandom().shuffle(pwd)
 print(''.join(pwd))
-" 2>/dev/null || openssl rand -base64 "$length" | tr -d '=/+\n' | head -c "$length"
+" 2>/dev/null || openssl rand -base64 "$length" | tr -d '=/+#%\n' | head -c "$length"
 }
 
 # ── Detectar IP local ─────────────────────────────────────────
@@ -171,9 +173,11 @@ replacements = {
 
 for key, value in replacements.items():
     # Reemplaza KEY=<cualquier cosa> por KEY=nuevo_valor
-    pattern = rf'^({re.escape(key)}=).*$'
-    replacement = rf'\g<1>{re.escape(value)}'
-    new_content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
+    # Usamos lambda para evitar que re.sub interprete caracteres especiales del valor
+    pattern = rf'^{re.escape(key)}=.*$'
+    def make_repl(v):
+        return lambda m: f'{key}={v}'
+    new_content = re.sub(pattern, make_repl(value), content, flags=re.MULTILINE)
     if new_content != content:
         content = new_content
     else:
