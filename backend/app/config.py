@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     INITIAL_ADMIN_EMAIL: str = "admin@ubpd.gov.co"
     INITIAL_ADMIN_NOMBRE: str = "Administrador UBPD"
 
+    # ── Logging ────────────────────────────────────────────────
+    # En Docker: /app/logs (montado como ./logs/backend en el host)
+    # En desarrollo local: ./logs/backend  (relativo al directorio de trabajo)
+    LOG_DIR: str = "/app/logs"
+    LOG_LEVEL: str = "INFO"  # DEBUG | INFO | WARNING | ERROR
+
     # ── Celery / Pipeline ──────────────────────────────────────
     STATS_RECALC_INTERVAL_SECONDS: int = 600  # 10 minutos
 

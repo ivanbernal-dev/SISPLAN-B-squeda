@@ -16,11 +16,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.logging_config import setup_logging
 
-logging.basicConfig(
-    level=logging.INFO if settings.APP_ENV == "production" else logging.DEBUG,
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-)
+# Configurar logging antes de cualquier otra cosa
+setup_logging(app_env=settings.APP_ENV, log_dir=settings.LOG_DIR)
 logger = logging.getLogger(__name__)
 
 

@@ -28,6 +28,9 @@ backend/venv/
 backups/
 *.sql.gz
 
+# Logs del sistema (generados en tiempo de ejecución)
+logs/
+
 # IDEs
 .vscode/
 .idea/

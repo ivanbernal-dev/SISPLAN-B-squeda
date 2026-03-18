@@ -37,4 +37,45 @@ celery_app.conf.update(
             "options": {"expires": settings.STATS_RECALC_INTERVAL_SECONDS},
         },
     },
+    # Logging — archivos dentro del volumen de logs
+    worker_log_format=(
+        "%(asctime)s | %(levelname)-8s | %(processName)s | %(message)s"
+    ),
+    worker_task_log_format=(
+        "%(asctime)s | %(levelname)-8s | TASK %(task_name)s[%(task_id)s] | %(message)s"
+    ),
 )
+
+
+# ── Configurar logging de Celery con handlers a archivo ───────────────────────
+from celery.signals import after_setup_logger, after_setup_task_logger
+import logging
+import logging.handlers
+from pathlib import Path
+
+
+def _add_file_handler(logger: logging.Logger, log_file: str) -> None:
+    """Añade un RotatingFileHandler al logger de Celery."""
+    log_path = Path(settings.LOG_DIR)
+    log_path.mkdir(parents=True, exist_ok=True)
+    fmt = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+    handler = logging.handlers.RotatingFileHandler(
+        filename=log_path / log_file,
+        maxBytes=10 * 1024 * 1024,
+        backupCount=7,
+        encoding="utf-8",
+    )
+    handler.setFormatter(logging.Formatter(fmt, datefmt="%Y-%m-%d %H:%M:%S"))
+    logger.addHandler(handler)
+
+
+@after_setup_logger.connect
+def setup_celery_logger(logger, **kwargs):
+    """Llamado tras inicializar el logger del worker."""
+    _add_file_handler(logger, "celery_worker.log")
+
+
+@after_setup_task_logger.connect
+def setup_celery_task_logger(logger, **kwargs):
+    """Llamado tras inicializar el logger de tareas."""
+    _add_file_handler(logger, "celery_tasks.log")
