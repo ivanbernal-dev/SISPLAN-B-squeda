@@ -19,9 +19,15 @@ class Template(Base):
     )
     nombre: Mapped[str] = mapped_column(String(255), nullable=False)
     descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    codigo: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True)
     indicador_nivel1_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("indicadores_nivel1.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    indicador_nivel2_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("indicadores_nivel2.id", ondelete="SET NULL"),
         nullable=True,
     )
     codigo_markdown: Mapped[str] = mapped_column(Text, nullable=False)
@@ -48,6 +54,9 @@ class Template(Base):
     # ── Relaciones ─────────────────────────────────────────────
     indicador: Mapped["Indicator | None"] = relationship(  # type: ignore[name-defined]
         "Indicator", back_populates="templates", lazy="selectin"
+    )
+    indicador_nivel2: Mapped["IndicadorNivel2 | None"] = relationship(  # type: ignore[name-defined]
+        "IndicadorNivel2", back_populates="templates", lazy="selectin"
     )
     created_by: Mapped["User | None"] = relationship(  # type: ignore[name-defined]
         "User", back_populates="created_templates", lazy="selectin"

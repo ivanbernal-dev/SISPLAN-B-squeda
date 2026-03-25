@@ -60,17 +60,30 @@ async def preview_template(
     )
 
 
+def _enrich(t: Template) -> TemplateResponse:
+    """Convierte un ORM Template en TemplateResponse con campos derivados."""
+    resp = TemplateResponse.model_validate(t)
+    # Nombre del indicador: nivel2 tiene prioridad sobre nivel1
+    if t.indicador_nivel2 is not None:
+        resp.indicador_nombre = t.indicador_nivel2.nombre
+    elif t.indicador is not None:
+        resp.indicador_nombre = t.indicador.nombre
+    return resp
+
+
 @router.get("", response_model=list[TemplateResponse])
 async def list_templates(
+    all: bool = False,
     current_user: User = Depends(get_admin_or_validator),
     db: AsyncSession = Depends(get_db),
 ) -> list[TemplateResponse]:
-    """Lista todos los templates activos."""
-    result = await db.execute(
-        select(Template).where(Template.activo == True).order_by(Template.nombre)
-    )
+    """Lista templates. Con ?all=true devuelve también los inactivos (solo admin)."""
+    query = select(Template).order_by(Template.nombre)
+    if not all:
+        query = query.where(Template.activo == True)
+    result = await db.execute(query)
     templates = result.scalars().all()
-    return [TemplateResponse.model_validate(t) for t in templates]
+    return [_enrich(t) for t in templates]
 
 
 @router.post("", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
@@ -117,7 +130,7 @@ async def list_templates_by_dependency(
         select(Template).where(Template.activo == True).order_by(Template.nombre)
     )
     templates = result.scalars().all()
-    return [TemplateResponse.model_validate(t) for t in templates]
+    return [_enrich(t) for t in templates]
 
 
 @router.get("/{template_id}", response_model=TemplateResponse)
@@ -131,7 +144,7 @@ async def get_template(
     template = result.scalar_one_or_none()
     if template is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template no encontrado")
-    return TemplateResponse.model_validate(template)
+    return _enrich(template)
 
 
 @router.patch("/{template_id}", response_model=TemplateResponse)

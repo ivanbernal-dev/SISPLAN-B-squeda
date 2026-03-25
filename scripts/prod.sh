@@ -55,11 +55,16 @@ check_prerequisites() {
 }
 
 show_urls() {
+    BOLD='\033[1m'
     echo ""
-    info "Aplicación:   https://${SERVER_IP}"
-    info "Estadísticas: https://${SERVER_IP}/stats"
-    info "API Docs:     https://${SERVER_IP}/api/docs"
-    info "Health:       https://${SERVER_IP}/api/health"
+    echo -e "  ${CYAN}────────────────────────────────────────────${NC}"
+    echo -e "  ${BOLD}${GREEN}🌐  Portal de Indicadores (público, sin login)${NC}"
+    echo -e "  ${BOLD}${GREEN}    https://${SERVER_IP}/estadisticas${NC}"
+    echo -e "  ${CYAN}────────────────────────────────────────────${NC}"
+    echo ""
+    info "Aplicación (login): https://${SERVER_IP}"
+    info "API Docs:           https://${SERVER_IP}/api/docs"
+    info "Health check:       https://${SERVER_IP}/api/health"
     echo ""
 }
 
@@ -69,6 +74,8 @@ case "$CMD" in
         check_prerequisites
         header "Levantando servicios..."
         $COMPOSE up -d $SERVICE
+        echo ""
+        echo -e "${GREEN}✅  Servicios levantados correctamente.${NC}"
         show_urls
         ;;
 

@@ -64,6 +64,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/public/Level3View.vue'),
         meta: { requiresAuth: false },
       },
+      {
+        path: ':indicador_id/:template_id/:form_id',
+        name: 'FormDetail',
+        component: () => import('../views/public/FormDetailView.vue'),
+        meta: { requiresAuth: false },
+      },
     ],
   },
 
@@ -137,6 +143,24 @@ const routes: RouteRecordRaw[] = [
         path: 'pipelines',
         name: 'AdminPipelines',
         component: () => import('../views/admin/PipelinesView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
+      {
+        path: 'pipeline-editor',
+        name: 'PipelineEditorList',
+        component: () => import('../views/admin/PipelinesView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
+      {
+        path: 'pipeline-editor/:id',
+        name: 'PipelineEditor',
+        component: () => import('../views/admin/PipelineEditorView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
+      {
+        path: 'indicadores',
+        name: 'IndicadoresAdmin',
+        component: () => import('../views/admin/IndicadoresView.vue'),
         meta: { requiresAuth: true, roles: ['admin'] },
       },
       {

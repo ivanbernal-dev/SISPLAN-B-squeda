@@ -188,7 +188,7 @@ Todo se maneja con un único script:
 | URL | Descripción |
 |-----|-------------|
 | `https://192.168.1.100` | Aplicación |
-| `https://192.168.1.100/stats` | Dashboard público |
+| `https://192.168.1.100/estadisticas` | Portal público de indicadores (sin login) |
 | `https://192.168.1.100/api/docs` | Documentación API |
 | `https://192.168.1.100/api/health` | Health check |
 

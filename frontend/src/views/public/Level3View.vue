@@ -91,9 +91,15 @@
       @sort="onSort"
       @page-change="onPageChange"
     >
-      <!-- Dependencia -->
-      <template #cell-dependencia="{ value }">
-        <span class="font-medium text-ubpd-gris">{{ value }}</span>
+      <!-- Dependencia (clickable) -->
+      <template #cell-dependencia="{ row, value }">
+        <button
+          type="button"
+          class="font-medium text-ubpd-gris hover:text-ubpd-teal transition-colors text-left"
+          @click="navigateToDetail(row.id as string)"
+        >
+          {{ value }}
+        </button>
       </template>
 
       <!-- Fecha referencia -->
@@ -187,7 +193,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, RouterLink } from 'vue-router'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useStatsFilter } from '@/stores/statsFilter'
 import type { FileRecord } from '@/types/forms'
@@ -221,6 +227,7 @@ const COLUMNS = [
 ]
 
 const route = useRoute()
+const router = useRouter()
 const { get } = useApi()
 const statsFilter = useStatsFilter()
 
@@ -303,6 +310,16 @@ function onSort(_key: string, _dir: 'asc' | 'desc') {
 function onPageChange(page: number) {
   currentPage.value = page
   loadData()
+}
+
+function navigateToDetail(formId: string) {
+  const indicadorId = route.params.indicador_id as string
+  const templateId = route.params.template_id as string
+  router.push({
+    name: 'FormDetail',
+    params: { indicador_id: indicadorId, template_id: templateId, form_id: formId },
+    query: statsFilter.queryParams,
+  })
 }
 
 async function openFiles(formId: string) {

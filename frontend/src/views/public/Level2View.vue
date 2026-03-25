@@ -62,8 +62,43 @@
       formularios encontrados en este período
     </p>
 
-    <!-- Gauge grid -->
-    <div>
+    <!-- Nivel 2 sub-groups (if available) -->
+    <div v-if="!loading && nivel2Groups.length > 0" class="space-y-6">
+      <div
+        v-for="group in nivel2Groups"
+        :key="group.id"
+        class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-4"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-base font-semibold font-montserrat text-ubpd-gris">{{ group.nombre }}</h2>
+          <div class="flex items-center gap-2">
+            <!-- Gauge for nivel2 group -->
+            <div class="flex flex-col items-end">
+              <span class="text-2xl font-bold font-montserrat" :class="scoreColor(group.completitud)">
+                {{ Math.round(group.completitud) }}%
+              </span>
+              <span class="text-xs font-barlow text-gray-400">{{ group.total_formularios }} formularios</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <IndicatorCard
+            v-for="tmpl in group.templates"
+            :key="tmpl.template_id"
+            :indicador-id="tmpl.template_id"
+            :nombre="tmpl.nombre"
+            :completitud="tmpl.completitud"
+            :total-formularios="tmpl.total_formularios"
+            variant="secondary"
+            size="sm"
+            @click="navigateToLevel3"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Gauge grid (no nivel2 grouping) -->
+    <div v-else>
       <!-- Skeleton -->
       <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
@@ -109,6 +144,16 @@ interface TemplateStats {
   nombre: string
   completitud: number
   total_formularios: number
+  nivel2_id?: number
+  nivel2_nombre?: string
+}
+
+interface Nivel2Group {
+  id: number | string
+  nombre: string
+  completitud: number
+  total_formularios: number
+  templates: TemplateStats[]
 }
 
 type PresetKey = 'this_month' | 'last_quarter' | 'this_year'
@@ -134,6 +179,42 @@ const indicadorId = computed(() => route.params.indicador_id as string)
 const totalFormularios = computed(() =>
   templates.value.reduce((sum, t) => sum + t.total_formularios, 0),
 )
+
+// Group templates by nivel2 when available
+const nivel2Groups = computed((): Nivel2Group[] => {
+  const templatesWithNivel2 = templates.value.filter((t) => t.nivel2_id)
+  if (templatesWithNivel2.length === 0) return []
+
+  const groups: Map<number, Nivel2Group> = new Map()
+  for (const tmpl of templatesWithNivel2) {
+    if (!tmpl.nivel2_id) continue
+    if (!groups.has(tmpl.nivel2_id)) {
+      groups.set(tmpl.nivel2_id, {
+        id: tmpl.nivel2_id,
+        nombre: tmpl.nivel2_nombre ?? `Nivel 2 — ${tmpl.nivel2_id}`,
+        completitud: 0,
+        total_formularios: 0,
+        templates: [],
+      })
+    }
+    const g = groups.get(tmpl.nivel2_id)!
+    g.templates.push(tmpl)
+    g.total_formularios += tmpl.total_formularios
+  }
+  // Compute completitud as average
+  for (const g of groups.values()) {
+    if (g.templates.length > 0) {
+      g.completitud = g.templates.reduce((s, t) => s + t.completitud, 0) / g.templates.length
+    }
+  }
+  return Array.from(groups.values())
+})
+
+function scoreColor(score: number): string {
+  if (score >= 70) return 'text-ubpd-verde'
+  if (score >= 30) return 'text-ubpd-lila'
+  return 'text-ubpd-naranja'
+}
 
 function onStartDateChange(e: Event) {
   statsFilter.setDates((e.target as HTMLInputElement).value, statsFilter.endDate)

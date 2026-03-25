@@ -34,6 +34,7 @@ redis==5.0.1
 markdown==3.5.2
 python-frontmatter==1.1.0   # Metadata en Markdown
 
-# ─── Exportación Excel ───────────────────────────────────
+# ─── Exportación / Procesamiento de datos ────────────────
 openpyxl==3.1.2
+pandas==2.2.1              # Pipeline executor (DataFrames)
 

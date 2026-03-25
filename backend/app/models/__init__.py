@@ -8,6 +8,9 @@ from app.models.fact_stats import FactStats
 from app.models.file import Archivo
 from app.models.form import Form, FormStatus
 from app.models.indicator import Indicator, FormulaTipo
+from app.models.indicador_nivel2 import IndicadorNivel2
+from app.models.pipeline_definicion import PipelineDefinicion
+from app.models.pipeline_ejecucion import PipelineEjecucion
 from app.models.pipeline_run import PipelineRun, PipelineStatus
 from app.models.template import Template
 from app.models.user import User, UserRole
@@ -21,6 +24,9 @@ __all__ = [
     "FormStatus",
     "Indicator",
     "FormulaTipo",
+    "IndicadorNivel2",
+    "PipelineDefinicion",
+    "PipelineEjecucion",
     "PipelineRun",
     "PipelineStatus",
     "Template",

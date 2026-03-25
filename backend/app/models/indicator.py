@@ -40,3 +40,6 @@ class Indicator(Base):
     fact_stats: Mapped[list["FactStats"]] = relationship(  # type: ignore[name-defined]
         "FactStats", back_populates="indicador", lazy="noload"
     )
+    indicadores_nivel2: Mapped[list["IndicadorNivel2"]] = relationship(  # type: ignore[name-defined]
+        "IndicadorNivel2", back_populates="indicador_nivel1", lazy="noload"
+    )

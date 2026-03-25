@@ -41,6 +41,9 @@ app.use(router)
 // Registrar VChart como componente global
 app.component('VChart', VChart)
 
+import { vAutoresize } from './directives/autoresize'
+app.directive('autoresize', vAutoresize)
+
 // Cargar tokens del localStorage antes de montar
 // (el store se inicializa dentro del plugin pinia, pero necesitamos
 //  que la acción loadFromStorage se llame después de que pinia esté activo)

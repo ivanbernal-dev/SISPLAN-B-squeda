@@ -105,6 +105,8 @@ import {
   PhClipboardText,
   PhSignOut,
   PhList,
+  PhShareNetwork,
+  PhChartBar,
 } from '@phosphor-icons/vue'
 
 // ─── Nav items ────────────────────────────────────────────
@@ -120,8 +122,10 @@ const navItems: NavItem[] = [
   { label: 'Usuarios',     to: '/admin/users',         icon: PhUsers                       },
   { label: 'Dependencias', to: '/admin/dependencies',  icon: PhBuildings                   },
   { label: 'Templates',    to: '/admin/templates',     icon: PhFileText                    },
-  { label: 'Pipelines',    to: '/admin/pipelines',     icon: PhGitBranch                   },
-  { label: 'Auditoría',    to: '/admin/audit',         icon: PhClipboardText               },
+  { label: 'Pipelines',       to: '/admin/pipelines',        icon: PhGitBranch                   },
+  { label: 'Editor Visual',   to: '/admin/pipeline-editor',  icon: PhShareNetwork                },
+  { label: 'Indicadores',     to: '/admin/indicadores',      icon: PhChartBar                    },
+  { label: 'Auditoría',       to: '/admin/audit',            icon: PhClipboardText               },
 ]
 
 // ─── State ───────────────────────────────────────────────

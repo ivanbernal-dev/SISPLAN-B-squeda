@@ -1,11 +1,10 @@
 """
 app/services/template_parser.py — Parseo de Markdown extendido a configuracion_campos JSONB.
 
-Formato de tabla de campos en el Markdown:
-| campo | tipo | bloqueado | default | requerido | opciones |
-|-------|------|-----------|---------|-----------|---------|
-| municipio | text | true | Bogotá | true | |
-| estado | select | false | | true | Activo,Inactivo |
+El parser es tolerante al orden de columnas: detecta el header y mapea por nombre.
+Columnas reconocidas (cualquier orden):
+  campo/name, label/etiqueta, tipo/type, bloqueado/readonly,
+  default/por_defecto, requerido/required, opciones/options
 """
 import logging
 import re
@@ -15,40 +14,69 @@ import markdown
 
 logger = logging.getLogger(__name__)
 
-# Tipos de campo admitidos
-VALID_FIELD_TYPES = {"text", "number", "date", "select", "textarea"}
+VALID_FIELD_TYPES = {"text", "number", "date", "select", "textarea", "computed"}
+
+# Aliases de nombres de columnas → clave interna
+_COLUMN_ALIASES: Dict[str, str] = {
+    "campo": "name", "name": "name", "field": "name",
+    "label": "label", "etiqueta": "label",
+    "tipo": "type", "type": "type",
+    "bloqueado": "readonly", "readonly": "readonly", "solo_lectura": "readonly",
+    "default": "default", "por_defecto": "default", "valor_default": "default",
+    "requerido": "required", "required": "required", "obligatorio": "required",
+    "opciones": "options", "options": "options",
+}
+
+# Orden por defecto si no hay header reconocible
+_DEFAULT_ORDER = ["name", "type", "readonly", "default", "required", "options"]
 
 
 def _parse_bool(value: str) -> bool:
-    """Convierte 'true'/'false'/'1'/'0' a bool."""
     return value.strip().lower() in ("true", "1", "yes", "si", "sí")
 
 
-def _parse_table_row(cells: List[str]) -> Optional[Dict[str, Any]]:
-    """Parsea una fila de la tabla de campos y retorna un dict de configuración."""
-    if len(cells) < 2:
+def _build_col_map(header_cells: List[str]) -> List[str]:
+    """
+    Dado el header de la tabla, devuelve una lista donde cada índice
+    contiene el nombre interno del campo (name, label, type, …) o '' si no se reconoce.
+    """
+    result: List[str] = []
+    for cell in header_cells:
+        key = cell.strip().lower().replace(" ", "_")
+        result.append(_COLUMN_ALIASES.get(key, ""))
+    return result
+
+
+def _parse_table_row(cells: List[str], col_map: List[str]) -> Optional[Dict[str, Any]]:
+    """Parsea una fila usando el mapa de columnas del header."""
+    if not cells:
         return None
 
-    name = cells[0].strip()
+    data: Dict[str, str] = {}
+    for idx, attr in enumerate(col_map):
+        if attr and idx < len(cells):
+            data[attr] = cells[idx].strip()
+
+    name = data.get("name", "").strip()
     if not name or name.startswith("-"):
         return None
 
-    field_type = cells[1].strip().lower() if len(cells) > 1 else "text"
+    field_type = data.get("type", "text").lower()
     if field_type not in VALID_FIELD_TYPES:
         field_type = "text"
 
-    readonly = _parse_bool(cells[2]) if len(cells) > 2 else False
-    default_val_raw = cells[3].strip() if len(cells) > 3 else ""
-    default_val: Any = default_val_raw if default_val_raw else None
+    readonly = _parse_bool(data.get("readonly", "false"))
+    default_raw = data.get("default", "")
+    default_val: Any = default_raw if default_raw else None
+    required = _parse_bool(data.get("required", "true"))
+    options_raw = data.get("options", "")
+    options: Optional[List[str]] = (
+        [o.strip() for o in options_raw.split(",") if o.strip()] if options_raw else None
+    )
 
-    required = _parse_bool(cells[4]) if len(cells) > 4 else True
-    options_raw = cells[5].strip() if len(cells) > 5 else ""
-    options: Optional[List[str]] = None
-    if options_raw:
-        options = [o.strip() for o in options_raw.split(",") if o.strip()]
-
-    # Generar label a partir del nombre (snake_case → Title Case)
-    label = name.replace("_", " ").title()
+    # Label: usar el valor de la columna si existe, sino generar desde name
+    label_raw = data.get("label", "").strip()
+    label = label_raw if label_raw else name.replace("_", " ").title()
 
     field_config: Dict[str, Any] = {
         "name": name,
@@ -64,62 +92,62 @@ def _parse_table_row(cells: List[str]) -> Optional[Dict[str, Any]]:
     return field_config
 
 
-def _extract_table_rows(markdown_text: str) -> List[List[str]]:
+def _extract_table_rows(markdown_text: str) -> Tuple[List[str], List[List[str]]]:
     """
-    Extrae filas de tablas Markdown del texto.
-    Retorna una lista de listas de celdas (strings).
+    Extrae el header y las filas de datos de la primera tabla Markdown encontrada.
+    Retorna (col_map, rows) donde col_map es la lista de atributos internos.
     """
+    col_map: List[str] = []
     rows: List[List[str]] = []
-    in_table = False
     header_seen = False
+    header_cells: List[str] = []
 
     for line in markdown_text.splitlines():
         stripped = line.strip()
         if not stripped.startswith("|"):
-            in_table = False
-            header_seen = False
+            if header_seen:
+                break  # fin de la tabla
+            header_cells = []
             continue
 
-        in_table = True
         cells = [c.strip() for c in stripped.split("|")[1:-1]]
 
-        # Detectar fila separadora (---|---|---)
-        if all(re.match(r"^-+$", c.replace(":", "")) for c in cells if c):
-            header_seen = True
+        # Separador (---|---|---)
+        if all(re.match(r"^[-:]+$", c) for c in cells if c):
+            if header_cells:
+                col_map = _build_col_map(header_cells)
+                header_seen = True
             continue
 
-        if header_seen:
+        if not header_seen:
+            header_cells = cells
+        else:
             rows.append(cells)
-        # Si aún no hay separador, la primera fila es el header — la saltamos
 
-    return rows
+    # Si el header no tenía columnas reconocibles, usar orden por defecto
+    if not any(c for c in col_map):
+        col_map = _DEFAULT_ORDER[:]
+
+    return col_map, rows
 
 
 def parse_markdown_to_schema(markdown_text: str) -> Dict[str, Any]:
     """
     Parsea el markdown del template y genera el JSONB de configuracion_campos.
+    Soporta cualquier orden de columnas siempre que el header sea reconocible.
 
-    El markdown puede contener una o más tablas con el siguiente encabezado:
-    | campo | tipo | bloqueado | default | requerido | opciones |
-
-    Retorna: { "fields": [ { "name": ..., "type": ..., ... }, ... ] }
+    Retorna: { "fields": [ { "name": ..., "label": ..., "type": ..., ... }, ... ] }
     """
-    rows = _extract_table_rows(markdown_text)
+    col_map, rows = _extract_table_rows(markdown_text)
     fields: List[Dict[str, Any]] = []
-
     for row in rows:
-        field = _parse_table_row(row)
+        field = _parse_table_row(row, col_map)
         if field:
             fields.append(field)
-
     return {"fields": fields}
 
 
 def validate_schema(schema: Dict[str, Any]) -> bool:
-    """
-    Valida que el esquema JSONB tenga la estructura esperada.
-    Retorna True si es válido, False en caso contrario.
-    """
     if not isinstance(schema, dict):
         return False
     fields = schema.get("fields")
@@ -139,29 +167,20 @@ def calculate_completeness(
     form_data: Dict[str, Any], schema: Dict[str, Any]
 ) -> Tuple[int, int]:
     """
-    Calcula la completitud de un formulario.
-
-    Solo cuenta campos que sean editables (readonly=False).
-    Un campo se considera "lleno" si tiene un valor no nulo y no vacío.
-
-    Retorna: (campos_llenos, campos_totales_editables)
+    Calcula la completitud de un formulario (campos editables llenos / total editables).
     """
     fields: List[Dict[str, Any]] = schema.get("fields", [])
     editable_fields = [f for f in fields if not f.get("readonly", False)]
     total = len(editable_fields)
-    filled = 0
-
-    for field in editable_fields:
-        name = field.get("name", "")
-        value = form_data.get(name)
-        if value is not None and str(value).strip() != "":
-            filled += 1
-
+    filled = sum(
+        1
+        for f in editable_fields
+        if (v := form_data.get(f.get("name", ""))) is not None and str(v).strip() != ""
+    )
     return filled, total
 
 
 def render_markdown_to_html(markdown_text: str) -> str:
-    """Convierte el Markdown a HTML para preview."""
     return markdown.markdown(
         markdown_text,
         extensions=["tables", "fenced_code", "nl2br"],

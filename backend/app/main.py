@@ -142,6 +142,7 @@ app.add_middleware(
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 from app.routers import auth, admin, templates, forms, files, validation, stats
+from app.routers import indicadores, pipeline_definitions, forms_excel
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
@@ -150,6 +151,9 @@ app.include_router(forms.router, prefix="/api")
 app.include_router(files.router, prefix="/api")
 app.include_router(validation.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
+app.include_router(indicadores.router, prefix="/api")
+app.include_router(pipeline_definitions.router, prefix="/api")
+app.include_router(forms_excel.router, prefix="/api")
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────

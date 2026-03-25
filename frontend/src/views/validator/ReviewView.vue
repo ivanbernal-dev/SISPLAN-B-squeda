@@ -89,11 +89,11 @@
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <h3 class="font-subtitulo font-semibold text-ubpd-gris mb-3">Informe Cualitativo</h3>
           <textarea
+            v-autoresize
             :value="formData.informe_cualitativo"
             disabled
-            rows="6"
             class="w-full font-cuerpo text-sm bg-ubpd-gris-claro border border-ubpd-gris-borde
-                   rounded-lg px-4 py-3 text-gray-600 cursor-not-allowed resize-none"
+                   rounded-lg px-4 py-3 text-gray-600 cursor-not-allowed min-h-[100px]"
           />
         </div>
       </div>
@@ -170,12 +170,12 @@
                 Observaciones <span class="text-ubpd-naranja">*</span>
               </label>
               <textarea
+                v-autoresize
                 v-model="rejectionComment"
-                rows="4"
                 placeholder="Indique los ajustes requeridos de forma clara y precisa..."
-                class="w-full font-cuerpo text-sm border border-gray-300 rounded-lg px-4 py-3
+                class="w-full font-cuerpo text-sm border border-gray-300 rounded-lg px-4 py-3 min-h-[90px]
                        focus:outline-none focus:border-ubpd-naranja focus:ring-2 focus:ring-ubpd-naranja/20
-                       transition resize-none"
+                       transition"
                 :class="rejectionComment.trim() ? 'border-ubpd-naranja/50' : ''"
               />
               <p class="font-cuerpo text-xs text-gray-400">

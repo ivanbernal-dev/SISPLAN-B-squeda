@@ -6,6 +6,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -78,6 +79,7 @@ class Form(Base):
         nullable=False,
     )
     comentario_rechazo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cargado_via_excel: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     validado_por_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("usuarios.id", ondelete="SET NULL"),
