@@ -44,8 +44,12 @@ header() { echo -e "\n${CYAN}▶  $*${NC}"; }
 info()   { echo -e "${GREEN}   $*${NC}"; }
 warn()   { echo -e "${YELLOW}   $*${NC}"; }
 
-# Leer IP del servidor del .env
-SERVER_IP=$(grep -E "^SERVER_IP=" .env 2>/dev/null | cut -d= -f2 | tr -d '"' | tr -d "'" || echo "192.168.1.100")
+# Detectar IP local activa (descarta loopback y docker)
+SERVER_IP=$(ipconfig getifaddr en0 2>/dev/null \
+  || ipconfig getifaddr en1 2>/dev/null \
+  || ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' \
+  || grep -E "^SERVER_IP=" .env 2>/dev/null | cut -d= -f2 | tr -d '"' | tr -d "'" \
+  || echo "127.0.0.1")
 
 check_prerequisites() {
     local ok=true
