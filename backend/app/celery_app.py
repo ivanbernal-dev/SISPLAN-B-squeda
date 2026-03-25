@@ -1,5 +1,5 @@
 """
-app/celery_app.py — Configuración de Celery con Redis como broker.
+app/celery_app.py — Configuración de Celery con Valkey como broker.
 
 Beat Schedule:
 - recalcular estadísticas cada STATS_RECALC_INTERVAL_SECONDS (por defecto 10 min).

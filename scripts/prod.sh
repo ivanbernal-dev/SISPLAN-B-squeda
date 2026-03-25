@@ -104,7 +104,7 @@ case "$CMD" in
         echo ""
 
         # Lista de servicios esperados
-        EXPECTED="nginx frontend backend celery celery-beat postgres redis minio"
+        EXPECTED="nginx frontend backend celery celery-beat postgres valkey minio"
 
         # Obtener estado de todos los contenedores en JSON
         PS_JSON=$($COMPOSE ps --format json 2>/dev/null)
@@ -210,7 +210,7 @@ print('ausente')
         echo "  test              Ejecutar tests"
         echo "  reset-db          Resetear BD (requiere ALLOW_DB_RESET=true en .env)"
         echo ""
-        echo "Servicios: nginx | backend | frontend | celery | celery-beat | postgres | redis | minio"
+        echo "Servicios: nginx | backend | frontend | celery | celery-beat | postgres | valkey | minio"
         echo ""
         ;;
 esac

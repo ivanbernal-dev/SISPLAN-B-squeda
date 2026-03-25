@@ -19,4 +19,4 @@ docker load -i "$IMAGE_FILE"
 
 echo ""
 echo "✅ Imágenes cargadas:"
-docker images | grep -E "postgres|redis|nginx|minio|python|node"
+docker images | grep -E "postgres|valkey|nginx|minio|python|node"

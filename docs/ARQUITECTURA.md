@@ -28,7 +28,7 @@ Todos los servicios corren como contenedores Docker orquestados con Docker Compo
 │                              └────────────┘  └────────────┘ │ │
 │                                        │                     │ │
 │                              ┌─────────▼──┐                 │ │
-│                              │   Redis     │                 │ │
+│                              │   Valkey    │                 │ │
 │                              │ Puerto 6379 │                 │ │
 │                              └─────────────┘                │ │
 │                                        │                     │ │
@@ -72,9 +72,9 @@ Todos los servicios corren como contenedores Docker orquestados con Docker Compo
 - **Puertos internos**: `9000` (API), `9001` (Consola Web)
 - **Persistencia**: Volumen Docker `minio_data`
 
-### 6. `redis` — Caché y Cola de Tareas
-- **Imagen**: `redis:7-alpine`
-- **Función**: Broker de mensajes para Celery. Caché de sesiones y resultados de pipelines.
+### 6. `valkey` — Caché y Cola de Tareas
+- **Imagen**: `valkey/valkey:7-alpine`
+- **Función**: Broker de mensajes para Celery. Caché de resultados de pipelines. Fork open-source de Redis, 100% compatible con el cliente `redis` de Python.
 - **Puerto**: `6379` (interno)
 
 ### 7. `celery` — Worker de Tareas

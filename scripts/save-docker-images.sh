@@ -11,7 +11,7 @@ OUTPUT_FILE="ubpd-docker-images-$(date +%Y%m%d).tar.gz"
 echo "📦 Descargando imágenes Docker para UBPD..."
 
 docker pull postgres:16-alpine
-docker pull redis:7-alpine
+docker pull valkey/valkey:7-alpine
 docker pull nginx:1.25-alpine
 docker pull minio/minio:latest
 docker pull python:3.12-slim
@@ -21,7 +21,7 @@ echo "💾 Guardando imágenes en $OUTPUT_FILE ..."
 
 docker save \
   postgres:16-alpine \
-  redis:7-alpine \
+  valkey/valkey:7-alpine \
   nginx:1.25-alpine \
   minio/minio:latest \
   python:3.12-slim \

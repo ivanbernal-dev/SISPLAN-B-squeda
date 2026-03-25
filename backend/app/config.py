@@ -2,7 +2,7 @@
 app/config.py — Configuración global mediante pydantic-settings
 Lee variables de entorno desde .env o variables del sistema.
 """
-from typing import List, Optional
+from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
 
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # ── Redis ──────────────────────────────────────────────────
+    # ── Valkey (broker Celery — usa protocolo redis://) ───────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # ── MinIO ──────────────────────────────────────────────────

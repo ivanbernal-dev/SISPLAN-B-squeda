@@ -64,12 +64,12 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@valkey:6379/0
       - MINIO_ENDPOINT=minio:9000
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
+      valkey:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -109,11 +109,11 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@valkey:6379/0
       - MINIO_ENDPOINT=minio:9000
     depends_on:
       - backend
-      - redis
+      - valkey
       - postgres
     volumes:
       - ./logs/backend:/app/logs
@@ -136,10 +136,10 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@valkey:6379/0
     depends_on:
       - celery
-      - redis
+      - valkey
     volumes:
       - ./logs/backend:/app/logs
       # [DEV] Montar código para ver cambios sin rebuild:
@@ -206,22 +206,22 @@ services:
       start_period: 15s
 
   # ──────────────────────────────────────────────────────────
-  # REDIS — Broker de Celery y Caché
+  # VALKEY — Broker de Celery y Caché (fork open-source de Redis)
   # ──────────────────────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    container_name: ubpd_redis
+  valkey:
+    image: valkey/valkey:7-alpine
+    container_name: ubpd_valkey
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    command: valkey-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
-      - redis_data:/data
+      - valkey_data:/data
     networks:
       - ubpd_network
-    # [DEV] Exponer para redis-cli / RedisInsight local:
+    # [DEV] Exponer para valkey-cli / RedisInsight local:
     # ports:
     #   - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "valkey-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -236,9 +236,9 @@ volumes:
   minio_data:
     driver: local
     name: ubpd_minio_data
-  redis_data:
+  valkey_data:
     driver: local
-    name: ubpd_redis_data
+    name: ubpd_valkey_data
 
 # ──────────────────────────────────────────────────────────
 # RED INTERNA
