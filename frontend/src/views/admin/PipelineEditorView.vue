@@ -52,13 +52,14 @@
     <!-- Main content -->
     <div class="flex flex-1 overflow-hidden">
       <!-- Canvas area -->
-      <div class="flex-1 relative overflow-hidden bg-gray-100" ref="canvasRef">
+      <div class="flex-1 relative overflow-hidden bg-gray-100" ref="canvasRef"
+        @mousemove="onCanvasMouseMove"
+        @mouseup="onCanvasMouseUp"
+      >
         <!-- Simple node canvas (no external library dependency, fully functional) -->
         <svg
           class="absolute inset-0 w-full h-full"
           @click.self="deselectNode"
-          @mousemove="onCanvasMouseMove"
-          @mouseup="onCanvasMouseUp"
         >
           <!-- Grid background -->
           <defs>
@@ -304,6 +305,8 @@ result = df['calculo_formula'].mean()"
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+
+const canvasRef = ref<HTMLDivElement | null>(null)
 import { useApi } from '@/composables/useApi'
 import { useNotificationsStore } from '@/stores/notifications'
 
@@ -452,27 +455,27 @@ let draggingNodeId: string | null = null
 let dragOffset = { x: 0, y: 0 }
 
 function startDrag(event: MouseEvent, nodeId: string) {
+  event.preventDefault()
   draggingNodeId = nodeId
   const node = nodes.value.find((n) => n.id === nodeId)!
-  const target = event.currentTarget as HTMLElement
-  const rect = target.closest('[data-canvas]')?.getBoundingClientRect() ??
-    target.getBoundingClientRect()
+  const canvasRect = canvasRef.value?.getBoundingClientRect() ?? { left: 0, top: 0 }
   dragOffset = {
-    x: event.clientX - node.position.x,
-    y: event.clientY - node.position.y,
+    x: event.clientX - canvasRect.left - node.position.x,
+    y: event.clientY - canvasRect.top - node.position.y,
   }
 }
 
 function onCanvasMouseMove(event: MouseEvent) {
-  const canvas = event.currentTarget as SVGElement
-  const rect = canvas.getBoundingClientRect()
-  mousePos.value = { x: event.clientX - rect.left, y: event.clientY - rect.top }
-
+  const canvasRect = canvasRef.value?.getBoundingClientRect() ?? { left: 0, top: 0 }
+  mousePos.value = {
+    x: event.clientX - canvasRect.left,
+    y: event.clientY - canvasRect.top,
+  }
   if (draggingNodeId) {
     const node = nodes.value.find((n) => n.id === draggingNodeId)
     if (node) {
-      node.position.x = event.clientX - dragOffset.x
-      node.position.y = event.clientY - dragOffset.y
+      node.position.x = Math.max(0, event.clientX - canvasRect.left - dragOffset.x)
+      node.position.y = Math.max(0, event.clientY - canvasRect.top - dragOffset.y)
     }
   }
 }

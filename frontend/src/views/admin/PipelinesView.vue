@@ -11,21 +11,30 @@
           </span>
         </p>
       </div>
-      <button
-        @click="loadPipelines"
-        :disabled="loading"
-        class="inline-flex items-center gap-2 border border-ubpd-teal text-ubpd-teal font-cuerpo font-semibold text-sm
-               rounded-xl px-5 py-2.5 hover:bg-ubpd-teal hover:text-white transition disabled:opacity-50"
-      >
-        <svg
-          class="w-4 h-4 transition-transform"
-          :class="loading ? 'animate-spin' : ''"
-          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+      <div class="flex items-center gap-2">
+        <RouterLink
+          to="/admin/pipeline-editor"
+          class="inline-flex items-center gap-2 bg-ubpd-teal text-white font-cuerpo font-semibold text-sm
+                 rounded-xl px-5 py-2.5 hover:bg-[#346d7a] transition"
         >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        Actualizar
-      </button>
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Nuevo Pipeline
+        </RouterLink>
+        <button
+          @click="loadPipelines"
+          :disabled="loading"
+          class="inline-flex items-center gap-2 border border-ubpd-teal text-ubpd-teal font-cuerpo font-semibold text-sm
+                 rounded-xl px-5 py-2.5 hover:bg-ubpd-teal hover:text-white transition disabled:opacity-50"
+        >
+          <svg class="w-4 h-4 transition-transform" :class="loading ? 'animate-spin' : ''"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Actualizar
+        </button>
+      </div>
     </div>
 
     <!-- Resumen de estados -->
@@ -68,6 +77,7 @@
               <th class="px-6 py-3 text-left font-cuerpo font-medium text-xs text-gray-500 uppercase tracking-wide">Iniciado</th>
               <th class="px-6 py-3 text-left font-cuerpo font-medium text-xs text-gray-500 uppercase tracking-wide hidden lg:table-cell">Terminado</th>
               <th class="px-6 py-3 text-left font-cuerpo font-medium text-xs text-gray-500 uppercase tracking-wide hidden lg:table-cell">Duración</th>
+              <th class="px-6 py-3"></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
@@ -118,6 +128,15 @@
                   {{ pipe.iniciado && pipe.terminado ? calcDuration(pipe.iniciado, pipe.terminado) : '—' }}
                 </span>
               </td>
+              <td class="px-6 py-4 text-right">
+                <RouterLink
+                  v-if="pipe.pipeline_id"
+                  :to="`/admin/pipeline-editor/${pipe.pipeline_id}`"
+                  class="font-cuerpo text-xs font-medium text-ubpd-teal hover:underline"
+                >
+                  Editar
+                </RouterLink>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -141,6 +160,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useNotificationsStore } from '@/stores/notifications'
 

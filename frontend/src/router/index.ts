@@ -147,8 +147,8 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'pipeline-editor',
-        name: 'PipelineEditorList',
-        component: () => import('../views/admin/PipelinesView.vue'),
+        name: 'PipelineEditorNew',
+        component: () => import('../views/admin/PipelineEditorView.vue'),
         meta: { requiresAuth: true, roles: ['admin'] },
       },
       {
