@@ -59,21 +59,21 @@
         </RouterLink>
 
         <RouterLink
-          to="/validator/templates/new"
-          class="sidebar-item"
-          :class="{ 'sidebar-item-active': isActive('/validator/templates/new') }"
-        >
-          <PhPlus :size="20" aria-hidden="true" />
-          <span>Crear Template</span>
-        </RouterLink>
-
-        <RouterLink
           to="/validator/history"
           class="sidebar-item"
           :class="{ 'sidebar-item-active': isActive('/validator/history') }"
         >
           <PhClockCounterClockwise :size="20" aria-hidden="true" />
           <span>Historial</span>
+        </RouterLink>
+
+        <RouterLink
+          to="/validator/registros"
+          class="sidebar-item"
+          :class="{ 'sidebar-item-active': isActive('/validator/registros') }"
+        >
+          <PhFolderOpen :size="20" aria-hidden="true" />
+          <span>Registros</span>
         </RouterLink>
       </nav>
 
@@ -123,10 +123,10 @@ import { useNotificationsStore } from '../stores/notifications'
 import { apiGet } from '../composables/useApi'
 import {
   PhTray,
-  PhPlus,
   PhClockCounterClockwise,
   PhSignOut,
   PhList,
+  PhFolderOpen,
 } from '@phosphor-icons/vue'
 
 const auth          = useAuthStore()

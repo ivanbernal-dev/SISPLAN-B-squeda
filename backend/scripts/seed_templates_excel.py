@@ -127,8 +127,8 @@ def campos_cierre(entregables_count=1):
                                    placeholder=f"Nombre del entregable {i}"))
     campos.append(ed_textarea("informe_cualitativo", "Informe cualitativo",
                                placeholder="Descripción cualitativa del avance del mes"))
-    campos.append(ed_text("soportes_archivos", "Soportes / Archivos",
-                           placeholder="Referencias o nombres de los archivos de soporte"))
+    campos.append({"name": "soportes_archivos", "label": "Soportes / Archivos",
+                   "tipo": "archivos", "readonly": False, "requerido": False, "default": None})
     return campos
 
 

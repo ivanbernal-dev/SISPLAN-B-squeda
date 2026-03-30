@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_client_ip, get_validator_user
@@ -24,6 +25,23 @@ async def _log_audit(db: AsyncSession, **kwargs) -> None:
     db.add(AuditLog(**kwargs))
 
 
+def _with_relations():
+    return [
+        selectinload(Form.archivos),
+        selectinload(Form.validado_por),
+        selectinload(Form.plantilla),
+        selectinload(Form.dependency),
+        selectinload(Form.usuario),
+    ]
+
+
+async def _load_form(db: AsyncSession, form_id: uuid.UUID) -> Form | None:
+    result = await db.execute(
+        select(Form).where(Form.id == form_id).options(*_with_relations())
+    )
+    return result.scalar_one_or_none()
+
+
 @router.get("/pending", response_model=FormListResponse)
 async def get_pending_forms(
     page: int = Query(1, ge=1),
@@ -37,10 +55,8 @@ async def get_pending_forms(
     query = select(Form).where(Form.estado == FormStatus.pending)
 
     if start_date:
-        from datetime import date
         query = query.where(Form.fecha_carga >= datetime.fromisoformat(start_date))
     if end_date:
-        from datetime import date
         query = query.where(Form.fecha_carga <= datetime.fromisoformat(end_date + "T23:59:59"))
 
     count_q = select(func.count()).select_from(query.subquery())
@@ -48,7 +64,8 @@ async def get_pending_forms(
 
     offset = (page - 1) * size
     result = await db.execute(
-        query.order_by(Form.fecha_carga.asc()).offset(offset).limit(size)
+        query.options(*_with_relations())
+        .order_by(Form.fecha_carga.asc()).offset(offset).limit(size)
     )
     forms = result.scalars().all()
     return FormListResponse(
@@ -89,7 +106,8 @@ async def get_validation_history(
 
     offset = (page - 1) * size
     result = await db.execute(
-        query.order_by(Form.fecha_validacion.desc()).offset(offset).limit(size)
+        query.options(*_with_relations())
+        .order_by(Form.fecha_validacion.desc()).offset(offset).limit(size)
     )
     forms = result.scalars().all()
     return FormListResponse(
@@ -111,8 +129,7 @@ async def approve_form(
     Aprueba un formulario pendiente.
     Cambia el estado a 'approved' y dispara la tarea Celery de cálculo de estadísticas.
     """
-    result = await db.execute(select(Form).where(Form.id == form_id))
-    form = result.scalar_one_or_none()
+    form = await _load_form(db, form_id)
     if form is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Formulario no encontrado")
     if form.estado != FormStatus.pending:
@@ -134,15 +151,11 @@ async def approve_form(
         ip_address=get_client_ip(request),
     )
 
-    # Disparar tarea Celery (se ejecuta después del commit)
     form_id_str = str(form_id)
-
-    # Registrar el flush para que la tarea pueda leer el estado actualizado
-    await db.flush()
-
-    # Encolar tarea Celery
+    await db.commit()
     process_form_approved.delay(form_id_str)
 
+    form = await _load_form(db, form_id)
     return FormResponse.model_validate(form)
 
 
@@ -157,8 +170,7 @@ async def reject_form(
     """
     Rechaza un formulario pendiente. Requiere comentario obligatorio.
     """
-    result = await db.execute(select(Form).where(Form.id == form_id))
-    form = result.scalar_one_or_none()
+    form = await _load_form(db, form_id)
     if form is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Formulario no encontrado")
     if form.estado != FormStatus.pending:
@@ -181,4 +193,6 @@ async def reject_form(
         detalle={"comentario": body.comentario[:200]},
         ip_address=get_client_ip(request),
     )
+    await db.commit()
+    form = await _load_form(db, form_id)
     return FormResponse.model_validate(form)

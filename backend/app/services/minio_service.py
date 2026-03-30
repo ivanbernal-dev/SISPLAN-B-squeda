@@ -122,6 +122,23 @@ class MinioService:
                 detail="Error al generar URL de descarga",
             )
 
+    def get_file_stream(self, file_record: Archivo):
+        """
+        Retorna el stream HTTP de un objeto MinIO.
+        El llamador es responsable de cerrar la conexión (.close() + .release_conn()).
+        """
+        try:
+            return self.client.get_object(
+                bucket_name=file_record.bucket,
+                object_name=file_record.ruta_minio,
+            )
+        except S3Error as exc:
+            logger.error("Error al obtener stream de MinIO: %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al obtener el archivo",
+            )
+
     def delete_file(self, file_record: Archivo) -> None:
         """Elimina el objeto de MinIO."""
         try:

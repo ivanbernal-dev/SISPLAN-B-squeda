@@ -133,6 +133,89 @@ async def list_templates_by_dependency(
     return [_enrich(t) for t in templates]
 
 
+@router.get("/export")
+async def export_templates(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Exporta todos los templates (activos e inactivos) como JSON para respaldo."""
+    result = await db.execute(select(Template).order_by(Template.nombre))
+    templates = result.scalars().all()
+    return [
+        {
+            "codigo":               t.codigo,
+            "nombre":               t.nombre,
+            "descripcion":          t.descripcion,
+            "codigo_markdown":      t.codigo_markdown,
+            "configuracion_campos": t.configuracion_campos,
+            "activo":               t.activo,
+        }
+        for t in templates
+    ]
+
+
+@router.post("/import")
+async def import_templates(
+    request: Request,
+    payload: list[dict],
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Importa/restaura templates desde un JSON exportado previamente.
+    - Si el código ya existe → actualiza campos y configuración.
+    - Si no existe → crea uno nuevo.
+    """
+    created = 0
+    updated = 0
+    errors: list[str] = []
+
+    for item in payload:
+        codigo = item.get("codigo") or ""
+        nombre = item.get("nombre") or codigo
+        if not nombre:
+            errors.append("Item sin nombre ni código omitido")
+            continue
+        try:
+            if codigo:
+                existing = (await db.execute(
+                    select(Template).where(Template.codigo == codigo)
+                )).scalar_one_or_none()
+            else:
+                existing = None
+
+            if existing:
+                existing.nombre               = item.get("nombre", existing.nombre)
+                existing.descripcion          = item.get("descripcion", existing.descripcion)
+                existing.codigo_markdown      = item.get("codigo_markdown", existing.codigo_markdown) or ""
+                existing.configuracion_campos = item.get("configuracion_campos", existing.configuracion_campos) or {}
+                existing.activo               = item.get("activo", existing.activo)
+                existing.version              += 1
+                updated += 1
+            else:
+                db.add(Template(
+                    codigo               = codigo or None,
+                    nombre               = nombre,
+                    descripcion          = item.get("descripcion"),
+                    codigo_markdown      = item.get("codigo_markdown") or "",
+                    configuracion_campos = item.get("configuracion_campos") or {},
+                    activo               = item.get("activo", True),
+                    created_by_id        = current_user.id,
+                ))
+                created += 1
+        except Exception as exc:
+            errors.append(f"{codigo or nombre}: {exc}")
+
+    await db.commit()
+    return {
+        "creados":    created,
+        "actualizados": updated,
+        "errores":    errors,
+        "mensaje":    f"{created} template(s) creados, {updated} actualizado(s)." +
+                      (f" {len(errors)} error(es)." if errors else ""),
+    }
+
+
 @router.get("/{template_id}", response_model=TemplateResponse)
 async def get_template(
     template_id: uuid.UUID,
@@ -213,3 +296,69 @@ async def deactivate_template(
         ip_address=get_client_ip(request),
     )
     return {"detail": "Template desactivado exitosamente"}
+
+
+@router.get("/{template_id}/forms")
+async def list_forms_by_template(
+    template_id: uuid.UUID,
+    page: int = 1,
+    size: int = 20,
+    estado: str | None = None,
+    current_user: User = Depends(get_any_authenticated),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Lista los formularios de un template.
+    - Admin / Validator: todos los formularios.
+    - Dependency user: solo los propios.
+    """
+    from sqlalchemy import func
+    from app.models.form import Form, FormStatus
+    from app.models.user import UserRole
+    from app.schemas.form import FormResponse
+
+    from sqlalchemy.orm import selectinload
+
+    result = await db.execute(select(Template).where(Template.id == template_id))
+    template = result.scalar_one_or_none()
+    if template is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template no encontrado")
+
+    query = select(Form).where(Form.plantilla_id == template_id)
+
+    if current_user.role == UserRole.dependency_user:
+        # Usuarios de dependencia solo ven sus propios formularios
+        query = query.where(Form.usuario_id == current_user.id)
+    else:
+        # Admin / Validator: no muestran borradores (salvo filtro explícito)
+        if not estado:
+            query = query.where(Form.estado != FormStatus.draft)
+
+    if estado:
+        try:
+            query = query.where(Form.estado == FormStatus(estado))
+        except ValueError:
+            pass
+
+    count_q = select(func.count()).select_from(query.subquery())
+    total = await db.scalar(count_q) or 0
+
+    eager = [
+        selectinload(Form.archivos),
+        selectinload(Form.validado_por),
+        selectinload(Form.plantilla),
+        selectinload(Form.dependency),
+        selectinload(Form.usuario),
+    ]
+
+    offset = (page - 1) * size
+    rows = (await db.execute(
+        query.options(*eager).order_by(Form.fecha_carga.desc()).offset(offset).limit(size)
+    )).scalars().all()
+
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": [FormResponse.model_validate(f) for f in rows],
+    }

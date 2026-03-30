@@ -107,8 +107,8 @@
 
           <!-- Fecha de envío -->
           <div class="flex-shrink-0 text-right hidden sm:block">
-            <p class="font-cuerpo text-sm text-gray-600">{{ formatDate(form.fecha_envio) }}</p>
-            <p class="font-cuerpo text-xs text-gray-400">{{ formatTime(form.fecha_envio) }}</p>
+            <p class="font-cuerpo text-sm text-gray-600">{{ formatDate(form.fecha_carga) }}</p>
+            <p class="font-cuerpo text-xs text-gray-400">{{ formatTime(form.fecha_carga) }}</p>
           </div>
 
           <!-- Flecha -->
@@ -170,7 +170,7 @@ interface PendingForm {
   id: string
   template_nombre: string
   dependencia_nombre: string
-  fecha_envio: string
+  fecha_carga: string
   estado: string
 }
 

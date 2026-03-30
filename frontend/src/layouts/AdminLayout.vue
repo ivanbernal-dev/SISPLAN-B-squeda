@@ -107,6 +107,7 @@ import {
   PhList,
   PhShareNetwork,
   PhChartBar,
+  PhFolderOpen,
 } from '@phosphor-icons/vue'
 
 // ─── Nav items ────────────────────────────────────────────
@@ -122,6 +123,7 @@ const navItems: NavItem[] = [
   { label: 'Usuarios',     to: '/admin/users',         icon: PhUsers                       },
   { label: 'Dependencias', to: '/admin/dependencies',  icon: PhBuildings                   },
   { label: 'Templates',    to: '/admin/templates',     icon: PhFileText                    },
+  { label: 'Registros',    to: '/admin/registros',     icon: PhFolderOpen                  },
   { label: 'Pipelines',       to: '/admin/pipelines',        icon: PhGitBranch                   },
   { label: 'Editor Visual',   to: '/admin/pipeline-editor',  icon: PhShareNetwork                },
   { label: 'Indicadores',     to: '/admin/indicadores',      icon: PhChartBar                    },

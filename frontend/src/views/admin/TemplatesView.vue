@@ -6,16 +6,50 @@
         <h1 class="font-subtitulo font-bold text-2xl text-ubpd-gris">Templates de Formularios</h1>
         <p class="font-cuerpo text-sm text-gray-500 mt-1">Plantillas para el registro de información</p>
       </div>
-      <RouterLink
-        to="/admin/templates/new"
-        class="inline-flex items-center gap-2 bg-ubpd-teal text-white font-cuerpo font-semibold text-sm
-               rounded-xl px-5 py-2.5 hover:bg-[#346d7a] transition"
-      >
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Nuevo Template
-      </RouterLink>
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Exportar JSON -->
+        <button
+          @click="exportJson"
+          :disabled="exportingJson"
+          class="inline-flex items-center gap-2 border border-gray-300 text-gray-600 font-cuerpo font-semibold
+                 text-sm rounded-xl px-4 py-2.5 hover:bg-gray-50 transition disabled:opacity-50"
+          title="Descargar todos los templates como JSON"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          {{ exportingJson ? 'Exportando…' : 'Exportar JSON' }}
+        </button>
+
+        <!-- Importar JSON -->
+        <button
+          @click="triggerImport"
+          :disabled="importingJson"
+          class="inline-flex items-center gap-2 border border-ubpd-teal text-ubpd-teal font-cuerpo font-semibold
+                 text-sm rounded-xl px-4 py-2.5 hover:bg-teal-50 transition disabled:opacity-50"
+          title="Restaurar templates desde un archivo JSON"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
+          </svg>
+          {{ importingJson ? 'Importando…' : 'Importar JSON' }}
+        </button>
+        <input ref="importInputRef" type="file" accept=".json" class="hidden" @change="onImportFileSelected" />
+
+        <!-- Nuevo Template -->
+        <RouterLink
+          to="/admin/templates/new"
+          class="inline-flex items-center gap-2 bg-ubpd-teal text-white font-cuerpo font-semibold text-sm
+                 rounded-xl px-5 py-2.5 hover:bg-[#346d7a] transition"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Nuevo Template
+        </RouterLink>
+      </div>
     </div>
 
     <!-- Buscador -->
@@ -78,7 +112,9 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <!-- Editar — deshabilitado si el template está activo -->
           <RouterLink
+            v-if="!tmpl.is_active"
             :to="`/admin/templates/${tmpl.id}`"
             class="flex-1 flex items-center justify-center gap-1.5 text-xs font-cuerpo font-medium
                    border border-ubpd-teal text-ubpd-teal rounded-lg px-3 py-2
@@ -89,6 +125,18 @@
             </svg>
             Editar
           </RouterLink>
+          <span
+            v-else
+            class="flex-1 flex items-center justify-center gap-1.5 text-xs font-cuerpo font-medium
+                   border border-gray-200 text-gray-400 rounded-lg px-3 py-2 cursor-not-allowed select-none"
+            title="Desactiva el template para poder editarlo"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Editar
+          </span>
 
           <!-- Botón Vista Previa -->
           <button
@@ -134,11 +182,13 @@
 
     <!-- Modal Confirmar activar/desactivar -->
     <ConfirmModal
-      v-model="showConfirm"
+      :is-open="showConfirm"
       :title="confirmData.is_active ? 'Desactivar template' : 'Activar template'"
-      :message="`¿Desea ${confirmData.is_active ? 'desactivar' : 'activar'} el template &quot;${confirmData.nombre}&quot;?`"
-      :confirm-label="confirmData.is_active ? 'Desactivar' : 'Activar'"
-      :variant="confirmData.is_active ? 'warning' : 'confirm'"
+      :message="confirmData.is_active
+        ? `¿Desea desactivar el template «${confirmData.nombre}»?\n\nAl desactivarlo, los usuarios de dependencias dejarán de ver este formulario y no podrán crear nuevos registros.`
+        : `¿Desea activar el template «${confirmData.nombre}»?\n\nAl activarlo, los usuarios de dependencias podrán ver y completar este formulario.`"
+      :confirm-text="confirmData.is_active ? 'Sí, desactivar' : 'Sí, activar'"
+      :confirm-variant="confirmData.is_active ? 'danger' : 'success'"
       :loading="confirmLoading"
       @confirm="handleToggle"
       @cancel="showConfirm = false"
@@ -350,7 +400,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), { showDeactivate: true })
 
-const { get, patch, del } = useApi()
+const { get, post, patch, del } = useApi()
 const notifications = useNotificationsStore()
 
 const loading = ref(true)
@@ -360,6 +410,63 @@ const search = ref('')
 const showConfirm = ref(false)
 const confirmLoading = ref(false)
 const confirmData = reactive({ id: '', nombre: '', is_active: true })
+
+// ── Exportar / Importar JSON ──────────────────────────────────────────────────
+const exportingJson = ref(false)
+const importingJson = ref(false)
+const importInputRef = ref<HTMLInputElement | null>(null)
+
+function triggerImport() {
+  importInputRef.value?.click()
+}
+
+async function exportJson() {
+  exportingJson.value = true
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api'
+    const token = localStorage.getItem('ubpd_access_token')
+    const response = await fetch(`${apiUrl}/templates/export`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const data = await response.json()
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `templates_backup_${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    notifications.success('Exportación exitosa', `${data.length} template(s) descargados en JSON.`)
+  } catch {
+    notifications.error('Error al exportar', 'No se pudo descargar el archivo JSON.')
+  } finally {
+    exportingJson.value = false
+  }
+}
+
+async function onImportFileSelected(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  importingJson.value = true
+  try {
+    const text = await file.text()
+    const payload = JSON.parse(text)
+    if (!Array.isArray(payload)) throw new Error('El archivo no contiene un arreglo de templates.')
+    const result = await post<{ mensaje: string; creados: number; actualizados: number; errores: string[] }>(
+      '/templates/import',
+      payload,
+    )
+    notifications.success('Importación exitosa', result.mensaje)
+    await loadTemplates()
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Verifique que el archivo sea válido.'
+    notifications.error('Error al importar', msg)
+  } finally {
+    importingJson.value = false
+    if (importInputRef.value) importInputRef.value.value = ''
+  }
+}
 
 // ── Vista Previa ──────────────────────────────────────────────────────────────
 const previewTemplate = ref<Template | null>(null)
@@ -420,14 +527,23 @@ function confirmToggle(tmpl: Template) {
 
 async function handleToggle() {
   confirmLoading.value = true
+  const activando = !confirmData.is_active
   try {
-    await patch(`/templates/${confirmData.id}`, { activo: !confirmData.is_active })
-    const idx = templates.value.findIndex((t) => t.id === confirmData.id)
-    if (idx !== -1) templates.value[idx].is_active = !confirmData.is_active
-    notifications.success(confirmData.is_active ? 'Template desactivado' : 'Template activado')
+    await patch(`/templates/${confirmData.id}`, { activo: activando })
     showConfirm.value = false
+    notifications.success(
+      activando ? 'Template activado' : 'Template desactivado',
+      activando
+        ? `«${confirmData.nombre}» ya es visible para los usuarios de dependencias.`
+        : `«${confirmData.nombre}» fue ocultado a los usuarios de dependencias.`,
+    )
+    // Recargar lista desde el servidor para reflejar el estado real
+    await loadTemplates()
   } catch {
-    notifications.error('No se pudo actualizar el template')
+    notifications.error(
+      'No se pudo actualizar el template',
+      `Ocurrió un error al ${activando ? 'activar' : 'desactivar'} «${confirmData.nombre}». Intente de nuevo.`,
+    )
   } finally {
     confirmLoading.value = false
   }

@@ -102,8 +102,49 @@
             :disabled="uploadingExcel"
             @click="uploadExcel"
           >
-            {{ uploadingExcel ? 'Subiendo...' : `Subir ${excelPreviewRows.length} formularios` }}
+            <span v-if="uploadingExcel" class="flex items-center justify-center gap-2">
+              <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              Validando y subiendo...
+            </span>
+            <span v-else>Subir {{ excelPreviewRows.length }} formulario(s)</span>
           </button>
+
+          <!-- Panel de errores de validación por fila -->
+          <div v-if="excelErrors.length > 0" class="rounded-xl border border-red-200 bg-red-50 overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 bg-red-100 border-b border-red-200">
+              <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              <p class="font-barlow text-sm font-semibold text-red-700">
+                Se encontraron errores en {{ excelErrors.length }} fila(s) — corrígelos en el archivo y vuelve a cargarlo
+              </p>
+            </div>
+            <div class="divide-y divide-red-100 max-h-64 overflow-y-auto">
+              <div
+                v-for="rowErr in excelErrors"
+                :key="rowErr.fila"
+                class="px-4 py-3"
+              >
+                <p class="font-barlow text-xs font-bold text-red-600 mb-1">
+                  Fila {{ rowErr.fila }} del archivo Excel:
+                </p>
+                <ul class="space-y-0.5">
+                  <li
+                    v-for="(err, i) in rowErr.errores"
+                    :key="i"
+                    class="font-barlow text-xs text-red-700 flex items-start gap-1.5"
+                  >
+                    <span class="mt-0.5 w-1 h-1 rounded-full bg-red-400 flex-shrink-0 mt-1.5" />
+                    {{ err }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -195,6 +236,7 @@
       <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-2">
         <h2 class="text-base font-semibold font-montserrat text-ubpd-gris">Soportes y archivos adjuntos</h2>
         <FileUploadZone
+          ref="fileUploadZoneRef"
           :form-id="formId ?? undefined"
           :existing-files="formData?.archivos ?? []"
           :read-only="isReadOnly"
@@ -244,12 +286,14 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
-import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
-import type { FormData, FormSchema, FileRecord } from '@/types/forms'
+import type { FormData, FormSchema, FieldConfig, FileRecord } from '@/types/forms'
 import DynamicFormRenderer from '@/components/forms/DynamicFormRenderer.vue'
 import FileUploadZone from '@/components/forms/FileUploadZone.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
+
+// Ref al componente FileUploadZone para poder llamar triggerUploadAll
+const fileUploadZoneRef = ref<InstanceType<typeof FileUploadZone> | null>(null)
 
 interface Template {
   id: string
@@ -261,11 +305,12 @@ interface Template {
 const route = useRoute()
 const router = useRouter()
 const { get, post, patch } = useApi()
-const authStore = useAuthStore()
 const notifications = useNotificationsStore()
 
-// Route params
-const templateId = computed(() => route.params.template_id as string | undefined)
+// Route params — la ruta define :templateId (camelCase) y :id
+const templateId = computed(() =>
+  (route.params.templateId ?? route.params.template_id ?? '') as string
+)
 const formId = ref<string | null>((route.params.id as string) || null)
 
 // Excel mode
@@ -276,6 +321,12 @@ const excelPreviewRows = ref<Record<string, unknown>[]>([])
 const downloadingExample = ref(false)
 const uploadingExcel = ref(false)
 const excelInputRef = ref<HTMLInputElement | null>(null)
+
+interface ExcelRowError {
+  fila: number
+  errores: string[]
+}
+const excelErrors = ref<ExcelRowError[]>([])
 
 function triggerExcelInput() {
   excelInputRef.value?.click()
@@ -295,6 +346,7 @@ async function handleExcelFile(file: File) {
   excelFile.value = file
   excelPreviewHeaders.value = []
   excelPreviewRows.value = []
+  excelErrors.value = []
 
   try {
     // Use the xlsx library that's already in dependencies
@@ -326,7 +378,7 @@ async function downloadExcelExample() {
   downloadingExample.value = true
   try {
     const apiUrl = import.meta.env.VITE_API_URL || '/api'
-    const token = authStore.token
+    const token = localStorage.getItem('ubpd_access_token')
     const response = await fetch(`${apiUrl}/templates/${templateId.value}/excel-example`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -348,25 +400,46 @@ async function downloadExcelExample() {
 async function uploadExcel() {
   if (!excelFile.value || !templateId.value) return
   uploadingExcel.value = true
+  excelErrors.value = []
   try {
-    const formData = new FormData()
-    formData.append('file', excelFile.value)
+    const fd = new FormData()
+    fd.append('file', excelFile.value)
     const apiUrl = import.meta.env.VITE_API_URL || '/api'
-    const token = authStore.token
+    const token = localStorage.getItem('ubpd_access_token')
     const response = await fetch(`${apiUrl}/forms/upload-excel/${templateId.value}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
-      body: formData,
+      body: fd,
     })
+
+    if (response.status === 422) {
+      // Errores de validación estructurados por fila
+      const body = await response.json()
+      const detail = body.detail
+      if (detail && typeof detail === 'object' && detail.errores_por_fila) {
+        excelErrors.value = detail.errores_por_fila as ExcelRowError[]
+        notifications.error(
+          'Errores en el archivo',
+          `Se encontraron errores en ${excelErrors.value.length} fila(s). Revisa los detalles abajo.`,
+        )
+      } else {
+        notifications.error('Error de validación', typeof detail === 'string' ? detail : 'Revisa el archivo.')
+      }
+      return
+    }
+
     if (!response.ok) {
       const err = await response.json()
-      throw new Error(err.detail ?? 'Error al subir')
+      const msg = typeof err.detail === 'string' ? err.detail : 'Error al subir el archivo.'
+      notifications.error('Error', msg)
+      return
     }
+
     const result = await response.json()
-    notifications.success('Cargado', result.mensaje ?? `${result.created} formularios creados.`)
+    notifications.success('¡Cargado!', result.mensaje ?? `${result.created} formulario(s) creado(s).`)
     router.push('/dependencia/inbox')
-  } catch (err: unknown) {
-    notifications.error('Error', err instanceof Error ? err.message : 'No se pudo subir el archivo.')
+  } catch {
+    notifications.error('Error', 'No se pudo conectar con el servidor. Intenta de nuevo.')
   } finally {
     uploadingExcel.value = false
   }
@@ -379,7 +452,30 @@ const saveMode = ref<'draft' | 'submit'>('draft')
 
 const templateData = ref<Template | null>(null)
 const formData = ref<FormData | null>(null)
-const schema = computed<FormSchema | null>(() => templateData.value?.configuracion_campos ?? null)
+/** Normaliza configuracion_campos sin importar si viene con claves en español o inglés */
+function normalizeSchema(raw: Record<string, unknown> | null | undefined): FormSchema | null {
+  if (!raw) return null
+  const rawFields = (raw.campos ?? raw.fields ?? []) as Record<string, unknown>[]
+  const fields: FormSchema['fields'] = rawFields.map((f) => ({
+    name:     String(f.name     ?? ''),
+    label:    String(f.label    ?? f.name ?? ''),
+    type:     String(f.tipo     ?? f.type ?? 'text') as FieldConfig['type'],
+    readonly: Boolean(f.readonly ?? f.bloqueado ?? false),
+    required: Boolean(f.requerido ?? f.required ?? false),
+    default:  (f.default ?? null) as string | number | null,
+    options:  Array.isArray(f.opciones ?? f.options)
+      ? ((f.opciones ?? f.options) as unknown[]).map((o) =>
+          typeof o === 'string' ? { value: o, label: o } : (o as { value: string; label: string })
+        )
+      : undefined,
+    formula: f.formula ? String(f.formula) : undefined,
+  }))
+  return { fields }
+}
+
+const schema = computed<FormSchema | null>(() =>
+  normalizeSchema(templateData.value?.configuracion_campos as Record<string, unknown> | null)
+)
 
 const dependenciaNombre = ref('')
 const dinamicValues = ref<Record<string, unknown>>({})
@@ -414,9 +510,10 @@ function formatTime(date: Date): string {
 
 async function loadTemplate(id: string) {
   templateData.value = await get<Template>(`/templates/${id}`)
-  // Pre-fill defaults
+  // Pre-fill defaults usando la schema normalizada
   const vals: Record<string, unknown> = {}
-  for (const f of templateData.value.configuracion_campos.fields) {
+  const normalized = normalizeSchema(templateData.value.configuracion_campos as Record<string, unknown>)
+  for (const f of normalized?.fields ?? []) {
     vals[f.name] = f.default ?? ''
   }
   dinamicValues.value = vals
@@ -424,7 +521,10 @@ async function loadTemplate(id: string) {
 
 async function loadForm(id: string) {
   formData.value = await get<FormData>(`/forms/${id}`)
-  templateData.value = await get<Template>(`/templates/${formData.value.template_id}`)
+  // El backend devuelve plantilla_id (no template_id)
+  const tmplId = (formData.value as unknown as Record<string, string>).plantilla_id
+    ?? formData.value.template_id
+  templateData.value = await get<Template>(`/templates/${tmplId}`)
   dinamicValues.value = formData.value.datos_dinamicos as Record<string, unknown>
   informeCualitativo.value = formData.value.informe_cualitativo ?? ''
   fechaReferencia.value = formData.value.fecha_referencia ?? new Date().toISOString().split('T')[0]
@@ -449,8 +549,8 @@ async function loadData() {
 
 function buildPayload() {
   return {
-    template_id: templateData.value?.id,
-    fecha_referencia: fechaReferencia.value,
+    plantilla_id: templateData.value?.id,   // el backend usa plantilla_id
+    fecha_usuario: fechaReferencia.value,   // el backend usa fecha_usuario
     datos_dinamicos: dinamicValues.value,
     informe_cualitativo: informeCualitativo.value,
   }
@@ -466,6 +566,10 @@ async function saveDraft() {
       const created = await post<FormData>('/forms', buildPayload())
       formId.value = created.id
       formData.value = created
+      // Subir archivos pendientes ANTES de navegar al nuevo formulario
+      if (fileUploadZoneRef.value) {
+        await fileUploadZoneRef.value.triggerUploadAll(created.id)
+      }
       router.replace(`/dependencia/forms/${created.id}`)
     }
     hasChanges = false
@@ -489,12 +593,15 @@ async function submitForm() {
     } else {
       const created = await post<FormData>('/forms', buildPayload())
       formId.value = created.id
+      // Subir archivos pendientes antes de enviar a revisión
+      if (fileUploadZoneRef.value) {
+        await fileUploadZoneRef.value.triggerUploadAll(created.id)
+      }
       await post(`/forms/${created.id}/submit`, {})
-      router.replace(`/dependencia/forms/${created.id}`)
     }
     hasChanges = false
     notifications.success('Enviado', 'El formulario ha sido enviado a revisión.')
-    await loadForm(formId.value!)
+    router.push('/dependencia/inbox')
   } catch {
     notifications.error('Error al enviar', 'No se pudo enviar el formulario a revisión.')
   } finally {

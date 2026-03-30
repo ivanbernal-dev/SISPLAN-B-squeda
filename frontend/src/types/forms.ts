@@ -5,11 +5,12 @@
 export interface FieldConfig {
   name: string
   label: string
-  type: 'text' | 'number' | 'date' | 'textarea' | 'select'
+  type: 'text' | 'number' | 'date' | 'textarea' | 'select' | 'archivos' | 'computed'
   readonly: boolean
   default: string | number | null
   required?: boolean
   options?: { value: string; label: string }[]
+  formula?: string
 }
 
 export interface FormSchema {

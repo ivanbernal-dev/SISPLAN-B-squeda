@@ -82,19 +82,6 @@
         <!-- Tabs -->
         <div class="flex items-center border-b border-gray-100 px-1 pt-1 flex-shrink-0">
           <button
-            @click="setMode('markdown')"
-            class="flex items-center gap-1.5 px-4 py-2.5 text-xs font-cuerpo font-medium rounded-t-lg transition border-b-2"
-            :class="editorMode === 'markdown'
-              ? 'border-ubpd-teal text-ubpd-teal bg-ubpd-teal/5'
-              : 'border-transparent text-gray-500 hover:text-ubpd-gris'"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-            </svg>
-            Markdown
-          </button>
-          <button
             @click="setMode('visual')"
             class="flex items-center gap-1.5 px-4 py-2.5 text-xs font-cuerpo font-medium rounded-t-lg transition border-b-2"
             :class="editorMode === 'visual'
@@ -106,6 +93,19 @@
                 d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
             Editor Visual
+          </button>
+          <button
+            @click="setMode('markdown')"
+            class="flex items-center gap-1.5 px-4 py-2.5 text-xs font-cuerpo font-medium rounded-t-lg transition border-b-2"
+            :class="editorMode === 'markdown'
+              ? 'border-ubpd-teal text-ubpd-teal bg-ubpd-teal/5'
+              : 'border-transparent text-gray-500 hover:text-ubpd-gris'"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Markdown
           </button>
           <div class="ml-auto pr-3 flex items-center gap-2">
             <span v-if="syncing" class="font-cuerpo text-xs text-ubpd-teal flex items-center gap-1">
@@ -230,6 +230,7 @@
                     <option value="textarea">Área texto</option>
                     <option value="select">Selector</option>
                     <option value="computed">Calculado</option>
+                    <option value="archivos">Archivos adjuntos</option>
                   </select>
                 </div>
                 <div class="col-span-2 flex justify-end items-end gap-1 pb-0.5">
@@ -259,20 +260,23 @@
                            focus:outline-none focus:border-ubpd-teal transition"
                   />
                 </div>
-                <div class="col-span-8 flex items-center gap-3 pt-4 flex-wrap">
+                <div class="col-span-8 flex items-center gap-4 pt-4 flex-wrap">
                   <!-- Toggle readonly -->
                   <label class="flex items-center gap-2 cursor-pointer select-none">
                     <button
                       type="button"
                       @click="field.readonly = !field.readonly; onVisualChange()"
-                      class="relative w-8 h-4.5 rounded-full transition-colors flex-shrink-0"
+                      class="relative flex-shrink-0 rounded-full transition-colors duration-200"
                       :class="field.readonly ? 'bg-ubpd-teal' : 'bg-gray-300'"
-                      style="height:18px;width:32px"
+                      style="width:36px;height:20px;"
                     >
                       <span
-                        class="absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-transform"
-                        :class="field.readonly ? 'translate-x-3.5' : 'translate-x-0.5'"
-                        style="height:14px;width:14px"
+                        class="absolute bg-white rounded-full shadow transition-transform duration-200"
+                        :style="{
+                          width: '16px', height: '16px',
+                          top: '2px', left: '2px',
+                          transform: field.readonly ? 'translateX(16px)' : 'translateX(0)',
+                        }"
                       />
                     </button>
                     <span class="font-cuerpo text-xs" :class="field.readonly ? 'text-ubpd-teal font-medium' : 'text-gray-500'">
@@ -285,14 +289,17 @@
                     <button
                       type="button"
                       @click="field.required = !field.required; onVisualChange()"
-                      class="relative rounded-full transition-colors flex-shrink-0"
+                      class="relative flex-shrink-0 rounded-full transition-colors duration-200"
                       :class="field.required ? 'bg-ubpd-naranja' : 'bg-gray-300'"
-                      style="height:18px;width:32px"
+                      style="width:36px;height:20px;"
                     >
                       <span
-                        class="absolute top-0.5 bg-white rounded-full shadow transition-transform"
-                        :class="field.required ? 'translate-x-3.5' : 'translate-x-0.5'"
-                        style="height:14px;width:14px"
+                        class="absolute bg-white rounded-full shadow transition-transform duration-200"
+                        :style="{
+                          width: '16px', height: '16px',
+                          top: '2px', left: '2px',
+                          transform: field.required ? 'translateX(16px)' : 'translateX(0)',
+                        }"
                       />
                     </button>
                     <span class="font-cuerpo text-xs" :class="field.required ? 'text-ubpd-naranja font-medium' : 'text-gray-500'">
@@ -428,7 +435,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useNotificationsStore } from '@/stores/notifications'
 
-type FieldType = 'text' | 'number' | 'date' | 'textarea' | 'select' | 'computed'
+type FieldType = 'text' | 'number' | 'date' | 'textarea' | 'select' | 'computed' | 'archivos'
 
 interface Indicator {
   indicador_id: number
@@ -466,7 +473,7 @@ const previewLoading = ref(false)
 const previewError = ref('')
 const previewFields = ref<PreviewField[]>([])
 const indicators = ref<Indicator[]>([])
-const editorMode = ref<'markdown' | 'visual'>('markdown')
+const editorMode = ref<'markdown' | 'visual'>('visual')
 const visualFields = ref<VisualField[]>([])
 
 // ── Drag & drop state ─────────────────────────────────────────────────────────
@@ -688,6 +695,23 @@ ${rows.join('\n')}
 `
 }
 
+// ── Normalizar campo de BD (claves español) → PreviewField (claves inglés) ────
+
+function normalizeCampo(c: Record<string, unknown>): PreviewField {
+  const rawOpts = (c.opciones ?? c.options) as unknown[]
+  return {
+    name:     String(c.name ?? ''),
+    label:    String(c.label ?? c.name ?? ''),
+    type:     String(c.tipo ?? c.type ?? 'text') as FieldType,
+    readonly: Boolean(c.readonly ?? c.bloqueado ?? false),
+    required: Boolean(c.requerido ?? c.required ?? false),
+    default:  c.default ?? null,
+    options:  Array.isArray(rawOpts)
+      ? rawOpts.map((o) => (typeof o === 'string' ? o : String(o)))
+      : [],
+  }
+}
+
 // ── Carga inicial ─────────────────────────────────────────────────────────────
 
 async function loadIndicators() {
@@ -709,19 +733,27 @@ async function loadTemplate() {
       descripcion?: string
       indicador_nivel1_id?: number
       codigo_markdown?: string
-      configuracion_campos?: { fields?: PreviewField[]; campos?: PreviewField[] }
+      configuracion_campos?: Record<string, unknown>
     }>(`/templates/${templateId.value}`)
 
     form.nombre = data.nombre
     form.descripcion = data.descripcion ?? ''
     form.indicador_nivel1_id = data.indicador_nivel1_id ?? null
 
+    const cfg = data.configuracion_campos ?? {}
+    const rawCampos = ((cfg.campos ?? cfg.fields ?? []) as Record<string, unknown>[])
+    // Normalizar siempre a claves en inglés
+    const campos: PreviewField[] = rawCampos.map(normalizeCampo)
+
     if (data.codigo_markdown?.trim()) {
       form.codigo_markdown = data.codigo_markdown
-    } else {
-      const campos = data.configuracion_campos?.fields ?? data.configuracion_campos?.campos ?? []
-      form.codigo_markdown = campos.length ? fieldsToMarkdown(data.nombre, campos) : form.codigo_markdown
+    } else if (campos.length) {
+      form.codigo_markdown = fieldsToMarkdown(data.nombre, campos)
     }
+
+    // Poblar directamente el editor visual y el preview sin llamada extra a la API
+    visualFields.value = campos.map(fieldToVisual)
+    previewFields.value = campos.slice()
   } catch {
     notifications.error('No se pudo cargar el template')
   }
@@ -730,7 +762,10 @@ async function loadTemplate() {
 onMounted(async () => {
   await loadIndicators()
   await loadTemplate()
-  await updatePreview()
+  // Si arrancamos en modo markdown, actualizar el preview renderizado
+  if (editorMode.value === 'markdown') {
+    await updatePreview()
+  }
 })
 
 // ── Guardar ───────────────────────────────────────────────────────────────────

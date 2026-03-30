@@ -3,7 +3,10 @@ app/routers/files.py — Endpoints de gestión de archivos adjuntos (MinIO).
 """
 import uuid
 
+import urllib.parse
+
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,18 +36,18 @@ async def _get_form_or_404(db: AsyncSession, form_id: uuid.UUID) -> Form:
 
 @router.post(
     "/upload/{form_id}",
-    response_model=list[FileResponse],
+    response_model=FileResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def upload_files(
+async def upload_file(
     request: Request,
     form_id: uuid.UUID,
-    files: list[UploadFile],
+    file: UploadFile,
     current_user: User = Depends(get_dependency_user),
     db: AsyncSession = Depends(get_db),
     minio: MinioService = Depends(get_minio_service),
-) -> list[FileResponse]:
-    """Sube uno o más archivos a un formulario (almacenado en MinIO)."""
+) -> FileResponse:
+    """Sube un archivo a un formulario (almacenado en MinIO)."""
     form = await _get_form_or_404(db, form_id)
 
     if form.usuario_id != current_user.id:
@@ -55,31 +58,28 @@ async def upload_files(
             detail="Solo se pueden adjuntar archivos a formularios en estado draft o rejected",
         )
 
-    uploaded: list[FileResponse] = []
-    for file in files:
-        archivo = await minio.upload_file(
-            file=file,
-            form_id=form_id,
-            dep_id=form.dependency_id,
-        )
-        db.add(archivo)
-        await db.flush()
+    archivo = await minio.upload_file(
+        file=file,
+        form_id=form_id,
+        dep_id=form.dependency_id,
+    )
+    db.add(archivo)
+    await db.flush()
 
-        await _log_audit(
-            db,
-            usuario_id=current_user.id,
-            accion="FILE_UPLOAD",
-            entidad_tipo="archivo",
-            entidad_id=archivo.id,
-            detalle={
-                "formulario_id": str(form_id),
-                "nombre_original": archivo.nombre_original,
-            },
-            ip_address=get_client_ip(request),
-        )
-        uploaded.append(FileResponse.model_validate(archivo))
-
-    return uploaded
+    await _log_audit(
+        db,
+        usuario_id=current_user.id,
+        accion="FILE_UPLOAD",
+        entidad_tipo="archivo",
+        entidad_id=archivo.id,
+        detalle={
+            "formulario_id": str(form_id),
+            "nombre_original": archivo.nombre_original,
+        },
+        ip_address=get_client_ip(request),
+    )
+    await db.commit()
+    return FileResponse.model_validate(archivo)
 
 
 @router.get("/{file_id}/url", response_model=FileUrlResponse)
@@ -108,6 +108,54 @@ async def get_file_url(
         nombre_original=archivo.nombre_original,
         url=url,
         expires_in_seconds=settings.MINIO_PRESIGNED_URL_EXPIRY,
+    )
+
+
+@router.get("/{file_id}/download")
+async def download_file_stream(
+    file_id: uuid.UUID,
+    current_user: User = Depends(get_any_authenticated),
+    db: AsyncSession = Depends(get_db),
+    minio: MinioService = Depends(get_minio_service),
+) -> StreamingResponse:
+    """
+    Descarga un archivo haciendo streaming a través del backend.
+    Evita exponer la URL interna de MinIO al navegador.
+    """
+    result = await db.execute(select(Archivo).where(Archivo.id == file_id))
+    archivo = result.scalar_one_or_none()
+    if archivo is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Archivo no encontrado")
+
+    # dependency_user solo puede acceder a archivos de sus propios formularios
+    if current_user.role == UserRole.dependency_user:
+        form = await _get_form_or_404(db, archivo.formulario_id)
+        if form.usuario_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sin acceso a este archivo")
+
+    stream = minio.get_file_stream(archivo)
+    media_type = archivo.tipo_mime or "application/octet-stream"
+
+    # Codificar el nombre para el header Content-Disposition (RFC 5987)
+    safe_name = urllib.parse.quote(archivo.nombre_original, safe="")
+    disposition = f"inline; filename*=UTF-8''{safe_name}"
+
+    def _iter_chunks():
+        try:
+            for chunk in stream.stream(amt=65536):
+                yield chunk
+        finally:
+            stream.close()
+            stream.release_conn()
+
+    return StreamingResponse(
+        _iter_chunks(),
+        media_type=media_type,
+        headers={
+            "Content-Disposition": disposition,
+            "Content-Length": str(archivo.tamaño_bytes or 0),
+            "Cache-Control": "private, max-age=300",
+        },
     )
 
 

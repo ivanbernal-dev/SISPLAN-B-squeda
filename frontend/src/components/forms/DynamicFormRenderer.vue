@@ -28,14 +28,14 @@
       <!-- textarea -->
       <textarea
         v-if="field.type === 'textarea'"
+        v-autoresize
         :id="`field-${field.name}`"
         :name="field.name"
         :value="String(modelValue[field.name] ?? field.default ?? '')"
         :readonly="isReadonlyField(field)"
         :disabled="isReadonlyField(field)"
         :required="field.required && !isReadonlyField(field)"
-        rows="3"
-        class="w-full rounded-lg border px-3 py-2 text-sm font-barlow resize-y transition-all duration-150 focus:outline-none"
+        class="w-full rounded-lg border px-3 py-2 text-sm font-barlow resize-none transition-all duration-150 focus:outline-none"
         :class="fieldClass(field)"
         @input="onInput(field.name, ($event.target as HTMLTextAreaElement).value)"
       />
@@ -61,6 +61,23 @@
           {{ opt.label }}
         </option>
       </select>
+
+      <!-- computed (read-only calculated value) -->
+      <div
+        v-else-if="field.type === 'computed'"
+        :id="`field-${field.name}`"
+        class="w-full rounded-lg border px-3 py-2 text-sm font-barlow bg-gray-50 border-gray-200 text-gray-600 min-h-[38px] flex items-center"
+      >
+        {{ computedValue(field) }}
+      </div>
+
+      <!-- archivos — shown as a note (FileUploadZone handles actual upload at the parent) -->
+      <div
+        v-else-if="field.type === 'archivos'"
+        class="text-xs text-gray-400 font-barlow italic"
+      >
+        Los archivos adjuntos se gestionan en la sección «Soportes y archivos adjuntos».
+      </div>
 
       <!-- number / date / text -->
       <input
@@ -90,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import type { FormSchema } from '@/types/forms'
+import type { FormSchema, FieldConfig } from '@/types/forms'
 
 interface Props {
   schema: FormSchema
@@ -127,6 +144,22 @@ function fieldClass(field: { name: string; readonly: boolean }) {
     return 'border-ubpd-naranja bg-orange-50 focus:ring-2 focus:ring-orange-200'
   }
   return 'border-gray-300 bg-white focus:border-ubpd-verde focus:ring-2 focus:ring-teal-100'
+}
+
+function computedValue(field: FieldConfig): string {
+  if (!field.formula) return '—'
+  // formula is like "var1 / var2" — evaluate simple arithmetic from modelValue
+  try {
+    const parts = field.formula.split('/')
+    if (parts.length === 2) {
+      const a = parseFloat(String(props.modelValue[parts[0].trim()] ?? 0))
+      const b = parseFloat(String(props.modelValue[parts[1].trim()] ?? 0))
+      if (!isNaN(a) && !isNaN(b) && b !== 0) {
+        return (a / b * 100).toFixed(2) + '%'
+      }
+    }
+  } catch { /* ignore */ }
+  return '—'
 }
 
 function onInput(fieldName: string, value: unknown) {

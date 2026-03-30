@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_any_authenticated, get_client_ip, get_dependency_user
@@ -24,6 +25,27 @@ async def _log_audit(db: AsyncSession, **kwargs) -> None:
     db.add(AuditLog(**kwargs))
 
 
+def _with_relations():
+    """Opciones de carga eager para evitar lazy-load fuera del contexto async."""
+    return [
+        selectinload(Form.archivos),
+        selectinload(Form.validado_por),
+        selectinload(Form.plantilla),
+        selectinload(Form.dependency),
+        selectinload(Form.usuario),
+    ]
+
+
+async def _load_form(db: AsyncSession, form_id: uuid.UUID) -> Form | None:
+    """Carga un formulario con todas sus relaciones necesarias."""
+    result = await db.execute(
+        select(Form)
+        .where(Form.id == form_id)
+        .options(*_with_relations())
+    )
+    return result.scalar_one_or_none()
+
+
 def _assert_editable(form: Form) -> None:
     """Verifica que el formulario esté en estado editable."""
     if form.estado not in (FormStatus.draft, FormStatus.rejected):
@@ -38,20 +60,34 @@ async def list_my_forms(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     estado: Optional[FormStatus] = None,
+    search: Optional[str] = Query(None, description="Filtrar por nombre de template"),
+    start_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
     current_user: User = Depends(get_dependency_user),
     db: AsyncSession = Depends(get_db),
 ) -> FormListResponse:
-    """Lista todos los formularios del usuario autenticado, con filtro opcional por estado."""
+    """Lista todos los formularios del usuario autenticado, con filtro opcional por estado, búsqueda y fechas."""
+    from sqlalchemy import cast, String
     query = select(Form).where(Form.usuario_id == current_user.id)
     if estado:
         query = query.where(Form.estado == estado)
+    if start_date:
+        query = query.where(Form.fecha_carga >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.where(Form.fecha_carga <= datetime.fromisoformat(end_date + "T23:59:59"))
+    # Filtro por nombre de template: join con Template
+    if search:
+        query = query.join(Template, Form.plantilla_id == Template.id).where(
+            Template.nombre.ilike(f"%{search}%")
+        )
 
     count_q = select(func.count()).select_from(query.subquery())
     total = await db.scalar(count_q) or 0
 
     offset = (page - 1) * size
     result = await db.execute(
-        query.order_by(Form.fecha_carga.desc()).offset(offset).limit(size)
+        query.options(*_with_relations())
+        .order_by(Form.fecha_carga.desc()).offset(offset).limit(size)
     )
     forms = result.scalars().all()
     return FormListResponse(
@@ -67,11 +103,14 @@ async def get_inbox(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     estado: Optional[FormStatus] = None,
+    search: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
     current_user: User = Depends(get_dependency_user),
     db: AsyncSession = Depends(get_db),
 ) -> FormListResponse:
     """Bandeja de trámites: formularios del usuario filtrados por estado."""
-    return await list_my_forms(page, size, estado, current_user, db)
+    return await list_my_forms(page, size, estado, search, start_date, end_date, current_user, db)
 
 
 @router.post("", response_model=FormResponse, status_code=status.HTTP_201_CREATED)
@@ -120,6 +159,8 @@ async def create_form(
         detalle={"plantilla_id": str(body.plantilla_id)},
         ip_address=get_client_ip(request),
     )
+    await db.commit()
+    form = await _load_form(db, form.id)
     return FormResponse.model_validate(form)
 
 
@@ -130,8 +171,7 @@ async def get_form(
     db: AsyncSession = Depends(get_db),
 ) -> FormResponse:
     """Retorna el detalle de un formulario."""
-    result = await db.execute(select(Form).where(Form.id == form_id))
-    form = result.scalar_one_or_none()
+    form = await _load_form(db, form_id)
     if form is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Formulario no encontrado")
 
@@ -154,8 +194,7 @@ async def update_form(
     db: AsyncSession = Depends(get_db),
 ) -> FormResponse:
     """Actualiza un formulario en estado draft o rejected."""
-    result = await db.execute(select(Form).where(Form.id == form_id))
-    form = result.scalar_one_or_none()
+    form = await _load_form(db, form_id)
     if form is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Formulario no encontrado")
     if form.usuario_id != current_user.id:
@@ -177,6 +216,8 @@ async def update_form(
         detalle=list(update_data.keys()),
         ip_address=get_client_ip(request),
     )
+    await db.commit()
+    form = await _load_form(db, form.id)
     return FormResponse.model_validate(form)
 
 
@@ -188,8 +229,7 @@ async def submit_form(
     db: AsyncSession = Depends(get_db),
 ) -> FormResponse:
     """Envía un formulario a validación (draft → pending)."""
-    result = await db.execute(select(Form).where(Form.id == form_id))
-    form = result.scalar_one_or_none()
+    form = await _load_form(db, form_id)
     if form is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Formulario no encontrado")
     if form.usuario_id != current_user.id:
@@ -212,6 +252,8 @@ async def submit_form(
         entidad_id=form.id,
         ip_address=get_client_ip(request),
     )
+    await db.commit()
+    form = await _load_form(db, form.id)
     return FormResponse.model_validate(form)
 
 

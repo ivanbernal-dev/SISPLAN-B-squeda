@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.form import FormStatus
 from app.schemas.file import FileResponse
@@ -47,9 +47,30 @@ class FormResponse(BaseModel):
     comentario_rechazo: Optional[str] = None
     validado_por_id: Optional[uuid.UUID] = None
     fecha_validacion: Optional[datetime] = None
+    # Campos derivados de relaciones
+    template_nombre: Optional[str] = None
+    dependencia_nombre: Optional[str] = None
+    usuario_nombre: Optional[str] = None
+    validador_nombre: Optional[str] = None
+    validador_correo: Optional[str] = None
     archivos: List[FileResponse] = []
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _populate_relations(cls, value: Any, handler: Any) -> "FormResponse":
+        instance = handler(value)
+        if hasattr(value, "plantilla") and value.plantilla is not None:
+            instance.template_nombre = value.plantilla.nombre
+        if hasattr(value, "dependency") and value.dependency is not None:
+            instance.dependencia_nombre = value.dependency.nombre
+        if hasattr(value, "usuario") and value.usuario is not None:
+            instance.usuario_nombre = value.usuario.nombre_completo
+        if hasattr(value, "validado_por") and value.validado_por is not None:
+            instance.validador_nombre = value.validado_por.nombre_completo
+            instance.validador_correo = value.validado_por.email
+        return instance
 
 
 class FormListResponse(BaseModel):

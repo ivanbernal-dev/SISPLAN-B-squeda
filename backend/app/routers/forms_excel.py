@@ -1,12 +1,14 @@
 """
 app/routers/forms_excel.py — Endpoints para carga y descarga de formularios via Excel.
 
-Requires: openpyxl (add to requirements.txt if not present)
+La clave interna de cada campo en configuracion_campos es "type" (no "tipo").
+La carga valida campos requeridos, tipos numéricos y opciones de select.
 """
 import io
 import logging
 import uuid
 from datetime import date
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -34,6 +36,38 @@ def _get_openpyxl():
         ) from e
 
 
+def _get_fields(template: Template) -> list[dict]:
+    """
+    Retorna la lista de campos del template.
+    Soporta tanto {"fields": [...]} como {"campos": [...]}.
+    Excluye campos de tipo 'computed' (se calculan automáticamente).
+    """
+    cfg = template.configuracion_campos or {}
+    fields = cfg.get("fields") or cfg.get("campos") or []
+    return [f for f in fields if f.get("type", f.get("tipo", "text")) != "computed"]
+
+
+def _field_type(f: dict) -> str:
+    """Obtiene el tipo normalizado del campo (acepta 'type' o 'tipo')."""
+    return str(f.get("type", f.get("tipo", "text"))).lower()
+
+
+def _field_label(f: dict) -> str:
+    return str(f.get("label", f.get("name", ""))).strip()
+
+
+def _field_name(f: dict) -> str:
+    return str(f.get("name", "")).strip()
+
+
+def _is_readonly(f: dict) -> bool:
+    return bool(f.get("readonly", f.get("bloqueado", False)))
+
+
+def _is_required(f: dict) -> bool:
+    return bool(f.get("required", f.get("requerido", False)))
+
+
 # ── GET /templates/{template_id}/excel-example ───────────────────────────────
 
 @router.get("/templates/{template_id}/excel-example")
@@ -43,10 +77,15 @@ async def download_excel_example(
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """
-    Descarga un archivo Excel de ejemplo para el template dado.
-    Contiene una fila de encabezados y una fila de ejemplo con los valores por defecto.
+    Descarga un Excel de ejemplo para el template.
+    Incluye todos los campos editables + informe_cualitativo.
+    Fila 1: Encabezados con color.
+    Fila 2: Tipo de dato esperado (guía).
+    Fila 3: Ejemplo de valores.
     """
     openpyxl = _get_openpyxl()
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
 
     result = await db.execute(
         select(Template).where(Template.id == template_id, Template.activo == True)
@@ -55,67 +94,196 @@ async def download_excel_example(
     if template is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template no encontrado")
 
-    fields = template.configuracion_campos.get("fields", [])
+    fields = _get_fields(template)
+
+    # Columnas a exportar: campos editables + informe_cualitativo al final
+    # Los campos readonly se incluyen solo como referencia pero marcados en gris
+    export_cols: list[dict] = []
+    for f in fields:
+        export_cols.append(f)
+
+    # Agregar informe_cualitativo si no está ya en los campos
+    has_informe = any(_field_name(f) == "informe_cualitativo" for f in fields)
+    if not has_informe:
+        export_cols.append({
+            "name": "informe_cualitativo",
+            "label": "Informe cualitativo de la búsqueda",
+            "type": "textarea",
+            "readonly": False,
+            "required": True,
+            "default": None,
+        })
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = template.codigo or template.nombre[:31]
+    ws.title = (template.codigo or template.nombre)[:31]
 
-    # Header row
-    headers = [f.get("label", f.get("name", "")) for f in fields]
+    # ── Estilos ──────────────────────────────────────────────────────────────
+    header_fill    = PatternFill(start_color="1A3C5E", end_color="1A3C5E", fill_type="solid")
+    required_fill  = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")  # verde claro
+    optional_fill  = PatternFill(start_color="FFF8E1", end_color="FFF8E1", fill_type="solid")  # amarillo claro
+    readonly_fill  = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")  # gris
+    type_row_fill  = PatternFill(start_color="E3F2FD", end_color="E3F2FD", fill_type="solid")  # azul muy claro
+
+    header_font  = Font(color="FFFFFF", bold=True, size=10, name="Calibri")
+    type_font    = Font(color="1A3C5E", italic=True, size=9, name="Calibri")
+    normal_font  = Font(size=10, name="Calibri")
+    req_font     = Font(color="1B5E20", size=10, name="Calibri")
+    opt_font     = Font(color="5D4037", size=10, name="Calibri")
+    ro_font      = Font(color="757575", size=10, name="Calibri")
+
+    thin_border = Border(
+        left=Side(style='thin', color='CCCCCC'),
+        right=Side(style='thin', color='CCCCCC'),
+        top=Side(style='thin', color='CCCCCC'),
+        bottom=Side(style='thin', color='CCCCCC'),
+    )
+
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left_align   = Alignment(horizontal="left",   vertical="center", wrap_text=True)
+
+    # ── Fila 1: Encabezados ───────────────────────────────────────────────────
+    headers = [_field_label(f) for f in export_cols]
     ws.append(headers)
 
-    # Sample row with defaults (skip file fields)
-    sample_row = []
-    for f in fields:
-        tipo = f.get("tipo", "text")
-        if tipo == "file":
-            sample_row.append("")
-        elif f.get("default") is not None:
-            sample_row.append(f["default"])
-        elif tipo == "date":
-            sample_row.append(date.today().isoformat())
-        elif tipo == "number":
-            sample_row.append(0)
+    # ── Fila 2: Tipo de dato / guía ────────────────────────────────────────
+    type_hints = []
+    for f in export_cols:
+        ft = _field_type(f)
+        ro = _is_readonly(f)
+        req = _is_required(f)
+
+        if ro:
+            hint = "Solo lectura"
+        elif ft == "number":
+            hint = "Número"
+        elif ft == "date":
+            hint = "Fecha (AAAA-MM-DD)"
+        elif ft == "select":
+            opts = f.get("options") or []
+            opts_str = " / ".join(str(o.get("value", o) if isinstance(o, dict) else o) for o in opts[:5])
+            hint = f"Opciones: {opts_str}" if opts_str else "Seleccionar"
+        elif ft == "textarea":
+            hint = "Texto largo"
         else:
-            sample_row.append("")
+            hint = "Texto"
+
+        if not ro:
+            hint = ("* " if req else "") + hint
+        type_hints.append(hint)
+    ws.append(type_hints)
+
+    # ── Fila 3: Ejemplo de valores ────────────────────────────────────────
+    sample_row = []
+    for f in export_cols:
+        ft = _field_type(f)
+        default = f.get("default")
+        if _is_readonly(f):
+            sample_row.append(str(default) if default is not None else "")
+        elif ft == "date":
+            sample_row.append(date.today().isoformat())
+        elif ft == "number":
+            sample_row.append(0)
+        elif ft == "select":
+            opts = f.get("options") or []
+            if opts:
+                first = opts[0]
+                sample_row.append(first.get("value", first) if isinstance(first, dict) else first)
+            else:
+                sample_row.append("")
+        elif _field_name(f) == "informe_cualitativo":
+            sample_row.append("Descripción detallada de los hallazgos y procesos de búsqueda.")
+        else:
+            sample_row.append(str(default) if default is not None else "Ejemplo de valor")
     ws.append(sample_row)
 
-    # Style header row
-    from openpyxl.styles import Font, PatternFill, Alignment
-    header_fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
-    header_font = Font(color="FFFFFF", bold=True, size=10)
+    # ── Aplicar estilos columna por columna ───────────────────────────────
+    for col_idx, f in enumerate(export_cols, start=1):
+        col_letter = get_column_letter(col_idx)
+        ro = _is_readonly(f)
+        req = _is_required(f)
 
-    readonly_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
-    editable_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+        # Ancho de columna
+        ws.column_dimensions[col_letter].width = 28
 
-    for col_idx, (field, header_cell) in enumerate(zip(fields, ws[1]), start=1):
-        header_cell.font = header_font
-        header_cell.fill = header_fill
-        header_cell.alignment = Alignment(wrap_text=True)
-        ws.column_dimensions[header_cell.column_letter].width = 20
+        # Fila 1: header
+        h_cell = ws.cell(row=1, column=col_idx)
+        h_cell.font = header_font
+        h_cell.fill = header_fill
+        h_cell.alignment = center_align
+        h_cell.border = thin_border
 
-        # Color sample row based on readonly
-        sample_cell = ws.cell(row=2, column=col_idx)
-        if field.get("readonly"):
-            sample_cell.fill = readonly_fill
+        # Fila 2: tipo
+        t_cell = ws.cell(row=2, column=col_idx)
+        t_cell.font = type_font
+        t_cell.fill = type_row_fill
+        t_cell.alignment = left_align
+        t_cell.border = thin_border
+
+        # Fila 3: ejemplo
+        s_cell = ws.cell(row=3, column=col_idx)
+        if ro:
+            s_cell.fill = readonly_fill
+            s_cell.font = ro_font
+        elif req:
+            s_cell.fill = required_fill
+            s_cell.font = req_font
         else:
-            sample_cell.fill = editable_fill
+            s_cell.fill = optional_fill
+            s_cell.font = opt_font
+        s_cell.alignment = left_align
+        s_cell.border = thin_border
 
-    # Add a notes row
+    # ── Fila de leyenda ────────────────────────────────────────────────────
     ws.append([""])
-    notes_row_idx = 3
-    note_cell = ws.cell(row=notes_row_idx, column=1)
-    note_cell.value = "NOTA: Las celdas en gris son de solo lectura. Las celdas en verde deben llenarse."
+    ws.append(["LEYENDA:",
+               "Verde = campo requerido (*)",
+               "Amarillo = campo opcional",
+               "Gris = solo lectura (no editar)",
+               "* El símbolo * en la fila de tipo indica campo obligatorio"])
+    legend_row = ws.max_row
+    legend_cell = ws.cell(row=legend_row, column=1)
+    legend_cell.font = Font(bold=True, size=9, color="444444", name="Calibri")
+    for col in range(2, 6):
+        c = ws.cell(row=legend_row, column=col)
+        c.font = Font(size=9, color="666666", name="Calibri")
 
-    # Freeze header row
-    ws.freeze_panes = "A2"
+    # ── Fijar encabezados y zoom ──────────────────────────────────────────
+    ws.freeze_panes = "A4"
+    ws.row_dimensions[1].height = 32
+    ws.row_dimensions[2].height = 28
+    ws.row_dimensions[3].height = 24
+    ws.sheet_view.zoomScale = 110
+
+    # ── Hoja de referencia ────────────────────────────────────────────────
+    ws_ref = wb.create_sheet("Referencia")
+    ws_ref.append(["Campo", "Nombre interno", "Tipo", "Requerido", "Solo lectura", "Opciones válidas"])
+    ref_header_font = Font(bold=True, color="FFFFFF", size=10)
+    ref_header_fill = PatternFill(start_color="37474F", end_color="37474F", fill_type="solid")
+    for cell in ws_ref[1]:
+        cell.font = ref_header_font
+        cell.fill = ref_header_fill
+        cell.alignment = center_align
+
+    for f in export_cols:
+        opts = f.get("options") or []
+        opts_str = ", ".join(str(o.get("value", o) if isinstance(o, dict) else o) for o in opts)
+        ws_ref.append([
+            _field_label(f),
+            _field_name(f),
+            _field_type(f),
+            "Sí" if _is_required(f) else "No",
+            "Sí" if _is_readonly(f) else "No",
+            opts_str,
+        ])
+    for col in ["A", "B", "C", "D", "E", "F"]:
+        ws_ref.column_dimensions[col].width = 30
 
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
 
-    filename = f"ejemplo_{template.codigo or template_id}.xlsx"
+    filename = f"plantilla_{template.codigo or str(template_id)}.xlsx"
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -136,24 +304,32 @@ async def upload_excel_forms(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
-    Carga un archivo Excel con múltiples filas y crea un formulario en estado draft
-    por cada fila de datos (omitiendo la fila de encabezados).
+    Carga un Excel con múltiples filas y crea formularios en estado draft.
 
-    Returns: {"created": N, "form_ids": [...]}
+    Validaciones por fila:
+    - Campos requeridos no vacíos
+    - Campos numéricos parseable como float
+    - Campos select con valor dentro de las opciones permitidas
+    - informe_cualitativo obligatorio
+
+    Si hay errores retorna 422 con detalle por fila.
     """
     openpyxl = _get_openpyxl()
 
-    if file.content_type not in (
+    # Validar tipo MIME
+    allowed_types = {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.ms-excel",
         "application/octet-stream",
-    ):
+        "application/zip",  # algunos sistemas envían .xlsx como zip
+    }
+    if file.content_type not in allowed_types and not (file.filename or "").endswith((".xlsx", ".xls")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Solo se aceptan archivos Excel (.xlsx)",
+            detail="Solo se aceptan archivos Excel (.xlsx / .xls)",
         )
 
-    # Load template
+    # Cargar template
     t_result = await db.execute(
         select(Template).where(Template.id == template_id, Template.activo == True)
     )
@@ -161,11 +337,16 @@ async def upload_excel_forms(
     if template is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template no encontrado")
 
-    fields = template.configuracion_campos.get("fields", [])
-    field_by_label = {f.get("label", f.get("name", "")): f for f in fields}
-    field_by_name = {f["name"]: f for f in fields}
+    all_fields = _get_fields(template)
 
-    # Read Excel
+    # Campos disponibles por label y por name
+    field_by_label: dict[str, dict] = {_field_label(f): f for f in all_fields}
+    field_by_name:  dict[str, dict] = {_field_name(f): f  for f in all_fields}
+
+    # informe_cualitativo puede no estar en los campos del template
+    INFORME_LABEL = "Informe cualitativo de la búsqueda"
+
+    # Leer Excel
     content = await file.read()
     try:
         wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
@@ -176,82 +357,246 @@ async def upload_excel_forms(
             detail=f"No se pudo leer el archivo Excel: {e}",
         )
 
-    rows = list(ws.iter_rows(values_only=True))
-    if len(rows) < 2:
+    all_rows = list(ws.iter_rows(values_only=True))
+
+    # Debe tener al menos fila 1 (headers) + fila 3 (datos) — saltamos fila 2 (tipo/guía)
+    if len(all_rows) < 2:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El archivo debe tener al menos una fila de encabezados y una de datos.",
+            detail="El archivo debe tener al menos la fila de encabezados y una fila de datos.",
         )
 
-    # Map header labels to column index
-    headers = [str(h).strip() if h is not None else "" for h in rows[0]]
-    col_map: dict[str, int] = {}  # field_name → column_index
+    header_row = all_rows[0]
+    headers = [str(h).strip() if h is not None else "" for h in header_row]
+
+    # Detectar si fila 2 es la fila de tipo/guía (no datos reales)
+    # La detectamos si la segunda fila contiene "Número", "Texto", "Fecha", "Solo lectura" etc.
+    data_start = 1
+    if len(all_rows) >= 2:
+        row2_values = [str(v).strip().lower() if v is not None else "" for v in all_rows[1]]
+        type_hint_keywords = {"número", "texto", "fecha", "opciones", "solo lectura", "texto largo", "seleccionar"}
+        if any(any(kw in v for kw in type_hint_keywords) for v in row2_values if v):
+            data_start = 2  # saltar fila de tipo/guía
+
+    data_rows = all_rows[data_start:]
+
+    # Mapear columnas del Excel → campo del template
+    # col_map: índice_columna → field_dict (o None para informe_cualitativo)
+    col_map: dict[int, dict | str] = {}
+    informe_col: int | None = None
+
     for col_idx, header in enumerate(headers):
-        if header in field_by_label:
-            field_def = field_by_label[header]
-            col_map[field_def["name"]] = col_idx
-        elif header in field_by_name:
-            col_map[header] = col_idx
+        h = header.strip()
+        if not h:
+            continue
+        # informe_cualitativo puede venir por label exacto o por name
+        if h == INFORME_LABEL or h == "informe_cualitativo":
+            informe_col = col_idx
+            continue
+        if h in field_by_label:
+            col_map[col_idx] = field_by_label[h]
+        elif h in field_by_name:
+            col_map[col_idx] = field_by_name[h]
 
-    created_ids = []
+    # ── Validar todas las filas antes de crear nada ───────────────────────
+    validation_errors: list[dict] = []
 
-    for row in rows[1:]:
-        # Skip completely empty rows
-        if all(cell is None or str(cell).strip() == "" for cell in row):
+    def _cell_val(row: tuple, idx: int) -> Any:
+        if idx >= len(row):
+            return None
+        v = row[idx]
+        return v
+
+    def _str_val(v: Any) -> str:
+        if v is None:
+            return ""
+        s = str(v).strip()
+        # Eliminar "None" literal que a veces genera openpyxl
+        return "" if s.lower() == "none" else s
+
+    for row_idx, row in enumerate(data_rows, start=1):
+        # Saltar filas de leyenda / completamente vacías
+        non_empty = [c for c in row if c is not None and str(c).strip() not in ("", "None")]
+        if not non_empty:
+            continue
+
+        # Detectar filas de leyenda por palabra clave
+        first_val = _str_val(row[0] if row else None).lower()
+        if first_val in {"leyenda:", "nota:", "nota"} or first_val.startswith("leyenda"):
+            continue
+
+        row_errors: list[str] = []
+
+        # Validar informe_cualitativo
+        informe_val = ""
+        if informe_col is not None:
+            informe_val = _str_val(_cell_val(row, informe_col))
+        if not informe_val:
+            row_errors.append("'Informe cualitativo de la búsqueda' es obligatorio")
+
+        # Validar campos mapeados
+        for col_idx, field_def in col_map.items():
+            if not isinstance(field_def, dict):
+                continue
+            raw = _cell_val(row, col_idx)
+            val = _str_val(raw)
+            fname = _field_name(field_def)
+            flabel = _field_label(field_def)
+            ftype = _field_type(field_def)
+            readonly = _is_readonly(field_def)
+            required = _is_required(field_def)
+
+            if readonly:
+                continue  # no validar solo-lectura
+
+            # Requerido
+            if required and not val:
+                row_errors.append(f"El campo '{flabel}' es obligatorio")
+                continue
+
+            if not val:
+                continue  # campo vacío y no requerido — OK
+
+            # Tipo numérico
+            if ftype == "number":
+                try:
+                    float(str(raw).replace(",", "."))
+                except (TypeError, ValueError):
+                    row_errors.append(f"El campo '{flabel}' debe ser un número (se encontró: '{val}')")
+
+            # Tipo fecha
+            elif ftype == "date":
+                from datetime import datetime as _dt
+                parsed_ok = False
+                for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d"):
+                    try:
+                        _dt.strptime(val[:10], fmt)
+                        parsed_ok = True
+                        break
+                    except ValueError:
+                        continue
+                if not parsed_ok:
+                    # openpyxl puede retornar un date/datetime object
+                    import datetime
+                    if not isinstance(raw, (datetime.date, datetime.datetime)):
+                        row_errors.append(
+                            f"El campo '{flabel}' debe ser una fecha (AAAA-MM-DD). Se encontró: '{val}'"
+                        )
+
+            # Tipo select
+            elif ftype == "select":
+                opts = field_def.get("options") or []
+                valid_values = set()
+                for o in opts:
+                    if isinstance(o, dict):
+                        valid_values.add(str(o.get("value", "")).strip().lower())
+                        valid_values.add(str(o.get("label", "")).strip().lower())
+                    else:
+                        valid_values.add(str(o).strip().lower())
+
+                if valid_values and val.lower() not in valid_values:
+                    opts_display = ", ".join(
+                        str(o.get("value", o) if isinstance(o, dict) else o) for o in opts
+                    )
+                    row_errors.append(
+                        f"El campo '{flabel}' tiene un valor inválido ('{val}'). "
+                        f"Valores aceptados: {opts_display}"
+                    )
+
+        if row_errors:
+            validation_errors.append({
+                "fila": row_idx + data_start,  # número real en el Excel (1-indexed, + encabezados)
+                "errores": row_errors,
+            })
+
+    if validation_errors:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": f"Se encontraron errores en {len(validation_errors)} fila(s). "
+                           "Corrígelos y vuelve a cargar el archivo.",
+                "errores_por_fila": validation_errors,
+            },
+        )
+
+    # ── Crear formularios (todas las filas son válidas) ───────────────────
+    created_ids: list[str] = []
+
+    for row in data_rows:
+        non_empty = [c for c in row if c is not None and str(c).strip() not in ("", "None")]
+        if not non_empty:
+            continue
+        first_val = _str_val(row[0] if row else None).lower()
+        if first_val in {"leyenda:", "nota:", "nota"} or first_val.startswith("leyenda"):
             continue
 
         datos_dinamicos: dict = {}
-        informe_cualitativo = ""
+        informe_val = ""
         fecha_usuario: date | None = None
 
-        for field_name, col_idx in col_map.items():
-            if col_idx >= len(row):
-                continue
-            raw_value = row[col_idx]
-            field_def = field_by_name.get(field_name, {})
-            tipo = field_def.get("tipo", "text")
+        # informe_cualitativo
+        if informe_col is not None:
+            informe_val = _str_val(_cell_val(row, informe_col))
 
-            # Handle special fields
-            if field_name == "informe_cualitativo":
-                informe_cualitativo = str(raw_value) if raw_value is not None else ""
+        for col_idx, field_def in col_map.items():
+            if not isinstance(field_def, dict):
                 continue
-            if field_name == "mes_reporte":
-                if raw_value:
-                    if isinstance(raw_value, (date,)):
-                        fecha_usuario = raw_value
-                    else:
-                        try:
-                            from datetime import datetime as dt
-                            parsed = dt.strptime(str(raw_value)[:10], "%Y-%m-%d").date()
-                            fecha_usuario = parsed
-                        except (ValueError, TypeError):
-                            fecha_usuario = date.today()
-                continue
-            if tipo == "file":
+            raw = _cell_val(row, col_idx)
+            val = _str_val(raw)
+            fname = _field_name(field_def)
+            ftype = _field_type(field_def)
+            readonly = _is_readonly(field_def)
+
+            if fname == "informe_cualitativo":
+                informe_val = val
                 continue
 
-            # Convert value by type
-            if raw_value is None:
-                datos_dinamicos[field_name] = None
-            elif tipo == "number":
+            if fname == "mes_reporte" or fname == "fecha_referencia":
+                if raw is not None:
+                    import datetime
+                    if isinstance(raw, (datetime.date, datetime.datetime)):
+                        fecha_usuario = raw.date() if isinstance(raw, datetime.datetime) else raw
+                    elif val:
+                        from datetime import datetime as _dt
+                        for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d"):
+                            try:
+                                fecha_usuario = _dt.strptime(val[:10], fmt).date()
+                                break
+                            except ValueError:
+                                continue
+                continue
+
+            if ftype == "computed":
+                continue
+
+            if not val and readonly and field_def.get("default") is not None:
+                datos_dinamicos[fname] = field_def["default"]
+            elif ftype == "number" and val:
                 try:
-                    datos_dinamicos[field_name] = float(raw_value)
+                    datos_dinamicos[fname] = float(str(raw).replace(",", "."))
                 except (TypeError, ValueError):
-                    datos_dinamicos[field_name] = None
+                    datos_dinamicos[fname] = None
+            elif ftype == "date" and raw is not None:
+                import datetime
+                if isinstance(raw, (datetime.date, datetime.datetime)):
+                    datos_dinamicos[fname] = raw.isoformat() if isinstance(raw, datetime.date) else raw.date().isoformat()
+                else:
+                    datos_dinamicos[fname] = val or None
             else:
-                datos_dinamicos[field_name] = str(raw_value) if raw_value != "" else None
+                datos_dinamicos[fname] = val or None
 
-        # Fill readonly defaults
-        for f in fields:
-            if f.get("readonly") and f.get("default") is not None:
-                datos_dinamicos.setdefault(f["name"], f["default"])
+        # Rellenar defaults de campos readonly no presentes en el Excel
+        for f in all_fields:
+            fname = _field_name(f)
+            if _is_readonly(f) and f.get("default") is not None:
+                datos_dinamicos.setdefault(fname, f["default"])
 
         form = Form(
             plantilla_id=template_id,
             usuario_id=current_user.id,
             dependency_id=current_user.dependency_id,
             datos_dinamicos=datos_dinamicos,
-            informe_cualitativo=informe_cualitativo or None,
+            informe_cualitativo=informe_val or None,
             fecha_usuario=fecha_usuario or date.today(),
             estado=FormStatus.draft,
             cargado_via_excel=True,
@@ -260,12 +605,18 @@ async def upload_excel_forms(
         await db.flush()
         created_ids.append(str(form.id))
 
+    if not created_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo no contiene filas de datos válidas.",
+        )
+
     await db.commit()
 
     return {
         "created": len(created_ids),
         "form_ids": created_ids,
-        "mensaje": f"Se crearon {len(created_ids)} formularios en estado borrador.",
+        "mensaje": f"Se crearon {len(created_ids)} formulario(s) en estado borrador correctamente.",
     }
 
 
@@ -277,10 +628,10 @@ async def download_form_as_excel(
     current_user: User = Depends(get_any_authenticated),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
-    """
-    Descarga un formulario individual como archivo Excel.
-    """
+    """Descarga un formulario individual como archivo Excel."""
     openpyxl = _get_openpyxl()
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
 
     form_result = await db.execute(select(Form).where(Form.id == form_id))
     form = form_result.scalar_one_or_none()
@@ -292,62 +643,58 @@ async def download_form_as_excel(
     )
     template = template_result.scalar_one_or_none()
     if template is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template del formulario no encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template no encontrado")
 
-    fields = template.configuracion_campos.get("fields", [])
+    all_fields = _get_fields(template)
+    has_informe = any(_field_name(f) == "informe_cualitativo" for f in all_fields)
+    export_cols = list(all_fields)
+    if not has_informe:
+        export_cols.append({
+            "name": "informe_cualitativo",
+            "label": "Informe cualitativo de la búsqueda",
+            "type": "textarea",
+            "readonly": False,
+            "required": True,
+        })
+
     datos = form.datos_dinamicos or {}
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = template.codigo or template.nombre[:31]
+    ws.title = (template.codigo or template.nombre)[:31]
 
-    from openpyxl.styles import Font, PatternFill, Alignment
-    header_fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
-    header_font = Font(color="FFFFFF", bold=True, size=10)
-    readonly_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
-    editable_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+    header_fill   = PatternFill(start_color="1A3C5E", end_color="1A3C5E", fill_type="solid")
+    readonly_fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+    data_fill     = PatternFill(start_color="F8FDF8", end_color="F8FDF8", fill_type="solid")
+    header_font   = Font(color="FFFFFF", bold=True, size=10, name="Calibri")
+    data_font     = Font(size=10, name="Calibri")
 
-    # Header row
-    headers = [f.get("label", f.get("name", "")) for f in fields]
-    ws.append(headers)
-
-    # Data row
+    ws.append([_field_label(f) for f in export_cols])
     data_row = []
-    for f in fields:
-        tipo = f.get("tipo", "text")
-        name = f.get("name", "")
-        if name == "informe_cualitativo":
+    for f in export_cols:
+        fname = _field_name(f)
+        ftype = _field_type(f)
+        if fname == "informe_cualitativo":
             data_row.append(form.informe_cualitativo or "")
-        elif name == "mes_reporte":
+        elif fname in ("mes_reporte", "fecha_referencia"):
             data_row.append(str(form.fecha_usuario) if form.fecha_usuario else "")
-        elif tipo == "file":
-            data_row.append("[ver archivos adjuntos]")
         else:
-            data_row.append(datos.get(name, ""))
+            data_row.append(datos.get(fname, ""))
     ws.append(data_row)
 
-    # Style
-    for col_idx, (field, header_cell) in enumerate(zip(fields, ws[1]), start=1):
-        header_cell.font = header_font
-        header_cell.fill = header_fill
-        header_cell.alignment = Alignment(wrap_text=True)
-        ws.column_dimensions[header_cell.column_letter].width = 22
+    for col_idx, f in enumerate(export_cols, start=1):
+        col_letter = get_column_letter(col_idx)
+        ws.column_dimensions[col_letter].width = 28
+        h_cell = ws.cell(row=1, column=col_idx)
+        h_cell.font = header_font
+        h_cell.fill = header_fill
+        h_cell.alignment = Alignment(horizontal="center", wrap_text=True)
+        d_cell = ws.cell(row=2, column=col_idx)
+        d_cell.font = data_font
+        d_cell.fill = readonly_fill if _is_readonly(f) else data_fill
+        d_cell.alignment = Alignment(horizontal="left", wrap_text=True)
 
-        data_cell = ws.cell(row=2, column=col_idx)
-        if field.get("readonly"):
-            data_cell.fill = readonly_fill
-        else:
-            data_cell.fill = editable_fill
-
-    # Metadata sheet
-    ws_meta = wb.create_sheet("Metadata")
-    ws_meta.append(["Campo", "Valor"])
-    ws_meta.append(["ID Formulario", str(form.id)])
-    ws_meta.append(["Template", template.nombre])
-    ws_meta.append(["Estado", form.estado.value])
-    ws_meta.append(["Fecha carga", str(form.fecha_carga)])
-    ws_meta.append(["Cargado via Excel", str(form.cargado_via_excel)])
-
+    ws.row_dimensions[1].height = 30
     ws.freeze_panes = "A2"
 
     output = io.BytesIO()

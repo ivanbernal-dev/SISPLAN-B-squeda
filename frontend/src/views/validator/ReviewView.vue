@@ -14,7 +14,9 @@
         </RouterLink>
         <div>
           <p class="font-subtitulo font-bold text-ubpd-gris">Revisión de Formulario</p>
-          <p v-if="formData" class="font-cuerpo text-xs text-gray-400">{{ formData.template_nombre }} · {{ formData.dependencia_nombre }}</p>
+          <p v-if="formData" class="font-cuerpo text-xs text-gray-400">
+            {{ formData.template_nombre }} · {{ formData.dependencia_nombre }}
+          </p>
         </div>
       </div>
       <span class="font-cuerpo text-xs font-medium px-3 py-1 rounded-full bg-ubpd-teal/10 text-ubpd-teal">
@@ -38,8 +40,10 @@
 
     <!-- Contenido split screen -->
     <div v-else-if="formData" class="flex-1 flex overflow-hidden">
+
       <!-- Panel izquierdo (60%): Datos del formulario -->
       <div class="flex-1 overflow-y-auto p-6 space-y-5" style="flex: 0 0 60%;">
+
         <!-- Info general -->
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
           <h2 class="font-subtitulo font-bold text-lg text-ubpd-gris">{{ formData.template_nombre }}</h2>
@@ -58,11 +62,11 @@
             </div>
             <div>
               <span class="font-cuerpo text-xs text-gray-400 block">Última edición</span>
-              <span class="font-cuerpo text-ubpd-gris">{{ formatDate(formData.fecha_ultima_edicion) }}</span>
+              <span class="font-cuerpo text-ubpd-gris">{{ formatDate(formData.fecha_edicion) }}</span>
             </div>
             <div>
               <span class="font-cuerpo text-xs text-gray-400 block">Fecha de referencia</span>
-              <span class="font-cuerpo text-ubpd-gris">{{ formatDate(formData.fecha_referencia) }}</span>
+              <span class="font-cuerpo text-ubpd-gris">{{ formatDate(formData.fecha_usuario) }}</span>
             </div>
           </div>
         </div>
@@ -78,8 +82,8 @@
             <label class="font-cuerpo font-medium text-xs text-gray-500 uppercase tracking-wide">
               {{ formatFieldName(String(key)) }}
             </label>
-            <div class="w-full font-cuerpo text-sm bg-ubpd-gris-claro border border-ubpd-gris-borde
-                        rounded-lg px-4 py-2.5 text-gray-600 cursor-not-allowed">
+            <div class="w-full font-cuerpo text-sm bg-gray-50 border border-gray-200
+                        rounded-lg px-4 py-2.5 text-gray-600">
               {{ value ?? '—' }}
             </div>
           </div>
@@ -90,9 +94,9 @@
           <h3 class="font-subtitulo font-semibold text-ubpd-gris mb-3">Informe Cualitativo</h3>
           <textarea
             v-autoresize
-            :value="formData.informe_cualitativo"
+            :value="formData.informe_cualitativo ?? '—'"
             disabled
-            class="w-full font-cuerpo text-sm bg-ubpd-gris-claro border border-ubpd-gris-borde
+            class="w-full font-cuerpo text-sm bg-gray-50 border border-gray-200
                    rounded-lg px-4 py-3 text-gray-600 cursor-not-allowed min-h-[100px]"
           />
         </div>
@@ -100,13 +104,19 @@
 
       <!-- Panel derecho (40%): Archivos adjuntos + Dictamen -->
       <div class="border-l border-gray-100 overflow-y-auto flex flex-col" style="flex: 0 0 40%;">
-        <!-- Archivos adjuntos -->
+
+        <!-- ── Archivos adjuntos ──────────────────────────────── -->
         <div class="p-5 flex-1">
           <h3 class="font-subtitulo font-semibold text-ubpd-gris mb-4 flex items-center gap-2">
             <svg class="w-5 h-5 text-ubpd-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586
+                   a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
             </svg>
-            Documentos Soporte ({{ formData.archivos?.length ?? 0 }})
+            Documentos Soporte
+            <span class="ml-auto font-cuerpo text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+              {{ formData.archivos?.length ?? 0 }}
+            </span>
           </h3>
 
           <div v-if="formData.archivos?.length" class="space-y-3">
@@ -116,54 +126,113 @@
               class="bg-white rounded-xl border border-gray-100 shadow-sm p-4"
             >
               <div class="flex items-start gap-3">
-                <!-- Miniatura o ícono -->
-                <div class="flex-shrink-0">
+                <!-- Ícono según MIME -->
+                <div
+                  class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                  :class="mimeIconBg(archivo.tipo_mime)"
+                >
+                  <!-- Imagen: miniatura -->
                   <img
-                    v-if="isImage(archivo.tipo) && archivo.url"
-                    :src="archivo.url"
+                    v-if="isImage(archivo.tipo_mime)"
+                    :src="thumbCache[archivo.id]"
                     :alt="archivo.nombre"
-                    class="w-14 h-14 object-cover rounded-lg border border-gray-200"
+                    class="w-12 h-12 object-cover rounded-xl"
                   />
-                  <div v-else class="w-14 h-14 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center">
-                    <svg class="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </div>
+                  <!-- PDF -->
+                  <svg v-else-if="archivo.tipo_mime === 'application/pdf'"
+                    class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414
+                         A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <!-- Word -->
+                  <svg v-else
+                    class="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586
+                         a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-                <!-- Info del archivo -->
+
+                <!-- Info -->
                 <div class="flex-1 min-w-0">
-                  <p class="font-cuerpo font-medium text-sm text-ubpd-gris truncate">{{ archivo.nombre }}</p>
-                  <p class="font-cuerpo text-xs text-gray-400 mt-0.5">
-                    {{ archivo.tipo.toUpperCase() }} · {{ formatSize(archivo.tamano) }}
+                  <p class="font-cuerpo font-medium text-sm text-ubpd-gris truncate">
+                    {{ archivo.nombre || archivo.nombre_original }}
                   </p>
-                  <button
-                    @click="openFile(archivo)"
-                    class="mt-2 inline-flex items-center gap-1 font-cuerpo text-xs font-medium
-                           text-ubpd-teal hover:text-ubpd-morado transition"
-                  >
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    Ver / Descargar
-                  </button>
+                  <p class="font-cuerpo text-xs text-gray-400 mt-0.5">
+                    {{ mimeLabel(archivo.tipo_mime) }} · {{ formatSize(archivo.tamanio) }}
+                  </p>
+
+                  <!-- Acciones -->
+                  <div class="flex items-center gap-2 mt-2.5">
+                    <!-- Ver (PDF e imágenes) -->
+                    <button
+                      v-if="isViewable(archivo.tipo_mime)"
+                      @click="viewFile(archivo.id)"
+                      :disabled="activeFileId === archivo.id"
+                      class="inline-flex items-center gap-1 font-cuerpo text-xs font-medium
+                             text-gray-600 border border-gray-200 rounded-lg px-2.5 py-1.5
+                             hover:bg-gray-100 hover:border-gray-300 transition
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg v-if="activeFileId !== archivo.id || activeFileAction !== 'view'"
+                        class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943
+                             9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <svg v-else class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                      Ver
+                    </button>
+
+                    <!-- Descargar (siempre) -->
+                    <button
+                      @click="downloadFile(archivo.id, archivo.nombre || archivo.nombre_original)"
+                      :disabled="activeFileId === archivo.id"
+                      class="inline-flex items-center gap-1 font-cuerpo text-xs font-medium
+                             text-ubpd-teal border border-ubpd-teal/30 rounded-lg px-2.5 py-1.5
+                             hover:bg-ubpd-teal hover:text-white hover:border-ubpd-teal transition
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg v-if="activeFileId !== archivo.id || activeFileAction !== 'download'"
+                        class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      <svg v-else class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                      Descargar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div v-else class="text-center py-8">
-            <svg class="w-10 h-10 text-gray-200 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
-            <p class="font-cuerpo text-xs text-gray-400">Sin documentos adjuntos</p>
+          <div v-else class="text-center py-10">
+            <div class="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586
+                     a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            </div>
+            <p class="font-cuerpo text-sm text-gray-400">Sin documentos adjuntos</p>
           </div>
         </div>
 
-        <!-- Panel de Dictamen -->
+        <!-- ── Panel de Dictamen ──────────────────────────────── -->
         <div class="border-t border-gray-100 bg-gray-50 p-5 space-y-4 flex-shrink-0">
           <h3 class="font-subtitulo font-semibold text-ubpd-gris">Dictamen</h3>
 
-          <!-- Área de rechazo (expandible) -->
+          <!-- Área de rechazo -->
           <Transition name="slide">
             <div v-if="showRejectionForm" class="space-y-2">
               <label class="block font-cuerpo font-medium text-sm text-ubpd-gris">
@@ -173,9 +242,9 @@
                 v-autoresize
                 v-model="rejectionComment"
                 placeholder="Indique los ajustes requeridos de forma clara y precisa..."
-                class="w-full font-cuerpo text-sm border border-gray-300 rounded-lg px-4 py-3 min-h-[90px]
-                       focus:outline-none focus:border-ubpd-naranja focus:ring-2 focus:ring-ubpd-naranja/20
-                       transition"
+                class="w-full font-cuerpo text-sm border border-gray-300 rounded-lg px-4 py-3
+                       min-h-[90px] focus:outline-none focus:border-ubpd-naranja
+                       focus:ring-2 focus:ring-ubpd-naranja/20 transition"
                 :class="rejectionComment.trim() ? 'border-ubpd-naranja/50' : ''"
               />
               <p class="font-cuerpo text-xs text-gray-400">
@@ -186,7 +255,6 @@
 
           <!-- Botones de acción -->
           <div class="flex gap-3">
-            <!-- Aprobar -->
             <button
               v-if="!showRejectionForm"
               @click="showApproveConfirm = true"
@@ -197,12 +265,12 @@
                      disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Aprobar
             </button>
 
-            <!-- Rechazar / Cancelar -->
             <button
               v-if="!showRejectionForm"
               @click="showRejectionForm = true"
@@ -213,17 +281,18 @@
                      disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94
+                     a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
               Devolver
             </button>
 
-            <!-- Cuando el form de rechazo está abierto -->
             <template v-if="showRejectionForm">
               <button
                 @click="showRejectionForm = false; rejectionComment = ''"
-                class="flex-shrink-0 border border-gray-300 text-ubpd-gris font-cuerpo font-medium text-sm
-                       rounded-xl px-4 py-3 hover:bg-gray-100 transition"
+                class="flex-shrink-0 border border-gray-300 text-ubpd-gris font-cuerpo
+                       font-medium text-sm rounded-xl px-4 py-3 hover:bg-gray-100 transition"
               >
                 Cancelar
               </button>
@@ -236,8 +305,8 @@
                        disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg v-if="actionLoading" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
                 Enviar Observaciones
               </button>
@@ -247,11 +316,11 @@
       </div>
     </div>
 
-    <!-- Modal de confirmación de aprobación -->
+    <!-- Confirmación aprobación -->
     <ConfirmModal
       :is-open="showApproveConfirm"
       title="Aprobar registro"
-      message="¿Confirma que este registro cumple con los criterios de validación y debe ser incluido en el reporte oficial?"
+      message="¿Confirma que este registro cumple con los criterios de validación?"
       confirm-text="Confirmar aprobación"
       confirm-variant="success"
       :loading="actionLoading"
@@ -268,12 +337,15 @@ import { useApi } from '@/composables/useApi'
 import { useNotificationsStore } from '@/stores/notifications'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
 interface Archivo {
   id: string
-  nombre: string
-  tipo: string
-  tamano: number
-  url?: string
+  nombre_original: string
+  nombre: string       // alias del backend
+  tipo_mime?: string
+  tamanio: number      // alias del backend
+  tamaño_bytes?: number
 }
 
 interface FormData {
@@ -282,44 +354,46 @@ interface FormData {
   dependencia_nombre: string
   usuario_nombre: string
   fecha_carga: string
-  fecha_ultima_edicion: string
-  fecha_referencia: string
+  fecha_edicion: string
+  fecha_usuario: string
   datos_dinamicos: Record<string, unknown>
-  informe_cualitativo: string
+  informe_cualitativo: string | null
   archivos: Archivo[]
 }
 
-const route = useRoute()
+// ─── Setup ────────────────────────────────────────────────────────────────────
+
+const route  = useRoute()
 const router = useRouter()
-const { get, patch } = useApi()
+const { get, patch, client: apiClient } = useApi()
 const notifications = useNotificationsStore()
 
 const formId = route.params.id as string
 
-const loading = ref(true)
+const loading       = ref(true)
 const actionLoading = ref(false)
-const formData = ref<FormData | null>(null)
+const formData      = ref<FormData | null>(null)
 
 const showApproveConfirm = ref(false)
-const showRejectionForm = ref(false)
-const rejectionComment = ref('')
+const showRejectionForm  = ref(false)
+const rejectionComment   = ref('')
+
+// Estado para botones de archivo
+const activeFileId     = ref<string | null>(null)
+const activeFileAction = ref<'view' | 'download' | null>(null)
+
+// Cache de thumbnails para imágenes
+const thumbCache = ref<Record<string, string>>({})
+
+// ─── Carga ────────────────────────────────────────────────────────────────────
 
 async function loadForm() {
   loading.value = true
   try {
-    const data = await get<FormData>(`/forms/${formId}`)
-    formData.value = data
-
-    // Obtener pre-signed URLs para cada archivo
-    if (data.archivos?.length) {
-      for (const archivo of data.archivos) {
-        try {
-          const urlData = await get<{ url: string }>(`/files/${archivo.id}/url`)
-          archivo.url = urlData.url
-        } catch {
-          // No crítico si falla la URL de un archivo
-        }
-      }
+    formData.value = await get<FormData>(`/forms/${formId}`)
+    // Pre-cargar thumbnails de imágenes en background (no bloqueante)
+    if (formData.value?.archivos?.length) {
+      loadImageThumbs(formData.value.archivos)
     }
   } catch {
     notifications.error('No se pudo cargar el formulario')
@@ -329,18 +403,103 @@ async function loadForm() {
   }
 }
 
+async function loadImageThumbs(archivos: Archivo[]) {
+  for (const a of archivos) {
+    if (isImage(a.tipo_mime)) {
+      try {
+        const res = await apiClient.get(`/files/${a.id}/download`, { responseType: 'blob' })
+        const blob = new Blob([res.data as BlobPart], { type: a.tipo_mime || 'image/jpeg' })
+        thumbCache.value[a.id] = URL.createObjectURL(blob)
+      } catch {
+        // Miniatura no crítica — no mostrar error
+      }
+    }
+  }
+}
+
 onMounted(loadForm)
+
+// ─── Helpers de archivo ───────────────────────────────────────────────────────
+
+function isImage(mime?: string): boolean {
+  return !!mime?.startsWith('image/')
+}
+
+function isViewable(mime?: string): boolean {
+  return !!mime && (mime.startsWith('image/') || mime === 'application/pdf')
+}
+
+function mimeLabel(mime?: string): string {
+  if (!mime) return 'Archivo'
+  if (mime === 'application/pdf') return 'PDF'
+  if (mime.startsWith('image/')) return mime.split('/')[1].toUpperCase()
+  if (mime.includes('wordprocessingml')) return 'DOCX'
+  return mime.split('/')[1]?.toUpperCase() ?? 'Archivo'
+}
+
+function mimeIconBg(mime?: string): string {
+  if (mime === 'application/pdf') return 'bg-red-50 border border-red-100'
+  if (mime?.startsWith('image/'))  return 'bg-blue-50 border border-blue-100 overflow-hidden'
+  return 'bg-gray-50 border border-gray-100'
+}
+
+async function _fetchBlob(fileId: string): Promise<Blob> {
+  const res = await apiClient.get(`/files/${fileId}/download`, { responseType: 'blob' })
+  return new Blob([res.data as BlobPart], {
+    type: (res.headers['content-type'] as string) || 'application/octet-stream',
+  })
+}
+
+async function viewFile(fileId: string) {
+  activeFileId.value     = fileId
+  activeFileAction.value = 'view'
+  try {
+    const blob   = await _fetchBlob(fileId)
+    const url    = URL.createObjectURL(blob)
+    const win    = window.open(url, '_blank', 'noopener,noreferrer')
+    if (win) setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    else     URL.revokeObjectURL(url)
+  } catch {
+    notifications.error('No se pudo abrir el archivo')
+  } finally {
+    activeFileId.value     = null
+    activeFileAction.value = null
+  }
+}
+
+async function downloadFile(fileId: string, nombre?: string) {
+  activeFileId.value     = fileId
+  activeFileAction.value = 'download'
+  try {
+    const blob = await _fetchBlob(fileId)
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = nombre || 'archivo'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch {
+    notifications.error('No se pudo descargar el archivo')
+  } finally {
+    activeFileId.value     = null
+    activeFileAction.value = null
+  }
+}
+
+// ─── Acciones de validación ───────────────────────────────────────────────────
 
 async function handleApprove() {
   actionLoading.value = true
   try {
     await patch(`/validation/${formId}/approve`, {})
-    notifications.success('Registro validado', 'El registro ha sido aprobado y se inició el proceso de incorporación.')
+    notifications.success('Registro validado', 'El registro ha sido aprobado.')
     router.push('/validator/inbox')
   } catch {
     notifications.error('No se pudo aprobar el registro')
   } finally {
-    actionLoading.value = false
+    actionLoading.value     = false
     showApproveConfirm.value = false
   }
 }
@@ -349,10 +508,8 @@ async function handleReject() {
   if (!rejectionComment.value.trim()) return
   actionLoading.value = true
   try {
-    await patch(`/validation/${formId}/reject`, {
-      comentario: rejectionComment.value,
-    })
-    notifications.success('Registro devuelto', 'El registro fue devuelto con las observaciones indicadas.')
+    await patch(`/validation/${formId}/reject`, { comentario: rejectionComment.value })
+    notifications.success('Registro devuelto', 'El registro fue devuelto con las observaciones.')
     router.push('/validator/inbox')
   } catch {
     notifications.error('No se pudo devolver el registro')
@@ -361,29 +518,18 @@ async function handleReject() {
   }
 }
 
-async function openFile(archivo: Archivo) {
-  if (archivo.url) {
-    window.open(archivo.url, '_blank', 'noopener,noreferrer')
-  } else {
-    try {
-      const data = await get<{ url: string }>(`/files/${archivo.id}/url`)
-      window.open(data.url, '_blank', 'noopener,noreferrer')
-    } catch {
-      notifications.error('No se pudo obtener el enlace del archivo')
-    }
-  }
-}
-
-function isImage(tipo: string): boolean {
-  return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(tipo.toLowerCase())
-}
+// ─── Helpers visuales ─────────────────────────────────────────────────────────
 
 function formatDate(d?: string): string {
   if (!d) return '—'
-  return new Date(d).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(d).toLocaleString('es-CO', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
 }
 
-function formatSize(bytes: number): string {
+function formatSize(bytes?: number): string {
+  if (!bytes) return '—'
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`

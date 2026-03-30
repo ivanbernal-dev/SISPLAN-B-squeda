@@ -105,12 +105,41 @@
                   </div>
                   <div>
                     <p class="font-cuerpo font-medium text-sm text-ubpd-gris">{{ user.nombre_completo }}</p>
-                    <p class="font-cuerpo text-xs text-gray-400">{{ user.email }}</p>
+                    <div class="flex items-center gap-1">
+                      <p class="font-cuerpo text-xs text-gray-400">{{ user.email ?? '—' }}</p>
+                      <button
+                        v-if="user.email"
+                        @click.stop="copyEmail(user.email)"
+                        :title="copiedEmail === user.email ? 'Copiado!' : 'Copiar correo'"
+                        class="text-gray-300 hover:text-ubpd-teal transition-colors"
+                      >
+                        <svg v-if="copiedEmail === user.email" class="w-3 h-3 text-ubpd-verde" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <svg v-else class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </td>
               <td class="px-6 py-4">
-                <span class="font-cuerpo text-sm text-gray-600 font-mono">{{ user.username }}</span>
+                <div class="flex items-center gap-1">
+                  <span class="font-cuerpo text-sm text-gray-600 font-mono">{{ user.username }}</span>
+                  <button
+                    @click.stop="copyUsername(user.username)"
+                    :title="copiedUsername === user.username ? 'Copiado!' : 'Copiar usuario'"
+                    class="text-gray-300 hover:text-ubpd-teal transition-colors"
+                  >
+                    <svg v-if="copiedUsername === user.username" class="w-3 h-3 text-ubpd-verde" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <svg v-else class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
               </td>
               <td class="px-6 py-4">
                 <span class="inline-flex items-center font-cuerpo text-xs font-medium px-2.5 py-1 rounded-full"
@@ -378,6 +407,8 @@ const showResetResult = ref(false)
 const resetLoading = ref(false)
 const resetCopied = ref(false)
 const resetData = reactive({ id: '', nombre: '', newPassword: '' })
+const copiedEmail = ref<string | null>(null)
+const copiedUsername = ref<string | null>(null)
 
 async function loadUsers() {
   loading.value = true
@@ -514,6 +545,26 @@ async function handleResetPassword() {
     notifications.error('No se pudo resetear la contraseña')
   } finally {
     resetLoading.value = false
+  }
+}
+
+async function copyEmail(email: string) {
+  try {
+    await navigator.clipboard.writeText(email)
+    copiedEmail.value = email
+    setTimeout(() => { copiedEmail.value = null }, 2000)
+  } catch {
+    notifications.error('No se pudo copiar al portapapeles')
+  }
+}
+
+async function copyUsername(username: string) {
+  try {
+    await navigator.clipboard.writeText(username)
+    copiedUsername.value = username
+    setTimeout(() => { copiedUsername.value = null }, 2000)
+  } catch {
+    notifications.error('No se pudo copiar al portapapeles')
   }
 }
 

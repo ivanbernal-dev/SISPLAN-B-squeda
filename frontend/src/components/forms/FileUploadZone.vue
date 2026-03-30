@@ -134,6 +134,8 @@ import { useApi } from '@/composables/useApi'
 import { useNotificationsStore } from '@/stores/notifications'
 import type { FileRecord } from '@/types/forms'
 
+defineOptions({ name: 'FileUploadZone' })
+
 const MAX_SIZE_MB = 50
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
@@ -159,7 +161,7 @@ const emit = defineEmits<{
   removed: [fileId: string]
 }>()
 
-const { axiosInstance } = useApi()
+const { client: axiosInstance } = useApi()
 const notifications = useNotificationsStore()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -252,4 +254,44 @@ async function uploadFile(pf: PendingFile) {
 function removePending(idx: number) {
   pendingFiles.value.splice(idx, 1)
 }
+
+/**
+ * Llamado desde el padre cuando un formulario recién creado obtiene su ID.
+ * Sube todos los archivos pendientes que quedaron en cola sin formId.
+ */
+async function triggerUploadAll(newFormId: string) {
+  const toUpload = [...pendingFiles.value]
+  for (const pf of toUpload) {
+    if (pf.progress === 0) {
+      // Temporalmente inyectar el formId a la instancia del archivo
+      await uploadFileWithId(pf, newFormId)
+    }
+  }
+}
+
+async function uploadFileWithId(pf: PendingFile, targetFormId: string) {
+  const formData = new FormData()
+  formData.append('file', pf.file)
+  try {
+    const response = await axiosInstance.post<FileRecord>(
+      `/files/upload/${targetFormId}`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => {
+          if (e.total) pf.progress = Math.round((e.loaded / e.total) * 100)
+        },
+      },
+    )
+    emit('uploaded', response.data)
+    const idx = pendingFiles.value.indexOf(pf)
+    if (idx !== -1) pendingFiles.value.splice(idx, 1)
+  } catch {
+    notifications.error('Error al subir archivo', `No se pudo subir ${pf.file.name}`)
+    const idx = pendingFiles.value.indexOf(pf)
+    if (idx !== -1) pendingFiles.value.splice(idx, 1)
+  }
+}
+
+defineExpose({ triggerUploadAll })
 </script>

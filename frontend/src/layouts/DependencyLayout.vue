@@ -45,6 +45,7 @@
             <PhGridFour :size="18" aria-hidden="true" class="shrink-0" />
             <span class="hidden sm:inline">Formularios Disponibles</span>
           </RouterLink>
+
         </nav>
 
         <!-- Botón cerrar sesión -->
