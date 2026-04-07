@@ -11,7 +11,7 @@ Todos los servicios corren como contenedores Docker orquestados con Docker Compo
 │                                                                 │
 │   ┌──────────┐    ┌─────────────────────────────────────────┐  │
 │   │ Clientes │───▶│              NGINX (Reverse Proxy)       │  │
-│   │(Browsers)│    │         Puerto 80 / 443 (SSL local)      │  │
+│   │(Browsers)│    │              Puerto 80 (HTTP)              │  │
 │   └──────────┘    └────────────┬──────────────┬─────────────┘  │
 │                                │              │                 │
 │              ┌─────────────────▼──┐    ┌──────▼─────────────┐  │
@@ -45,8 +45,7 @@ Todos los servicios corren como contenedores Docker orquestados con Docker Compo
 ### 1. `nginx` — Proxy Inverso
 - **Imagen**: `nginx:1.25-alpine`
 - **Función**: Punto de entrada único. Enruta `/api/` al backend y `/` al frontend.
-- **SSL**: Certificados autofirmados generados localmente para HTTPS en intranet.
-- **Puertos expuestos**: `80`, `443`
+- **Puertos expuestos**: `80` (HTTP; TLS no configurado en esta versión)
 
 ### 2. `frontend` — Aplicación Vue.js
 - **Imagen**: Build multistage (Node → Nginx estático)
@@ -150,7 +149,7 @@ PENDIENTE (pending)
 1. **Sin CDN**: Todas las librerías JS/CSS van en el bundle de Vite.
 2. **Fuentes locales**: Barlow, Montserrat, Playfair Display como archivos `.woff2`.
 3. **Imágenes Docker**: Pre-descargadas y guardadas como `.tar` para transfer manual.
-4. **Certificados SSL**: Autofirmados con `openssl`, instalados en los clientes de la red.
+4. **Tráfico web**: Por ahora corre sobre HTTP en intranet; TLS opcional en despliegues futuros.
 5. **NTP local**: Se recomienda configurar servidor de tiempo en la red para sincronía de timestamps.
 6. **Backup**: Scripts de backup de volúmenes Docker programables con cron.
 
@@ -159,6 +158,6 @@ PENDIENTE (pending)
 - Autenticación: JWT firmado con `SECRET_KEY` local (HS256)
 - Tokens: Access Token (30 min) + Refresh Token (7 días)
 - Contraseñas: Hash con `bcrypt` (costo 12)
-- HTTPS: Obligatorio en producción, incluso en intranet
+- Capa de transporte: HTTP en esta configuración; conviene planear TLS cuando el entorno lo exija
 - RBAC: Cada endpoint verifica el rol del JWT antes de procesar
 - MinIO: Buckets privados, acceso solo via pre-signed URLs del backend

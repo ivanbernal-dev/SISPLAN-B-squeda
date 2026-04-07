@@ -12,7 +12,6 @@
 | SO | Ubuntu 22.04 LTS | Ubuntu 22.04 LTS |
 | Docker Engine | 24+ | 25+ |
 | Docker Compose plugin | 2.20+ | 2.24+ |
-| OpenSSL | 1.1+ | — |
 
 ---
 
@@ -24,10 +23,11 @@ chmod +x scripts/*.sh
 ```
 
 El script hace automáticamente:
-1. Verifica Docker, docker compose y openssl
-2. Crea `logs/nginx/`, `logs/backend/`, `nginx/certs/`, `postgres/init/`, `backups/`
+1. Verifica Docker y docker compose
+2. Crea `logs/nginx/`, `logs/backend/`, `postgres/init/`, `backups/`
 3. Copia `.env.example` → `.env`
-4. Genera el certificado SSL con la IP configurada en `.env`
+
+El acceso a la aplicación es por **HTTP** (puerto **80**); no se genera certificado en la instalación.
 
 Opcionalmente, generar todas las claves y contraseñas automáticamente:
 
@@ -62,7 +62,7 @@ INITIAL_ADMIN_USERNAME=admin
 INITIAL_ADMIN_PASSWORD=Admin@UBPD2024!
 INITIAL_ADMIN_EMAIL=admin@ubpd.gov.co
 
-CORS_ORIGINS=https://192.168.1.100,http://localhost:5173
+CORS_ORIGINS=http://127.0.0.1,http://localhost,http://192.168.1.100,http://localhost:5173
 ```
 
 ### Logging
@@ -84,31 +84,9 @@ LOG_LEVEL=INFO      # DEBUG activa logs SQL y detallados
 
 ---
 
-## Certificado SSL
+## HTTPS / certificados (opcional, no activo)
 
-Generado automáticamente por `install.sh`. Para regenerar:
-
-```bash
-./scripts/generate-ssl.sh 192.168.1.100
-```
-
-### Instalar en clientes Windows
-
-1. Copiar `nginx/certs/server.crt` al equipo
-2. Doble clic → **Instalar certificado** → Equipo local
-3. **Examinar** → "Entidades de certificación raíz de confianza"
-4. Aceptar y reiniciar el navegador
-
-### Instalar en Firefox (cualquier SO)
-
-`about:preferences#privacy` → Ver certificados → Importar → seleccionar `server.crt` → "Confiar para sitios web"
-
-### Instalar en macOS
-
-```bash
-sudo security add-trusted-cert -d -r trustRoot \
-  -k /Library/Keychains/System.keychain nginx/certs/server.crt
-```
+En esta versión Nginx solo escucha **HTTP**. El script `scripts/generate-ssl.sh` y la carpeta `nginx/certs/` pueden usarse en el futuro si se vuelve a configurar TLS en `nginx/conf.d/` y en `docker-compose.yml`.
 
 ---
 
@@ -187,10 +165,10 @@ Todo se maneja con un único script:
 
 | URL | Descripción |
 |-----|-------------|
-| `https://192.168.1.100` | Aplicación |
-| `https://192.168.1.100/estadisticas` | Portal público de indicadores (sin login) |
-| `https://192.168.1.100/api/docs` | Documentación API |
-| `https://192.168.1.100/api/health` | Health check |
+| `http://192.168.1.100` | Aplicación |
+| `http://192.168.1.100/estadisticas` | Portal público de indicadores (sin login) |
+| `http://192.168.1.100/api/docs` | Documentación API |
+| `http://192.168.1.100/api/health` | Health check |
 
 **Credenciales iniciales:** definidas en `INITIAL_ADMIN_*` del `.env`.
 

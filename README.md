@@ -11,7 +11,7 @@ Línea Estratégica No. 1. Funciona en red intranet (air-gapped) con un único e
 
 ```bash
 chmod +x scripts/*.sh
-./scripts/install.sh          # verifica Docker, crea directorios, genera SSL
+./scripts/install.sh          # verifica Docker y crea directorios
 nano .env                     # editar SERVER_IP, SECRET_KEY, contraseñas
 ./scripts/prod.sh build
 ./scripts/prod.sh start
@@ -29,7 +29,7 @@ nano .env                     # editar SERVER_IP, SECRET_KEY, contraseñas
 | Base de datos | PostgreSQL 16 |
 | Archivos | MinIO (S3-compatible) |
 | Tareas | Celery + Valkey |
-| Proxy | Nginx · SSL autofirmado |
+| Proxy | Nginx (HTTP) |
 | Contenedores | Docker Compose (8 servicios) |
 
 ---
@@ -38,6 +38,6 @@ nano .env                     # editar SERVER_IP, SECRET_KEY, contraseñas
 
 | Documento | Contenido |
 |-----------|-----------|
-| [`CONFIGURACION.md`](CONFIGURACION.md) | Instalación, `.env`, SSL, despliegue, operación |
+| [`CONFIGURACION.md`](CONFIGURACION.md) | Instalación, `.env`, despliegue, operación |
 | [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md) | Servicios, flujo de datos, seguridad |
 | [`docs/FLUJO_USUARIOS.md`](docs/FLUJO_USUARIOS.md) | Flujos por rol: admin, validador, dependencia, público |

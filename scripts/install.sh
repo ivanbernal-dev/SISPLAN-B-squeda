@@ -29,22 +29,19 @@ step "Verificando dependencias..."
 
 command -v docker   >/dev/null 2>&1 || error "Docker no está instalado."
 docker compose version >/dev/null 2>&1 || error "Plugin 'docker compose' no está disponible."
-command -v openssl  >/dev/null 2>&1 || error "openssl no está instalado."
 
 DOCKER_VERSION=$(docker --version | grep -oE '[0-9]+\.[0-9]+' | head -1)
 info "Docker $DOCKER_VERSION detectado."
 info "docker compose detectado."
-info "openssl detectado."
 
 # ── 2. Crear directorios necesarios ─────────────────────────
 step "Creando directorios de logs y datos..."
 
 mkdir -p logs/nginx logs/backend
-mkdir -p nginx/certs
 mkdir -p postgres/init
 mkdir -p backups
 
-info "Directorios creados: logs/nginx, logs/backend, nginx/certs, postgres/init, backups"
+info "Directorios creados: logs/nginx, logs/backend, postgres/init, backups"
 
 # ── 3. Configurar .env ───────────────────────────────────────
 step "Configurando variables de entorno..."
@@ -57,24 +54,7 @@ else
     warn "IMPORTANTE: Edita .env antes de arrancar — especialmente SECRET_KEY y las contraseñas."
 fi
 
-# ── 4. Generar certificado SSL ───────────────────────────────
-step "Configurando certificado SSL..."
-
-if [ -f "nginx/certs/server.crt" ] && [ -f "nginx/certs/server.key" ]; then
-    warn "Certificado SSL ya existe en nginx/certs/ — no se regenera."
-    warn "Para regenerar: ./scripts/generate-ssl.sh <IP_SERVIDOR>"
-else
-    # Obtener SERVER_IP del .env
-    SERVER_IP=$(grep -E "^SERVER_IP=" .env 2>/dev/null | cut -d= -f2 | tr -d '"' | tr -d "'")
-    SERVER_IP="${SERVER_IP:-192.168.1.100}"
-
-    info "Generando certificado autofirmado para IP: $SERVER_IP"
-    chmod +x scripts/generate-ssl.sh
-    ./scripts/generate-ssl.sh "$SERVER_IP"
-    info "Certificado generado en nginx/certs/"
-fi
-
-# ── 5. Resumen ───────────────────────────────────────────────
+# ── 4. Resumen ───────────────────────────────────────────────
 echo ""
 echo "╔══════════════════════════════════════════════════════╗"
 echo "║          Instalación completada                      ║"
@@ -92,9 +72,5 @@ echo "     ./scripts/prod.sh start"
 echo ""
 echo "  3. Verificar estado:"
 echo "     ./scripts/prod.sh status"
-echo "     → App: https://\$(grep SERVER_IP .env | cut -d= -f2)"
-echo ""
-echo "  Instalar certificado SSL en clientes Windows:"
-echo "  → Copiar nginx/certs/server.crt al equipo cliente"
-echo "  → Instalar en 'Entidades de certificación raíz de confianza'"
+echo "     → App: http://\$(grep SERVER_IP .env | cut -d= -f2)"
 echo ""
