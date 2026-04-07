@@ -44,12 +44,43 @@ header() { echo -e "\n${CYAN}▶  $*${NC}"; }
 info()   { echo -e "${GREEN}   $*${NC}"; }
 warn()   { echo -e "${YELLOW}   $*${NC}"; }
 
-# Detectar IP local activa (descarta loopback y docker)
-SERVER_IP=$(ipconfig getifaddr en0 2>/dev/null \
-  || ipconfig getifaddr en1 2>/dev/null \
-  || ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' \
-  || grep -E "^SERVER_IP=" .env 2>/dev/null | cut -d= -f2 | tr -d '"' | tr -d "'" \
-  || echo "127.0.0.1")
+# IP para URLs: .env no vacío primero; luego auto-detección por OS.
+# En Windows/Git Bash el comando `ipconfig` es el de CMD (no existe getifaddr como en macOS).
+resolve_server_ip() {
+    local ip="" os
+
+    if [ -f .env ]; then
+        ip=$(grep -E '^SERVER_IP=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r' | tr -d '"' | tr -d "'" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        [ -n "$ip" ] && { echo "$ip"; return; }
+    fi
+
+    os=$(uname -s 2>/dev/null || echo "")
+    case "$os" in
+        Darwin)
+            ip=$(ipconfig getifaddr en0 2>/dev/null || true)
+            [ -z "$ip" ] && ip=$(ipconfig getifaddr en1 2>/dev/null || true)
+            ;;
+        Linux)
+            ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{for (i = 1; i <= NF; i++) if ($i == "src") { print $(i + 1); exit }}')
+            ;;
+        MINGW*|MSYS*|CYGWIN*)
+            if command -v powershell.exe >/dev/null 2>&1; then
+                ip=$(powershell.exe -NoProfile -Command \
+                    'Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notmatch "^127\." -and $_.IPAddress -notmatch "^169\.254\." } | Sort-Object InterfaceMetric | Select-Object -First 1 -ExpandProperty IPAddress' \
+                    2>/dev/null | tr -d '\r\n')
+            fi
+            if [ -z "$ip" ]; then
+                ip=$(ipconfig 2>/dev/null | grep -Fi 'IPv4' | grep -Fvi 'IPv6' | head -1 \
+                    | sed -n 's/.*\: *\([0-9][0-9.]*\).*/\1/p')
+            fi
+            ;;
+    esac
+
+    [ -n "$ip" ] && { echo "$ip"; return; }
+    echo "127.0.0.1"
+}
+
+SERVER_IP=$(resolve_server_ip)
 
 check_prerequisites() {
     local ok=true
