@@ -145,7 +145,13 @@
                       d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414
                          A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
-                  <!-- Word -->
+                  <!-- Excel -->
+                  <svg v-else-if="archivo.tipo_mime?.includes('spreadsheetml') || archivo.tipo_mime === 'application/vnd.ms-excel'"
+                    class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <!-- Word / otros documentos -->
                   <svg v-else
                     class="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -434,12 +440,17 @@ function mimeLabel(mime?: string): string {
   if (mime === 'application/pdf') return 'PDF'
   if (mime.startsWith('image/')) return mime.split('/')[1].toUpperCase()
   if (mime.includes('wordprocessingml')) return 'DOCX'
+  if (mime.includes('spreadsheetml')) return 'XLSX'
+  if (mime === 'application/vnd.ms-excel') return 'XLS'
   return mime.split('/')[1]?.toUpperCase() ?? 'Archivo'
 }
 
 function mimeIconBg(mime?: string): string {
   if (mime === 'application/pdf') return 'bg-red-50 border border-red-100'
   if (mime?.startsWith('image/'))  return 'bg-blue-50 border border-blue-100 overflow-hidden'
+  if (mime?.includes('spreadsheetml') || mime === 'application/vnd.ms-excel') {
+    return 'bg-emerald-50 border border-emerald-100'
+  }
   return 'bg-gray-50 border border-gray-100'
 }
 

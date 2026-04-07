@@ -42,7 +42,11 @@ class Settings(BaseSettings):
 
     # ── Archivos ───────────────────────────────────────────────
     MAX_UPLOAD_MB: int = 50
-    ALLOWED_MIME_TYPES: str = "application/pdf,image/jpeg,image/png,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ALLOWED_MIME_TYPES: str = (
+        "application/pdf,image/jpeg,image/png,image/webp,"
+        "application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,"
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+    )
 
     # ── CORS ───────────────────────────────────────────────────
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"

@@ -3,6 +3,7 @@ app/services/minio_service.py — Servicio de almacenamiento de archivos con Min
 """
 import io
 import logging
+import mimetypes
 import uuid
 from datetime import timedelta
 
@@ -14,6 +15,18 @@ from app.config import settings
 from app.models.file import Archivo
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_upload_content_type(file: UploadFile) -> str:
+    """Usa el Content-Type del cliente o lo infiere por nombre (p. ej. Excel en drag-and-drop)."""
+    raw = (file.content_type or "").strip()
+    if raw and raw != "application/octet-stream":
+        return raw
+    if file.filename:
+        guessed, _ = mimetypes.guess_type(file.filename)
+        if guessed:
+            return guessed
+    return raw or "application/octet-stream"
 
 
 class MinioService:
@@ -66,8 +79,8 @@ class MinioService:
                 detail=f"El archivo supera el límite de {settings.MAX_UPLOAD_MB} MB",
             )
 
-        # Validar MIME
-        content_type = file.content_type or "application/octet-stream"
+        # Validar MIME (con inferencia por extensión si hace falta)
+        content_type = _resolve_upload_content_type(file)
         if content_type not in settings.allowed_mime_types_list:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,

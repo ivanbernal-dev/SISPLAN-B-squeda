@@ -21,7 +21,7 @@
         type="file"
         multiple
         class="hidden"
-        accept=".pdf,.jpg,.jpeg,.png,.docx"
+        accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.xls"
         @change="onFileSelected"
       />
 
@@ -36,7 +36,7 @@
       <p class="text-sm font-barlow text-gray-600">
         <span class="font-semibold text-ubpd-teal">Arrastra archivos aquí</span> o haz clic para seleccionar
       </p>
-      <p class="text-xs text-gray-400 mt-1">PDF, JPG, PNG, DOCX — máx. 50 MB por archivo</p>
+      <p class="text-xs text-gray-400 mt-1">PDF, JPG, PNG, DOCX, XLS/XLSX — máx. 50 MB por archivo</p>
     </div>
 
     <!-- Pending files queue -->
@@ -137,8 +137,15 @@ import type { FileRecord } from '@/types/forms'
 defineOptions({ name: 'FileUploadZone' })
 
 const MAX_SIZE_MB = 50
-const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+const ACCEPTED_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/jpg',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+]
 
 interface PendingFile {
   file: File
@@ -184,9 +191,16 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function isAcceptedUpload(file: File): boolean {
+  if (file.type && ACCEPTED_TYPES.includes(file.type)) return true
+  // Al arrastrar, a veces viene tipo vacío u "application/octet-stream"
+  const n = file.name.toLowerCase()
+  return /\.(pdf|jpe?g|png|docx|xlsx|xls)$/i.test(n)
+}
+
 function validateFile(file: File): string | null {
-  if (!ACCEPTED_TYPES.includes(file.type)) {
-    return `${file.name}: tipo no permitido (solo PDF, JPG, PNG, DOCX)`
+  if (!isAcceptedUpload(file)) {
+    return `${file.name}: tipo no permitido (PDF, JPG, PNG, DOCX, XLS, XLSX)`
   }
   if (file.size > MAX_SIZE_MB * 1024 * 1024) {
     return `${file.name}: supera el límite de ${MAX_SIZE_MB} MB`
