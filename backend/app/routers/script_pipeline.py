@@ -494,7 +494,7 @@ async def get_kpis_nivel1(db: AsyncSession = Depends(get_db)):
     """Devuelve los KPIs nivel 1 almacenados por el último pipeline ejecutado."""
     result = await db.execute(
         select(KpiResultado)
-        .where(KpiResultado.nivel == 1)
+        .where(KpiResultado.nivel == 1, KpiResultado.activo.isnot(False))
         .order_by(KpiResultado.kpi_key)
     )
     kpis = result.scalars().all()
@@ -595,7 +595,11 @@ async def get_kpis_nivel2(kpi_key: str, db: AsyncSession = Depends(get_db)):
     """Devuelve los KPIs nivel 2 almacenados por el último pipeline ejecutado."""
     result = await db.execute(
         select(KpiResultado)
-        .where(KpiResultado.nivel == 2, KpiResultado.nivel1_key == kpi_key)
+        .where(
+            KpiResultado.nivel == 2,
+            KpiResultado.nivel1_key == kpi_key,
+            KpiResultado.activo.isnot(False),
+        )
         .order_by(KpiResultado.kpi_key)
     )
     kpis = result.scalars().all()

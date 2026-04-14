@@ -23,6 +23,7 @@ class KpiResultado(Base):
     nivel1_key = Column(String(120), nullable=True)   # FK lógica al KPI padre (nivel 2)
     template_id = Column(String(36), nullable=True)   # UUID del template DB asociado
     descripcion = Column(Text, nullable=True)
+    activo = Column(Boolean, default=True)            # Visible en la vista pública
     updated_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

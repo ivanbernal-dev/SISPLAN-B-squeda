@@ -348,21 +348,69 @@ async def get_pipeline_status(
 async def get_audit_log(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
+    usuario: Optional[str] = Query(None, description="Filtrar por nombre o email de usuario"),
+    accion: Optional[str] = Query(None, description="Filtrar por acción (ej: LOGIN, FORM_APPROVE)"),
+    start_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="YYYY-MM-DD"),
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Log de auditoría paginado, ordenado de más reciente a más antiguo."""
-    offset = (page - 1) * size
-    count_result = await db.execute(select(func.count(AuditLog.id)))
+    """Log de auditoría paginado con filtros, ordenado de más reciente a más antiguo."""
+    from sqlalchemy import and_, cast, Date as SADate, or_
+    from sqlalchemy.orm import selectinload
+
+    filters = []
+
+    # Filtro por acción (insensible a mayúsculas)
+    if accion:
+        filters.append(AuditLog.accion.ilike(f"%{accion}%"))
+
+    # Filtro por fecha
+    if start_date:
+        try:
+            filters.append(
+                cast(AuditLog.created_at, SADate) >= datetime.strptime(start_date, "%Y-%m-%d").date()
+            )
+        except ValueError:
+            pass
+    if end_date:
+        try:
+            filters.append(
+                cast(AuditLog.created_at, SADate) <= datetime.strptime(end_date, "%Y-%m-%d").date()
+            )
+        except ValueError:
+            pass
+
+    # Filtro por usuario (nombre o email) — requires subquery via join
+    if usuario:
+        filters.append(
+            AuditLog.usuario_id.in_(
+                select(User.id).where(
+                    or_(
+                        User.nombre_completo.ilike(f"%{usuario}%"),
+                        User.email.ilike(f"%{usuario}%"),
+                    )
+                )
+            )
+        )
+
+    base_query = select(AuditLog).where(and_(*filters)) if filters else select(AuditLog)
+
+    count_result = await db.execute(
+        select(func.count()).select_from(base_query.subquery())
+    )
     total = count_result.scalar_one()
 
+    offset = (page - 1) * size
     result = await db.execute(
-        select(AuditLog)
+        base_query
+        .options(selectinload(AuditLog.usuario))
         .order_by(AuditLog.created_at.desc())
         .offset(offset)
         .limit(size)
     )
     logs = result.scalars().all()
+
     return {
         "total": total,
         "page": page,
@@ -370,13 +418,14 @@ async def get_audit_log(
         "items": [
             {
                 "id": str(log.id),
-                "usuario_id": str(log.usuario_id) if log.usuario_id else None,
+                "fecha": log.created_at.isoformat(),
+                "usuario": log.usuario.nombre_completo if log.usuario else "Sistema",
+                "usuario_email": log.usuario.email if log.usuario else None,
                 "accion": log.accion,
+                "entidad": f"{log.entidad_tipo or ''} {str(log.entidad_id)[:8] if log.entidad_id else ''}".strip() or None,
                 "entidad_tipo": log.entidad_tipo,
-                "entidad_id": str(log.entidad_id) if log.entidad_id else None,
                 "detalle": log.detalle,
-                "ip_address": str(log.ip_address) if log.ip_address else None,
-                "created_at": log.created_at.isoformat(),
+                "ip": str(log.ip_address) if log.ip_address else None,
             }
             for log in logs
         ],
