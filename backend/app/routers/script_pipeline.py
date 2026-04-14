@@ -18,10 +18,11 @@ import io
 import textwrap
 import threading
 import traceback
+import re
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -479,8 +480,18 @@ async def list_tables(
 
 # ── Público: GET KPIs nivel 1 ─────────────────────────────────────────────────
 
+# Mapping from nivel1 kpi_key → line prefix used in Template.codigo
+_LINEA_KEY_TO_PREFIX = {
+    "kpi_linea1": "L1",
+    "kpi_linea2": "L2",
+    "kpi_linea3": "L3",
+    "kpi_linea4": "L4",
+    "kpi_linea5": "L5",
+}
+
 @public_router.get("")
 async def get_kpis_nivel1(db: AsyncSession = Depends(get_db)):
+    """Devuelve los KPIs nivel 1 almacenados por el último pipeline ejecutado."""
     result = await db.execute(
         select(KpiResultado)
         .where(KpiResultado.nivel == 1)
@@ -488,26 +499,19 @@ async def get_kpis_nivel1(db: AsyncSession = Depends(get_db)):
     )
     kpis = result.scalars().all()
 
-    # Si no hay KPIs en BD, devolver los 5 por defecto con valor 0
     if not kpis:
         defaults = [
-            ("kpi_cobertura",   "Cobertura",   "Cobertura institucional de los registros"),
-            ("kpi_completitud", "Completitud", "Completitud promedio de los campos"),
-            ("kpi_oportunidad", "Oportunidad", "Oportunidad en la entrega de información"),
-            ("kpi_calidad",     "Calidad",     "Calidad de los datos registrados"),
-            ("kpi_gestion",     "Gestión",     "Eficiencia en la gestión documental"),
+            ("kpi_linea1", "Línea 1 — Investigación Humanitaria y Extrajudicial", "IHE: investigación, forense, identificación y búsqueda territorial"),
+            ("kpi_linea2", "Línea 2 — Participación y Gestión Territorial",        "Articulación con víctimas, familias y organizaciones de búsqueda"),
+            ("kpi_linea3", "Línea 3 — Despliegue y Modelo Operativo",              "Consolidación del modelo operativo descentralizado"),
+            ("kpi_linea4", "Línea 4 — Gestión del Conocimiento",                   "Sistematización, aprendizaje institucional y gestión del dato"),
+            ("kpi_linea5", "Línea 5 — Coordinación y Articulación Interinstitucional", "Coordinación con entidades del SIVJRNR y cooperación internacional"),
         ]
-        return [
-            {"key": k, "label": l, "valor": 0.0, "descripcion": d, "updated_at": None}
-            for k, l, d in defaults
-        ]
+        return [{"key": k, "label": l, "valor": 0.0, "descripcion": d, "updated_at": None} for k, l, d in defaults]
 
     return [
-        {
-            "key": k.kpi_key, "label": k.kpi_label, "valor": k.valor,
-            "descripcion": k.descripcion,
-            "updated_at": k.updated_at.isoformat() if k.updated_at else None,
-        }
+        {"key": k.kpi_key, "label": k.kpi_label, "valor": k.valor,
+         "descripcion": k.descripcion, "updated_at": k.updated_at.isoformat() if k.updated_at else None}
         for k in kpis
     ]
 
@@ -519,11 +523,15 @@ async def get_kpi_forms(
     kpi_key: str,
     page: int = 1,
     size: int = 20,
+    start_date: Optional[str] = Query(None, description="Fecha inicio YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="Fecha fin YYYY-MM-DD"),
     db: AsyncSession = Depends(get_db),
 ):
     """Devuelve formularios aprobados asociados al template de este sub-KPI."""
     from app.models.form import Form, FormStatus
     from app.models.template import Template
+    from sqlalchemy import and_, func as sqlfunc, cast, Date as SADate
+    from datetime import timedelta
 
     # Buscar template_id del KPI
     kpi_res = await db.execute(
@@ -533,16 +541,21 @@ async def get_kpi_forms(
     if not kpi or not kpi.template_id:
         return {"total": 0, "page": page, "size": size, "items": [], "kpi_label": kpi_key, "template_nombre": None}
 
-    from sqlalchemy import func as sqlfunc
+    # Build base filters — cast a DATE para evitar problemas de timezone
+    from datetime import date as PyDate
+    base_filters = [Form.plantilla_id == kpi.template_id, Form.estado == FormStatus.approved]
+    if start_date:
+        base_filters.append(cast(Form.fecha_carga, SADate) >= datetime.strptime(start_date, "%Y-%m-%d").date())
+    if end_date:
+        base_filters.append(cast(Form.fecha_carga, SADate) <= datetime.strptime(end_date, "%Y-%m-%d").date())
 
     total = await db.scalar(
-        select(sqlfunc.count(Form.id))
-        .where(Form.plantilla_id == kpi.template_id, Form.estado == FormStatus.approved)
+        select(sqlfunc.count(Form.id)).where(and_(*base_filters))
     ) or 0
 
     rows = await db.execute(
         select(Form)
-        .where(Form.plantilla_id == kpi.template_id, Form.estado == FormStatus.approved)
+        .where(and_(*base_filters))
         .order_by(Form.fecha_carga.desc())
         .offset((page - 1) * size)
         .limit(size)
@@ -579,6 +592,7 @@ async def get_kpi_forms(
 
 @public_router.get("/{kpi_key}")
 async def get_kpis_nivel2(kpi_key: str, db: AsyncSession = Depends(get_db)):
+    """Devuelve los KPIs nivel 2 almacenados por el último pipeline ejecutado."""
     result = await db.execute(
         select(KpiResultado)
         .where(KpiResultado.nivel == 2, KpiResultado.nivel1_key == kpi_key)
@@ -586,21 +600,8 @@ async def get_kpis_nivel2(kpi_key: str, db: AsyncSession = Depends(get_db)):
     )
     kpis = result.scalars().all()
 
-    # Defaults nivel 2 por padre
-    NIVEL2_DEFAULTS: dict[str, list] = {
-        "kpi_cobertura":   [("Regional", "kpi_cob_regional"), ("Poblacional", "kpi_cob_poblacional"), ("Territorial", "kpi_cob_territorial"), ("Institucional", "kpi_cob_institucional"), ("Temática", "kpi_cob_tematica")],
-        "kpi_completitud": [("Campos básicos", "kpi_comp_campos"), ("Adjuntos", "kpi_comp_adjuntos"), ("Firmas", "kpi_comp_firmas"), ("Fechas", "kpi_comp_fechas"), ("Referencias", "kpi_comp_referencias")],
-        "kpi_oportunidad": [("Entrega a tiempo", "kpi_op_entrega"), ("Validación oportuna", "kpi_op_validacion"), ("Tiempo de respuesta", "kpi_op_respuesta"), ("Actualización", "kpi_op_actualizacion"), ("Seguimiento", "kpi_op_seguimiento")],
-        "kpi_calidad":     [("Exactitud", "kpi_cal_exactitud"), ("Coherencia", "kpi_cal_coherencia"), ("Consistencia", "kpi_cal_consistencia"), ("Validez", "kpi_cal_validez"), ("Integridad", "kpi_cal_integridad")],
-        "kpi_gestion":     [("Proceso", "kpi_ges_proceso"), ("Recursos", "kpi_ges_recursos"), ("Resultados", "kpi_ges_resultado"), ("Impacto", "kpi_ges_impacto"), ("Mejora continua", "kpi_ges_mejora")],
-    }
-
     if not kpis:
-        sub_defaults = NIVEL2_DEFAULTS.get(kpi_key, [])
-        return [
-            {"key": k, "label": l, "valor": 0.0, "nivel1_key": kpi_key, "updated_at": None}
-            for l, k in sub_defaults
-        ]
+        return []
 
     return [
         {

@@ -55,6 +55,8 @@ CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
 LEFT   = Alignment(horizontal="left",   vertical="center", wrap_text=True)
 
 
+COL_DENOMINADOR = "reporte_cuantitativo_variable_2"
+
 def ftype(f): return str(f.get("type", f.get("tipo", "text"))).lower()
 def fname(f): return str(f.get("name", "")).strip()
 def flabel(f): return str(f.get("label", f.get("name", ""))).strip()
@@ -87,8 +89,13 @@ def get_sample(f, row_idx: int) -> object:
                   "2026-05-31", "2026-06-30", "2026-07-31"]
         return months[row_idx % len(months)]
     if ft == "number":
-        vals = [0.75, 0.5, 1.0, 0.25, 0.8, 0.6, 0.9]
-        return vals[row_idx % len(vals)]
+        # var1 (numerador/avance): valores variados que representan avance real 0-1
+        # var2 (denominador/meta): siempre 1.0 (meta = 100%)
+        if "variable_2" in fn or fn == COL_DENOMINADOR:
+            return 1.0   # meta fija
+        # var1 varía según row para mostrar avances distintos
+        var1_vals = [0.45, 0.72, 0.38, 0.85, 0.60, 0.91, 0.30]
+        return var1_vals[row_idx % len(var1_vals)]
     if ft == "select":
         opts = fopts(f)
         if opts:

@@ -17,7 +17,7 @@ from app.models.audit_log import AuditLog
 from app.models.form import Form, FormStatus
 from app.models.user import User
 from app.schemas.form import FormListResponse, FormResponse, RejectRequest
-from app.tasks.pipeline_tasks import process_form_approved
+from app.tasks.pipeline_tasks import process_form_approved, run_pipeline_on_approval
 
 router = APIRouter(prefix="/validation", tags=["Validación"])
 
@@ -52,8 +52,11 @@ async def get_pending_forms(
     current_user: User = Depends(get_validator_user),
     db: AsyncSession = Depends(get_db),
 ) -> FormListResponse:
-    """Bandeja de formularios pendientes de validación."""
-    query = select(Form).where(Form.estado == FormStatus.pending)
+    """Bandeja de formularios pendientes de validación (excluye los de carga Excel)."""
+    query = select(Form).where(
+        Form.estado == FormStatus.pending,
+        Form.lote_excel_id.is_(None),  # Los de Excel se validan por lote
+    )
 
     if start_date:
         query = query.where(Form.fecha_carga >= datetime.fromisoformat(start_date))
@@ -138,6 +141,13 @@ async def approve_form(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Solo se puede aprobar un formulario en estado 'pending' (actual: {form.estado.value})",
         )
+    # Si el formulario fue cargado por Excel, debe validarse como lote completo
+    if form.lote_excel_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Este formulario fue cargado por Excel y debe validarse como lote completo. "
+                   f"Usa la sección 'Carga Excel' del validador (lote: {form.lote_excel_id[:8]}...).",
+        )
 
     form.estado = FormStatus.approved
     form.validado_por_id = current_user.id
@@ -155,6 +165,7 @@ async def approve_form(
     form_id_str = str(form_id)
     await db.commit()
     process_form_approved.delay(form_id_str)
+    run_pipeline_on_approval.delay(f"form:{form_id_str}")
 
     form = await _load_form(db, form_id)
     return FormResponse.model_validate(form)
@@ -178,6 +189,13 @@ async def reject_form(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Solo se puede rechazar un formulario en estado 'pending' (actual: {form.estado.value})",
+        )
+    # Si el formulario fue cargado por Excel, debe rechazarse como lote completo
+    if form.lote_excel_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Este formulario fue cargado por Excel y debe rechazarse como lote completo. "
+                   f"Usa la sección 'Carga Excel' del validador (lote: {form.lote_excel_id[:8]}...).",
         )
 
     form.estado = FormStatus.rejected
@@ -353,6 +371,7 @@ async def approve_batch(
     # Disparar tarea Celery para cada formulario aprobado
     for fid in approved_ids:
         process_form_approved.delay(fid)
+    run_pipeline_on_approval.delay(f"lote:{lote_id}")
 
     return {
         "ok": True,

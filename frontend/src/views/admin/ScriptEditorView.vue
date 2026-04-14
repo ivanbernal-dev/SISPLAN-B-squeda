@@ -109,30 +109,9 @@
       <!-- Editor + consola ─────────────────────────────────────── -->
       <div class="flex-1 flex flex-col overflow-hidden">
 
-        <!-- Editor de código ─────────────────────────────────── -->
-        <div class="flex-1 overflow-hidden relative bg-[#1e1e1e]">
-          <!-- Números de línea + textarea -->
-          <div class="flex h-full overflow-auto font-mono text-sm leading-6">
-            <!-- Números de línea -->
-            <div
-              class="select-none text-right pr-4 pl-3 pt-4 text-[#858585] bg-[#1e1e1e] border-r border-[#333] flex-shrink-0"
-              aria-hidden="true"
-            >
-              <div v-for="n in lineCount" :key="n" class="leading-6">{{ n }}</div>
-            </div>
-            <!-- Textarea -->
-            <textarea
-              ref="editorRef"
-              v-model="code"
-              class="flex-1 bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm leading-6
-                     p-4 resize-none outline-none border-0 min-w-0 whitespace-pre"
-              spellcheck="false"
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="off"
-              @keydown="handleKeydown"
-            />
-          </div>
+        <!-- Editor de código con CodeMirror ────────────────────── -->
+        <div class="flex-1 overflow-hidden relative bg-[#282c34]">
+          <CodeMirrorEditor v-model="code" />
         </div>
 
         <!-- Consola de salida ─────────────────────────────────── -->
@@ -221,9 +200,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useApi } from '@/composables/useApi'
 import { useNotificationsStore } from '@/stores/notifications'
+import CodeMirrorEditor from '@/components/editor/CodeMirrorEditor.vue'
 
 const { get, post } = useApi()
 const notifications = useNotificationsStore()
@@ -236,7 +216,6 @@ const loadingTables = ref(true)
 const consoleOutput = ref('')
 const consoleHeight = ref(220)
 const confirmProduccion = ref(false)
-const editorRef = ref<HTMLTextAreaElement | null>(null)
 const consoleRef = ref<HTMLPreElement | null>(null)
 
 interface TableInfo { tabla: string; filas: number; tamaño: string }
@@ -244,8 +223,6 @@ const tables = ref<TableInfo[]>([])
 
 interface LastRun { ok: boolean; modo: string; time: string }
 const lastRun = ref<LastRun | null>(null)
-
-const lineCount = computed(() => (code.value.match(/\n/g)?.length ?? 0) + 1)
 
 // ── Cargar datos iniciales ────────────────────────────────────
 onMounted(async () => {
@@ -265,27 +242,8 @@ onMounted(async () => {
 })
 
 // ── Funciones del editor ──────────────────────────────────────
-function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Tab') {
-    e.preventDefault()
-    const textarea = editorRef.value
-    if (!textarea) return
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const spaces = '    '
-    code.value = code.value.substring(0, start) + spaces + code.value.substring(end)
-    nextTick(() => {
-      textarea.selectionStart = textarea.selectionEnd = start + 4
-    })
-  }
-}
-
 function insertTableName(name: string) {
-  const textarea = editorRef.value
-  if (!textarea) return
-  const pos = textarea.selectionStart
-  const insert = `dfs.get('${name}', pd.DataFrame())`
-  code.value = code.value.substring(0, pos) + insert + code.value.substring(pos)
+  code.value += `\ndfs.get('${name}', pd.DataFrame())`
 }
 
 // ── Guardar script ────────────────────────────────────────────

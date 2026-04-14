@@ -1,5 +1,6 @@
 <template>
-  <div class="space-y-6">
+  <div class="min-h-screen bg-gray-50">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
     <!-- Breadcrumb ───────────────────────────────────────────── -->
     <nav class="flex items-center gap-2 text-sm font-barlow text-gray-500 flex-wrap">
@@ -98,6 +99,7 @@
       </RouterLink>
     </div>
 
+  </div>
   </div>
 </template>
 

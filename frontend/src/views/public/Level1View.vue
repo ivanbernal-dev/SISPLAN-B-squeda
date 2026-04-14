@@ -84,10 +84,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import GaugeChart from '@/components/charts/GaugeChart.vue'
+import { useStatsFilterStore } from '@/stores/statsFilter'
 
 interface KpiNivel1 {
   key: string
@@ -99,12 +100,12 @@ interface KpiNivel1 {
 
 const router = useRouter()
 const { get } = useApi()
+const filterStore = useStatsFilterStore()
 
 const loading = ref(true)
 const kpis = ref<KpiNivel1[]>([])
 const updatedAt = ref<string | null>(null)
 
-// Verde para avanzado, amarillo para medio, naranja para bajo
 function gaugeColor(v: number): string {
   if (v >= 70) return '#3e9c45'
   if (v >= 40) return '#f59e0b'
@@ -118,6 +119,8 @@ function navigateToLevel2(kpiKey: string, label: string) {
 async function loadKpis() {
   loading.value = true
   try {
+    // Los KPIs nivel 1 siempre muestran el último valor guardado del pipeline
+    // El filtro de fecha solo afecta la lista de formularios (nivel 3)
     const data = await get<KpiNivel1[]>('/stats/kpis')
     kpis.value = data
     const last = data.find((k) => k.updated_at)?.updated_at

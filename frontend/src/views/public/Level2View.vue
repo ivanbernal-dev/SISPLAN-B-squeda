@@ -111,6 +111,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import GaugeChart from '@/components/charts/GaugeChart.vue'
+import { useStatsFilterStore } from '@/stores/statsFilter'
 
 interface SubKpi {
   key: string
@@ -129,6 +130,7 @@ interface ParentKpi {
 const route = useRoute()
 const router = useRouter()
 const { get } = useApi()
+const filterStore = useStatsFilterStore()
 
 const loading = ref(true)
 const subKpis = ref<SubKpi[]>([])
@@ -167,6 +169,8 @@ function navigateToForms(kpi: SubKpi) {
 async function loadData() {
   loading.value = true
   try {
+    // Los KPIs nivel 2 siempre muestran el último valor guardado del pipeline
+    // El filtro de fecha solo afecta la lista de formularios (nivel 3)
     subKpis.value = await get<SubKpi[]>(`/stats/kpis/${kpiKey.value}`)
     const nivel1 = await get<ParentKpi[]>('/stats/kpis')
     parentKpi.value = nivel1.find((k) => k.key === kpiKey.value) ?? null
