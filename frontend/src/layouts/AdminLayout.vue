@@ -84,8 +84,13 @@
       </header>
 
       <!-- Contenido de la vista -->
-      <main class="flex-1 overflow-y-auto">
-        <RouterView />
+      <main class="flex-1 overflow-hidden flex flex-col">
+        <RouterView v-slot="{ Component, route: r }">
+          <component
+            :is="Component"
+            :class="r.name === 'AdminScriptPipeline' ? 'flex-1 overflow-hidden' : 'flex-1 overflow-y-auto p-6'"
+          />
+        </RouterView>
       </main>
     </div>
   </div>
@@ -101,13 +106,12 @@ import {
   PhUsers,
   PhBuildings,
   PhFileText,
-  PhGitBranch,
   PhClipboardText,
   PhSignOut,
   PhList,
-  PhShareNetwork,
   PhChartBar,
   PhFolderOpen,
+  PhCode,
 } from '@phosphor-icons/vue'
 
 // ─── Nav items ────────────────────────────────────────────
@@ -124,8 +128,7 @@ const navItems: NavItem[] = [
   { label: 'Dependencias', to: '/admin/dependencies',  icon: PhBuildings                   },
   { label: 'Templates',    to: '/admin/templates',     icon: PhFileText                    },
   { label: 'Registros',    to: '/admin/registros',     icon: PhFolderOpen                  },
-  { label: 'Pipelines',       to: '/admin/pipelines',        icon: PhGitBranch                   },
-  { label: 'Editor Visual',   to: '/admin/pipeline-editor',  icon: PhShareNetwork                },
+  { label: 'Script Pipeline',  to: '/admin/script-pipeline',  icon: PhCode                        },
   { label: 'Indicadores',     to: '/admin/indicadores',      icon: PhChartBar                    },
   { label: 'Auditoría',       to: '/admin/audit',            icon: PhClipboardText               },
 ]

@@ -3,6 +3,7 @@ app/models/__init__.py — Registro de todos los modelos SQLAlchemy.
 Importar este paquete asegura que todas las tablas sean conocidas por Base.metadata.
 """
 from app.models.audit_log import AuditLog
+from app.models.kpi import KpiResultado, PipelineScript
 from app.models.dependency import Dependency
 from app.models.fact_stats import FactStats
 from app.models.file import Archivo
@@ -17,6 +18,8 @@ from app.models.user import User, UserRole
 
 __all__ = [
     "AuditLog",
+    "KpiResultado",
+    "PipelineScript",
     "Dependency",
     "FactStats",
     "Archivo",

@@ -62,7 +62,7 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@valkey:6379/0
+      - VALKEY_URL=redis://:${VALKEY_PASSWORD}@valkey:6379/0
       - MINIO_ENDPOINT=minio:9000
     depends_on:
       postgres:
@@ -107,7 +107,7 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@valkey:6379/0
+      - VALKEY_URL=redis://:${VALKEY_PASSWORD}@valkey:6379/0
       - MINIO_ENDPOINT=minio:9000
     depends_on:
       - backend
@@ -134,7 +134,7 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@valkey:6379/0
+      - VALKEY_URL=redis://:${VALKEY_PASSWORD}@valkey:6379/0
     depends_on:
       - celery
       - valkey
@@ -210,16 +210,16 @@ services:
     image: valkey/valkey:7-alpine
     container_name: ubpd_valkey
     restart: unless-stopped
-    command: valkey-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    command: valkey-server --appendonly yes --requirepass ${VALKEY_PASSWORD}
     volumes:
       - valkey_data:/data
     networks:
       - ubpd_network
-    # [DEV] Exponer para valkey-cli / RedisInsight local:
+    # [DEV] Exponer para valkey-cli local:
     # ports:
     #   - "6379:6379"
     healthcheck:
-      test: ["CMD", "valkey-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "valkey-cli", "-a", "${VALKEY_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3

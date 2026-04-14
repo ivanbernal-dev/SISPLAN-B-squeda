@@ -55,7 +55,7 @@ SERVER_IP=192.168.1.100        # IP del servidor en la intranet
 SECRET_KEY=CAMBIAR_POR_CLAVE_LARGA_ALEATORIA
 
 POSTGRES_PASSWORD=contraseña_segura
-REDIS_PASSWORD=contraseña_segura      # usada por Valkey
+VALKEY_PASSWORD=contraseña_segura
 MINIO_ROOT_PASSWORD=min8chars
 
 INITIAL_ADMIN_USERNAME=admin

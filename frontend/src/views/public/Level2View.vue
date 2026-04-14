@@ -1,133 +1,107 @@
 <template>
-  <div class="space-y-8">
-    <!-- Breadcrumb -->
-    <nav class="flex items-center gap-2 text-sm font-barlow text-gray-500" aria-label="Navegación">
-      <RouterLink to="/estadisticas" class="hover:text-ubpd-teal transition-colors">
-        Estadísticas
-      </RouterLink>
-      <span aria-hidden="true">›</span>
-      <span class="text-ubpd-gris font-semibold">{{ indicadorNombre || 'Indicador' }}</span>
-    </nav>
+  <div class="min-h-screen bg-gray-50">
 
-    <!-- Page header -->
-    <div>
-      <h1 class="text-2xl font-bold font-montserrat text-ubpd-gris">
-        {{ indicadorNombre || 'Cargando...' }}
-      </h1>
-      <p class="text-sm font-barlow text-gray-500 mt-0.5">
-        Desagregación por formulario — {{ statsFilter.startDate }} a {{ statsFilter.endDate }}
-      </p>
-    </div>
+    <!-- Encabezado con breadcrumb ────────────────────────────────── -->
+    <div class="bg-white border-b border-gray-100 shadow-sm">
+      <div class="max-w-6xl mx-auto px-6 py-6">
+        <nav class="flex items-center gap-2 text-sm font-barlow text-gray-400 mb-4">
+          <RouterLink to="/estadisticas" class="hover:text-ubpd-teal transition-colors">
+            Estadísticas
+          </RouterLink>
+          <span>›</span>
+          <span class="text-ubpd-gris font-semibold">{{ kpiLabel }}</span>
+        </nav>
 
-    <!-- Date filter bar (same as Level1) -->
-    <div class="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-center gap-4 shadow-sm">
-      <span class="text-sm font-semibold font-barlow text-gray-600">Período:</span>
-      <div class="flex items-center gap-2">
-        <label class="text-xs font-barlow text-gray-500">Desde</label>
-        <input
-          type="date"
-          :value="statsFilter.startDate"
-          class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-barlow focus:outline-none focus:border-ubpd-verde focus:ring-2 focus:ring-teal-100"
-          @change="onStartDateChange"
-        />
-      </div>
-      <div class="flex items-center gap-2">
-        <label class="text-xs font-barlow text-gray-500">Hasta</label>
-        <input
-          type="date"
-          :value="statsFilter.endDate"
-          class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-barlow focus:outline-none focus:border-ubpd-verde focus:ring-2 focus:ring-teal-100"
-          @change="onEndDateChange"
-        />
-      </div>
-      <div class="flex flex-wrap gap-2 ml-auto">
-        <button
-          v-for="preset in PRESETS"
-          :key="preset.key"
-          type="button"
-          class="px-3 py-1.5 text-xs font-semibold font-barlow rounded-lg border transition-colors"
-          :class="activePreset === preset.key
-            ? 'bg-ubpd-teal text-white border-ubpd-teal'
-            : 'border-gray-300 text-gray-600 hover:border-ubpd-teal hover:text-ubpd-teal'"
-          @click="applyPreset(preset.key)"
-        >
-          {{ preset.label }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Total badge -->
-    <p v-if="!loading && templates.length > 0" class="text-sm font-barlow text-gray-600">
-      <span class="font-semibold text-ubpd-gris">{{ totalFormularios }}</span>
-      formularios encontrados en este período
-    </p>
-
-    <!-- Nivel 2 sub-groups (if available) -->
-    <div v-if="!loading && nivel2Groups.length > 0" class="space-y-6">
-      <div
-        v-for="group in nivel2Groups"
-        :key="group.id"
-        class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-4"
-      >
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-base font-semibold font-montserrat text-ubpd-gris">{{ group.nombre }}</h2>
-          <div class="flex items-center gap-2">
-            <!-- Gauge for nivel2 group -->
-            <div class="flex flex-col items-end">
-              <span class="text-2xl font-bold font-montserrat" :class="scoreColor(group.completitud)">
-                {{ Math.round(group.completitud) }}%
-              </span>
-              <span class="text-xs font-barlow text-gray-400">{{ group.total_formularios }} formularios</span>
-            </div>
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <!-- Gauge resumen padre -->
+          <div v-if="parentKpi" class="flex flex-col items-center bg-gray-50 rounded-2xl border border-gray-100 px-6 pt-4 pb-3 shrink-0">
+            <GaugeChart
+              :value="parentKpi.valor"
+              :color="gaugeColor(parentKpi.valor)"
+              size="sm"
+            />
+            <p class="text-xs font-barlow text-gray-400 mt-1 text-center">Avance general</p>
+          </div>
+          <!-- Título -->
+          <div class="flex flex-col justify-center">
+            <h1 class="text-2xl font-bold font-montserrat text-ubpd-gris leading-snug">
+              {{ kpiLabel }}
+            </h1>
+            <p class="text-sm font-barlow text-gray-500 mt-1">
+              Sub-indicadores del indicador seleccionado
+            </p>
           </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <IndicatorCard
-            v-for="tmpl in group.templates"
-            :key="tmpl.template_id"
-            :indicador-id="tmpl.template_id"
-            :nombre="tmpl.nombre"
-            :completitud="tmpl.completitud"
-            :total-formularios="tmpl.total_formularios"
-            variant="secondary"
-            size="sm"
-            @click="navigateToLevel3"
-          />
-        </div>
       </div>
     </div>
 
-    <!-- Gauge grid (no nivel2 grouping) -->
-    <div v-else>
-      <!-- Skeleton -->
+    <!-- Grilla de sub-KPIs ───────────────────────────────────────── -->
+    <div class="max-w-6xl mx-auto px-6 py-10">
+
+      <!-- Loading -->
       <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
-          v-for="n in 4"
-          :key="n"
-          class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col items-center gap-3 animate-pulse"
+          v-for="n in 5" :key="n"
+          class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-center gap-3 animate-pulse"
         >
-          <div class="w-48 h-44 bg-gray-200 rounded" />
           <div class="h-4 bg-gray-200 rounded w-3/4" />
+          <div class="w-44 h-28 bg-gray-100 rounded-full mt-2" />
+          <div class="h-3 bg-gray-100 rounded w-1/2" />
         </div>
       </div>
 
-      <div v-else-if="templates.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <IndicatorCard
-          v-for="tmpl in templates"
-          :key="tmpl.template_id"
-          :indicador-id="tmpl.template_id"
-          :nombre="tmpl.nombre"
-          :completitud="tmpl.completitud"
-          :total-formularios="tmpl.total_formularios"
-          variant="secondary"
-          size="md"
-          @click="navigateToLevel3"
-        />
+      <!-- Gauges nivel 2 -->
+      <div v-else-if="subKpis.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+          v-for="(kpi, idx) in subKpis"
+          :key="kpi.key"
+          class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md
+                 transition-all duration-200 cursor-pointer group flex flex-col items-center
+                 px-6 pt-6 pb-5"
+          @click="navigateToForms(kpi)"
+          role="button"
+          :aria-label="`Ver formularios de ${kpi.label}`"
+        >
+          <!-- Título -->
+          <h3 class="text-sm font-semibold font-montserrat text-ubpd-gris text-center leading-snug min-h-[2.5rem] flex items-center">
+            <span class="text-ubpd-teal font-bold mr-1.5">{{ idx + 1 }}.</span>
+            {{ kpi.label }}
+          </h3>
+
+          <!-- Gauge -->
+          <div class="w-full flex justify-center mt-1">
+            <GaugeChart
+              :value="kpi.valor"
+              :color="gaugeColor(kpi.valor)"
+              size="md"
+            />
+          </div>
+
+          <!-- Badge estado -->
+          <span
+            class="mt-1 text-xs font-cuerpo font-semibold px-2.5 py-0.5 rounded-full"
+            :class="scoreClass(kpi.valor)"
+          >
+            {{ scoreLabel(kpi.valor) }}
+          </span>
+
+          <!-- Acción -->
+          <p class="mt-3 text-xs font-cuerpo font-semibold text-ubpd-teal opacity-0
+                     group-hover:opacity-100 transition-opacity">
+            Ver registros →
+          </p>
+        </div>
       </div>
 
-      <div v-else class="text-center py-16 text-gray-400">
-        <p class="text-base font-barlow">No hay datos para este indicador en el período seleccionado.</p>
+      <!-- Sin datos -->
+      <div v-else class="flex flex-col items-center justify-center py-24 text-gray-400">
+        <svg class="w-14 h-14 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <p class="text-base font-barlow">No hay sub-indicadores para este KPI.</p>
       </div>
+
     </div>
   </div>
 </template>
@@ -136,137 +110,73 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useApi } from '@/composables/useApi'
-import { useStatsFilter } from '@/stores/statsFilter'
-import IndicatorCard from '@/components/charts/IndicatorCard.vue'
+import GaugeChart from '@/components/charts/GaugeChart.vue'
 
-interface TemplateStats {
-  template_id: string
-  nombre: string
-  completitud: number
-  total_formularios: number
-  nivel2_id?: number
-  nivel2_nombre?: string
+interface SubKpi {
+  key: string
+  label: string
+  valor: number
+  nivel1_key: string | null
+  updated_at: string | null
 }
 
-interface Nivel2Group {
-  id: number | string
-  nombre: string
-  completitud: number
-  total_formularios: number
-  templates: TemplateStats[]
+interface ParentKpi {
+  key: string
+  label: string
+  valor: number
 }
-
-type PresetKey = 'this_month' | 'last_quarter' | 'this_year'
-
-const PRESETS: { key: PresetKey; label: string }[] = [
-  { key: 'this_month', label: 'Este mes' },
-  { key: 'last_quarter', label: 'Último trimestre' },
-  { key: 'this_year', label: 'Año actual' },
-]
 
 const route = useRoute()
 const router = useRouter()
 const { get } = useApi()
-const statsFilter = useStatsFilter()
 
 const loading = ref(true)
-const templates = ref<TemplateStats[]>([])
-const indicadorNombre = ref('')
-const activePreset = ref<PresetKey | null>(null)
+const subKpis = ref<SubKpi[]>([])
+const parentKpi = ref<ParentKpi | null>(null)
 
-const indicadorId = computed(() => route.params.indicador_id as string)
-
-const totalFormularios = computed(() =>
-  templates.value.reduce((sum, t) => sum + t.total_formularios, 0),
+const kpiKey = computed(() => route.params.indicadorId as string)
+const kpiLabel = computed(() =>
+  parentKpi.value?.label ?? (route.query.label as string) ?? kpiKey.value
 )
 
-// Group templates by nivel2 when available
-const nivel2Groups = computed((): Nivel2Group[] => {
-  const templatesWithNivel2 = templates.value.filter((t) => t.nivel2_id)
-  if (templatesWithNivel2.length === 0) return []
-
-  const groups: Map<number, Nivel2Group> = new Map()
-  for (const tmpl of templatesWithNivel2) {
-    if (!tmpl.nivel2_id) continue
-    if (!groups.has(tmpl.nivel2_id)) {
-      groups.set(tmpl.nivel2_id, {
-        id: tmpl.nivel2_id,
-        nombre: tmpl.nivel2_nombre ?? `Nivel 2 — ${tmpl.nivel2_id}`,
-        completitud: 0,
-        total_formularios: 0,
-        templates: [],
-      })
-    }
-    const g = groups.get(tmpl.nivel2_id)!
-    g.templates.push(tmpl)
-    g.total_formularios += tmpl.total_formularios
-  }
-  // Compute completitud as average
-  for (const g of groups.values()) {
-    if (g.templates.length > 0) {
-      g.completitud = g.templates.reduce((s, t) => s + t.completitud, 0) / g.templates.length
-    }
-  }
-  return Array.from(groups.values())
-})
-
-function scoreColor(score: number): string {
-  if (score >= 70) return 'text-ubpd-verde'
-  if (score >= 30) return 'text-ubpd-lila'
-  return 'text-ubpd-naranja'
+function gaugeColor(v: number): string {
+  if (v >= 70) return '#3e9c45'
+  if (v >= 40) return '#f59e0b'
+  return '#ef6c00'
 }
 
-function onStartDateChange(e: Event) {
-  statsFilter.setDates((e.target as HTMLInputElement).value, statsFilter.endDate)
-  activePreset.value = null
-  loadStats()
+function scoreClass(v: number) {
+  if (v >= 70) return 'bg-green-50 text-green-700'
+  if (v >= 40) return 'bg-amber-50 text-amber-700'
+  return 'bg-orange-50 text-orange-700'
 }
 
-function onEndDateChange(e: Event) {
-  statsFilter.setDates(statsFilter.startDate, (e.target as HTMLInputElement).value)
-  activePreset.value = null
-  loadStats()
+function scoreLabel(v: number) {
+  if (v >= 70) return 'Avanzado'
+  if (v >= 40) return 'En progreso'
+  return 'Inicial'
 }
 
-function applyPreset(preset: PresetKey) {
-  statsFilter.setPreset(preset)
-  activePreset.value = preset
-  loadStats()
-}
-
-function navigateToLevel3(templateId: string | number) {
+function navigateToForms(kpi: SubKpi) {
   router.push({
-    path: `/estadisticas/${indicadorId.value}/${templateId}`,
-    query: statsFilter.queryParams,
+    path: `/estadisticas/${kpiKey.value}/forms/${kpi.key}`,
+    query: { kpiLabel: kpiLabel.value, subLabel: kpi.label },
   })
 }
 
-async function loadStats() {
+async function loadData() {
   loading.value = true
   try {
-    const data = await get<TemplateStats[]>('/stats/by-template', {
-      params: {
-        indicador_id: indicadorId.value,
-        ...statsFilter.queryParams,
-      },
-    })
-    templates.value = data
-    // Set indicador name from route state or first result meta
-    if (route.query.nombre) {
-      indicadorNombre.value = String(route.query.nombre)
-    }
+    subKpis.value = await get<SubKpi[]>(`/stats/kpis/${kpiKey.value}`)
+    const nivel1 = await get<ParentKpi[]>('/stats/kpis')
+    parentKpi.value = nivel1.find((k) => k.key === kpiKey.value) ?? null
   } catch {
-    templates.value = []
+    subKpis.value = []
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  // Sync URL dates to store if present
-  if (route.query.start_date) statsFilter.setDates(String(route.query.start_date), String(route.query.end_date ?? statsFilter.endDate))
-  loadStats()
-})
-
-watch(indicadorId, loadStats)
+onMounted(loadData)
+watch(kpiKey, loadData)
 </script>

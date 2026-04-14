@@ -44,12 +44,17 @@ def _get_fields(template: Template) -> list[dict]:
     """
     cfg = template.configuracion_campos or {}
     fields = cfg.get("fields") or cfg.get("campos") or []
-    return [f for f in fields if f.get("type", f.get("tipo", "text")) != "computed"]
+    return [f for f in fields if f.get("type", f.get("tipo", "text")) not in ("computed", "archivos", "file")]
 
 
 def _field_type(f: dict) -> str:
     """Obtiene el tipo normalizado del campo (acepta 'type' o 'tipo')."""
     return str(f.get("type", f.get("tipo", "text"))).lower()
+
+
+def _field_options(f: dict) -> list:
+    """Obtiene las opciones de un campo select (acepta 'options' u 'opciones')."""
+    return f.get("options") or f.get("opciones") or []
 
 
 def _field_label(f: dict) -> str:
@@ -160,7 +165,7 @@ async def download_excel_example(
         elif ft == "date":
             hint = "Fecha (AAAA-MM-DD)"
         elif ft == "select":
-            opts = f.get("options") or []
+            opts = _field_options(f)
             opts_str = " / ".join(str(o.get("value", o) if isinstance(o, dict) else o) for o in opts[:5])
             hint = f"Opciones: {opts_str}" if opts_str else "Seleccionar"
         elif ft == "textarea":
@@ -185,7 +190,7 @@ async def download_excel_example(
         elif ft == "number":
             sample_row.append(0)
         elif ft == "select":
-            opts = f.get("options") or []
+            opts = _field_options(f)
             if opts:
                 first = opts[0]
                 sample_row.append(first.get("value", first) if isinstance(first, dict) else first)
@@ -266,7 +271,7 @@ async def download_excel_example(
         cell.alignment = center_align
 
     for f in export_cols:
-        opts = f.get("options") or []
+        opts = _field_options(f)
         opts_str = ", ".join(str(o.get("value", o) if isinstance(o, dict) else o) for o in opts)
         ws_ref.append([
             _field_label(f),
@@ -389,14 +394,25 @@ async def upload_excel_forms(
         h = header.strip()
         if not h:
             continue
-        # informe_cualitativo puede venir por label exacto o por name
-        if h == INFORME_LABEL or h == "informe_cualitativo":
+        # Detectar informe_cualitativo por label exacto, por name, o por campo del template
+        mapped_f = field_by_label.get(h) or field_by_name.get(h)
+        is_informe = (
+            h == INFORME_LABEL
+            or h.lower() == "informe_cualitativo"
+            or (mapped_f is not None and _field_name(mapped_f) == "informe_cualitativo")
+        )
+        if is_informe:
             informe_col = col_idx
             continue
         if h in field_by_label:
             col_map[col_idx] = field_by_label[h]
         elif h in field_by_name:
             col_map[col_idx] = field_by_name[h]
+
+    # ¿El template tiene informe_cualitativo definido como campo?
+    template_has_informe_field = any(
+        _field_name(f) == "informe_cualitativo" for f in all_fields
+    )
 
     # ── Validar todas las filas antes de crear nada ───────────────────────
     validation_errors: list[dict] = []
@@ -427,11 +443,11 @@ async def upload_excel_forms(
 
         row_errors: list[str] = []
 
-        # Validar informe_cualitativo
+        # Validar informe_cualitativo (solo obligatorio si NO está definido como campo del template)
         informe_val = ""
         if informe_col is not None:
             informe_val = _str_val(_cell_val(row, informe_col))
-        if not informe_val:
+        if not informe_val and not template_has_informe_field:
             row_errors.append("'Informe cualitativo de la búsqueda' es obligatorio")
 
         # Validar campos mapeados
@@ -485,7 +501,7 @@ async def upload_excel_forms(
 
             # Tipo select
             elif ftype == "select":
-                opts = field_def.get("options") or []
+                opts = _field_options(field_def)
                 valid_values = set()
                 for o in opts:
                     if isinstance(o, dict):
@@ -520,6 +536,7 @@ async def upload_excel_forms(
         )
 
     # ── Crear formularios (todas las filas son válidas) ───────────────────
+    lote_id = str(uuid.uuid4())
     created_ids: list[str] = []
 
     for row in data_rows:
@@ -598,8 +615,9 @@ async def upload_excel_forms(
             datos_dinamicos=datos_dinamicos,
             informe_cualitativo=informe_val or None,
             fecha_usuario=fecha_usuario or date.today(),
-            estado=FormStatus.draft,
+            estado=FormStatus.pending,
             cargado_via_excel=True,
+            lote_excel_id=lote_id,
         )
         db.add(form)
         await db.flush()
@@ -615,8 +633,9 @@ async def upload_excel_forms(
 
     return {
         "created": len(created_ids),
+        "lote_id": lote_id,
         "form_ids": created_ids,
-        "mensaje": f"Se crearon {len(created_ids)} formulario(s) en estado borrador correctamente.",
+        "mensaje": f"Se cargaron {len(created_ids)} registro(s) correctamente y están en revisión. El validador revisará el lote completo.",
     }
 
 

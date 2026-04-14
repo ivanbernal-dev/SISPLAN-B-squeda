@@ -80,6 +80,7 @@ class Form(Base):
     )
     comentario_rechazo: Mapped[str | None] = mapped_column(Text, nullable=True)
     cargado_via_excel: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    lote_excel_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     validado_por_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("usuarios.id", ondelete="SET NULL"),

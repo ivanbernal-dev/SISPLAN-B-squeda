@@ -59,6 +59,18 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: false },
       },
       {
+        path: ':kpiKey/forms/:subKpiKey',
+        name: 'KpiLevel3',
+        component: () => import('../views/public/Level3KpiView.vue'),
+        meta: { requiresAuth: false },
+      },
+      {
+        path: ':kpiKey/forms/:subKpiKey/:formId',
+        name: 'KpiFormDetail',
+        component: () => import('../views/public/KpiFormDetailView.vue'),
+        meta: { requiresAuth: false },
+      },
+      {
         path: ':indicadorId/:templateId',
         name: 'StatsLevel3',
         component: () => import('../views/public/Level3View.vue'),
@@ -140,6 +152,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, roles: ['admin'] },
       },
       {
+        path: 'script-pipeline',
+        name: 'AdminScriptPipeline',
+        component: () => import('../views/admin/ScriptEditorView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
+      {
         path: 'pipelines',
         name: 'AdminPipelines',
         component: () => import('../views/admin/PipelinesView.vue'),
@@ -210,6 +228,12 @@ const routes: RouteRecordRaw[] = [
         path: 'review/:id',
         name: 'ValidatorReview',
         component: () => import('../views/validator/ReviewView.vue'),
+        meta: { requiresAuth: true, roles: ['validator'] },
+      },
+      {
+        path: 'review-batch/:loteId',
+        name: 'ValidatorBatchReview',
+        component: () => import('../views/validator/BatchReviewView.vue'),
         meta: { requiresAuth: true, roles: ['validator'] },
       },
       {

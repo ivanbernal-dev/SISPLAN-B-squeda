@@ -1,11 +1,10 @@
 <template>
   <div
-    :style="{ width: sizeMap[size].width, height: sizeMap[size].height }"
+    class="relative flex items-center justify-center"
+    :style="{ width: sizeMap[size].container, height: sizeMap[size].container }"
     ref="chartEl"
-    class="cursor-pointer"
-    @click="emit('click', props.value)"
     role="img"
-    :aria-label="`${title}: ${value}% de completitud`"
+    :aria-label="`${title}: ${value}%`"
   />
 </template>
 
@@ -19,107 +18,71 @@ echarts.use([EGaugeChart, CanvasRenderer])
 
 interface Props {
   value: number
-  title: string
+  title?: string
   subtitle?: string
   size?: 'sm' | 'md' | 'lg'
-  variant?: 'primary' | 'secondary'
+  color?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'md',
-  variant: 'primary',
+  color: '#3e9c45',
 })
 
-const emit = defineEmits<{
-  click: [value: number]
-}>()
+const emit = defineEmits<{ click: [value: number] }>()
 
 const chartEl = ref<HTMLElement | null>(null)
 let chart: echarts.ECharts | null = null
 
 const sizeMap = {
-  sm: { width: '180px', height: '160px' },
-  md: { width: '240px', height: '210px' },
-  lg: { width: '320px', height: '280px' },
-}
-
-const colorScales = {
-  primary: [
-    [0.3, '#FF6900'],
-    [0.7, '#A97CC9'],
-    [1, '#52ABAB'],
-  ] as [number, string][],
-  secondary: [
-    [0.4, '#FF6900'],
-    [0.75, '#3E818F'],
-    [1, '#52ABAB'],
-  ] as [number, string][],
+  sm: { container: '160px', fontSize: 20, trackWidth: 14 },
+  md: { container: '200px', fontSize: 28, trackWidth: 18 },
+  lg: { container: '260px', fontSize: 36, trackWidth: 22 },
 }
 
 function buildOption() {
-  const colors = colorScales[props.variant]
-  const subtitleText = props.subtitle ? `\n${props.subtitle}` : ''
-
+  const s = sizeMap[props.size]
   return {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     series: [
       {
         type: 'gauge',
-        startAngle: 200,
-        endAngle: -20,
+        startAngle: 180,
+        endAngle: 0,
         min: 0,
         max: 100,
-        splitNumber: 5,
-        animationDuration: 1500,
+        radius: '90%',
+        center: ['50%', '70%'],
+        animationDuration: 1200,
         animationEasing: 'cubicOut',
+        progress: {
+          show: true,
+          roundCap: true,
+          width: s.trackWidth,
+          itemStyle: { color: props.color },
+        },
         axisLine: {
+          roundCap: true,
           lineStyle: {
-            width: props.size === 'sm' ? 12 : props.size === 'lg' ? 22 : 16,
-            color: colors,
+            width: s.trackWidth,
+            color: [[1, '#E8EDF0']],
           },
         },
-        pointer: {
-          show: true,
-          length: '65%',
-          width: props.size === 'sm' ? 4 : 6,
-          itemStyle: {
-            color: '#323232',
-          },
-        },
-        axisTick: {
-          show: false,
-        },
-        splitLine: {
-          show: false,
-        },
-        axisLabel: {
-          show: false,
-        },
-        title: {
-          show: true,
-          offsetCenter: [0, '75%'],
-          fontFamily: 'Montserrat, sans-serif',
-          fontSize: props.size === 'sm' ? 10 : props.size === 'lg' ? 14 : 12,
-          fontWeight: 600,
-          color: '#323232',
-          overflow: 'truncate',
-          width: props.size === 'sm' ? 140 : props.size === 'lg' ? 260 : 190,
-        },
+        pointer: { show: false },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        title: { show: false },
         detail: {
           show: true,
-          offsetCenter: [0, '35%'],
-          formatter: '{value}%',
+          offsetCenter: [0, '-15%'],
+          formatter: (val: number) => `${val.toLocaleString('es-CO', { maximumFractionDigits: 1 })}%`,
           fontFamily: 'Barlow, sans-serif',
-          fontSize: props.size === 'sm' ? 18 : props.size === 'lg' ? 28 : 22,
+          fontSize: s.fontSize,
           fontWeight: 700,
-          color: '#323232',
+          color: '#2D3748',
         },
-        data: [
-          {
-            value: Math.round(props.value),
-            name: props.title + subtitleText,
-          },
-        ],
+        data: [{ value: props.value }],
       },
     ],
   }
@@ -132,19 +95,19 @@ function initChart() {
   chart.on('click', () => emit('click', props.value))
 }
 
-function updateChart() {
-  chart?.setOption(buildOption(), { notMerge: false })
-}
+const resizeHandler = () => chart?.resize()
 
 onMounted(() => {
   initChart()
-  window.addEventListener('resize', () => chart?.resize())
+  window.addEventListener('resize', resizeHandler)
 })
 
 onUnmounted(() => {
   chart?.dispose()
-  window.removeEventListener('resize', () => chart?.resize())
+  window.removeEventListener('resize', resizeHandler)
 })
 
-watch(() => [props.value, props.title, props.subtitle, props.variant], updateChart)
+watch(() => [props.value, props.color, props.size], () => {
+  chart?.setOption(buildOption(), { notMerge: false })
+})
 </script>

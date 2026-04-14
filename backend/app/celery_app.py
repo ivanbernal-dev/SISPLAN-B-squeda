@@ -11,8 +11,8 @@ from app.config import settings
 
 celery_app = Celery(
     "ubpd",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL,
+    broker=settings.VALKEY_URL,
+    backend=settings.VALKEY_URL,
     include=["app.tasks.pipeline_tasks"],
 )
 

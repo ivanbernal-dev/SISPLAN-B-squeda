@@ -29,8 +29,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # ── Valkey (broker Celery — usa protocolo redis://) ───────────────────────
-    REDIS_URL: str = "redis://localhost:6379/0"
+    # ── Valkey (broker Celery) ─────────────────────────────────────────────────
+    VALKEY_URL: str = "redis://localhost:6379/0"
 
     # ── MinIO ──────────────────────────────────────────────────
     MINIO_ENDPOINT: str = "localhost:9000"
