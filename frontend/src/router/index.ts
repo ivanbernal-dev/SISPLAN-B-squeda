@@ -85,6 +85,14 @@ const routes: RouteRecordRaw[] = [
     ],
   },
 
+  // ── Dashboard BI Público (sin auth) ────────────────────
+  {
+    path: '/bi',
+    name: 'BiDashboardPublic',
+    component: () => import('../views/public/BiDashboardView.vue'),
+    meta: { requiresAuth: false },
+  },
+
   // ── Rutas Admin ────────────────────────────────────────
   {
     path: '/admin',
@@ -179,6 +187,12 @@ const routes: RouteRecordRaw[] = [
         path: 'indicadores',
         name: 'IndicadoresAdmin',
         component: () => import('../views/admin/IndicadoresView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
+      {
+        path: 'bi-dashboard',
+        name: 'AdminBiDashboard',
+        component: () => import('../views/admin/BiDashboardView.vue'),
         meta: { requiresAuth: true, roles: ['admin'] },
       },
       {

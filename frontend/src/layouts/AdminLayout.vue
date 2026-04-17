@@ -110,6 +110,7 @@ import {
   PhSignOut,
   PhList,
   PhChartBar,
+  PhChartLineUp,
   PhFolderOpen,
   PhCode,
 } from '@phosphor-icons/vue'
@@ -130,6 +131,7 @@ const navItems: NavItem[] = [
   { label: 'Registros',    to: '/admin/registros',     icon: PhFolderOpen                  },
   { label: 'Script Pipeline',  to: '/admin/script-pipeline',  icon: PhCode                        },
   { label: 'Indicadores',     to: '/admin/indicadores',      icon: PhChartBar                    },
+  { label: 'Dashboard BI',    to: '/admin/bi-dashboard',     icon: PhChartLineUp                 },
   { label: 'Auditoría',       to: '/admin/audit',            icon: PhClipboardText               },
 ]
 

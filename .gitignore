@@ -41,3 +41,6 @@ logs/
 
 # Wheels Python (vendor)
 vendor/
+
+# Referencias BI (archivos locales grandes)
+referencias_BI/

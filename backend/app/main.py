@@ -146,6 +146,8 @@ from app.routers import indicadores, pipeline_definitions, forms_excel
 from app.routers.script_pipeline import admin_router as script_admin_router
 from app.routers.script_pipeline import public_router as script_public_router
 from app.routers import test_data as test_data_router
+from app.routers.bi_dashboard import admin_router as bi_admin_router
+from app.routers.bi_dashboard import public_router as bi_public_router
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
@@ -160,6 +162,8 @@ app.include_router(forms_excel.router, prefix="/api")
 app.include_router(script_admin_router, prefix="/api")
 app.include_router(script_public_router, prefix="/api")
 app.include_router(test_data_router.router, prefix="/api")
+app.include_router(bi_admin_router, prefix="/api")
+app.include_router(bi_public_router, prefix="/api")
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────

@@ -58,6 +58,7 @@ async def init_db() -> None:
     # Importar todos los modelos para que Base los registre
     from app.models import (  # noqa: F401
         audit_log,
+        bi_data,
         dependency,
         fact_stats,
         file,
