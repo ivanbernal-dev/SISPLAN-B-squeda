@@ -100,8 +100,88 @@
             </span>
           </div>
 
-          <!-- Indicador clickable -->
-          <div class="mt-3 flex items-center justify-end">
+          <!-- Acciones admin (solo aprobados) + Indicador clickable -->
+          <div class="mt-3 flex items-center justify-between gap-2">
+            <div v-if="isAdmin" class="flex items-center gap-1.5 flex-wrap" @click.stop>
+              <button
+                type="button"
+                :disabled="downloadingKey === tmpl.id + ':excel'"
+                @click.stop="downloadTemplateForms(tmpl, 'excel')"
+                class="flex items-center gap-1 text-[11px] font-cuerpo font-medium
+                       border border-ubpd-verde/50 text-ubpd-verde rounded-lg px-2 py-1
+                       hover:bg-ubpd-verde/10 transition disabled:opacity-50"
+                title="Descargar Excel con los formularios APROBADOS"
+              >
+                <svg v-if="downloadingKey !== tmpl.id + ':excel'" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 17v-4a2 2 0 012-2h2a2 2 0 012 2v4M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <svg v-else class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25" />
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Excel
+              </button>
+              <button
+                type="button"
+                :disabled="downloadingKey === tmpl.id + ':zip'"
+                @click.stop="downloadTemplateForms(tmpl, 'zip')"
+                class="flex items-center gap-1 text-[11px] font-cuerpo font-medium
+                       border border-ubpd-teal/50 text-ubpd-teal rounded-lg px-2 py-1
+                       hover:bg-teal-50 transition disabled:opacity-50"
+                title="Descargar ZIP (aprobados) con evidencias por formulario"
+              >
+                <svg v-if="downloadingKey !== tmpl.id + ':zip'" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <svg v-else class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25" />
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                ZIP
+              </button>
+              <button
+                type="button"
+                :disabled="templateCount(tmpl.id).total === 0"
+                @click.stop="confirmDeleteRegistros(tmpl)"
+                class="flex items-center gap-1 text-[11px] font-cuerpo font-medium
+                       border rounded-lg px-2 py-1 transition"
+                :class="templateCount(tmpl.id).total === 0
+                  ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                  : 'border-red-300 text-red-600 hover:bg-red-50'"
+                :title="templateCount(tmpl.id).total === 0
+                  ? 'No hay registros que vaciar'
+                  : `Eliminar los ${templateCount(tmpl.id).total} registro(s) de este template`"
+              >
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a2 2 0 012-2h2a2 2 0 012 2v3" />
+                </svg>
+                Vaciar
+                <span v-if="templateCount(tmpl.id).total > 0" class="ml-0.5">({{ templateCount(tmpl.id).total }})</span>
+              </button>
+              <button
+                type="button"
+                :disabled="templateCount(tmpl.id).total > 0"
+                @click.stop="confirmDeleteTemplate(tmpl)"
+                class="flex items-center gap-1 text-[11px] font-cuerpo font-medium
+                       rounded-lg px-2 py-1 transition"
+                :class="templateCount(tmpl.id).total > 0
+                  ? 'border border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50'
+                  : 'border border-red-500 text-white bg-red-500 hover:bg-red-600'"
+                :title="templateCount(tmpl.id).total > 0
+                  ? `Primero vacía los ${templateCount(tmpl.id).total} registro(s) del template`
+                  : 'Eliminar el template'"
+              >
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Borrar template
+              </button>
+            </div>
+            <span v-else />
+
             <span class="font-cuerpo text-xs text-ubpd-teal opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
               Ver registros
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -156,18 +236,63 @@
           </p>
         </div>
 
-        <!-- Botón Nuevo Registro (solo dependency_user) -->
-        <button
-          v-if="isDependencyUser"
-          @click="goToNewForm"
-          class="inline-flex items-center gap-2 bg-ubpd-teal text-white font-cuerpo font-semibold text-sm
-                 rounded-xl px-5 py-2.5 hover:bg-[#346d7a] transition flex-shrink-0"
-        >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo Registro
-        </button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Descargas consolidadas (solo admin) -->
+          <button
+            v-if="isAdmin && selectedTemplate"
+            type="button"
+            :disabled="downloadingKey === selectedTemplate.id + ':excel'"
+            @click="downloadTemplateForms(selectedTemplate, 'excel')"
+            class="inline-flex items-center gap-2 border border-ubpd-verde text-ubpd-verde
+                   font-cuerpo font-semibold text-sm rounded-xl px-4 py-2.5
+                   hover:bg-ubpd-verde/10 transition disabled:opacity-50"
+            title="Descargar Excel con todos los formularios respondidos"
+          >
+            <svg v-if="downloadingKey !== selectedTemplate.id + ':excel'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 17v-4a2 2 0 012-2h2a2 2 0 012 2v4M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25" />
+              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Descargar Excel
+          </button>
+
+          <button
+            v-if="isAdmin && selectedTemplate"
+            type="button"
+            :disabled="downloadingKey === selectedTemplate.id + ':zip'"
+            @click="downloadTemplateForms(selectedTemplate, 'zip')"
+            class="inline-flex items-center gap-2 border border-ubpd-teal text-ubpd-teal
+                   font-cuerpo font-semibold text-sm rounded-xl px-4 py-2.5
+                   hover:bg-teal-50 transition disabled:opacity-50"
+            title="Descargar ZIP con evidencias agrupadas por formulario"
+          >
+            <svg v-if="downloadingKey !== selectedTemplate.id + ':zip'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25" />
+              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Descargar ZIP
+          </button>
+
+          <!-- Botón Nuevo Registro (solo dependency_user) -->
+          <button
+            v-if="isDependencyUser"
+            @click="goToNewForm"
+            class="inline-flex items-center gap-2 bg-ubpd-teal text-white font-cuerpo font-semibold text-sm
+                   rounded-xl px-5 py-2.5 hover:bg-[#346d7a] transition flex-shrink-0"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo Registro
+          </button>
+        </div>
       </div>
 
       <!-- Filtro de estado -->
@@ -419,9 +544,124 @@ const statusFilter = ref('')
 // ─── Computed ─────────────────────────────────────────────────────────────────
 
 const isDependencyUser = computed(() => authStore.user?.role === 'dependency_user')
+const isAdmin = computed(() => authStore.user?.role === 'admin')
 const isValidatorOrAdmin = computed(() =>
   authStore.user?.role === 'validator' || authStore.user?.role === 'admin',
 )
+
+// ── Conteos por template (admin) para habilitar acciones destructivas ─────
+interface TemplateCount {
+  total: number
+  approved: number
+  pending: number
+  draft: number
+  rejected: number
+}
+const templateCounts = ref<Record<string, TemplateCount>>({})
+
+function templateCount(id: string): TemplateCount {
+  return templateCounts.value[id] || { total: 0, approved: 0, pending: 0, draft: 0, rejected: 0 }
+}
+
+// ── Descarga consolidada por template (admin) ─────────────────────────────
+const downloadingKey = ref<string | null>(null)
+
+async function confirmDeleteRegistros(tmpl: Template) {
+  const ok = window.confirm(
+    `⚠️ ¿Eliminar TODOS los registros del template "${tmpl.nombre}"?\n\n` +
+    `Esta acción elimina todos los formularios respondidos (en cualquier estado) ` +
+    `junto con sus archivos adjuntos. No se puede deshacer.`,
+  )
+  if (!ok) return
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api'
+    const token = localStorage.getItem('ubpd_access_token')
+    const resp = await fetch(`${apiUrl}/admin/templates/${tmpl.id}/registros`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const data = await resp.json()
+    notifications.success('Registros eliminados', data.mensaje || '')
+    await loadTemplates()
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'No se pudo eliminar.'
+    notifications.error('Error', msg)
+  }
+}
+
+async function confirmDeleteTemplate(tmpl: Template) {
+  const ok = window.confirm(
+    `⚠️ ¿Eliminar el TEMPLATE "${tmpl.nombre}"?\n\n` +
+    `Solo se puede borrar si NO tiene registros. Si hay registros, primero usa "Vaciar".`,
+  )
+  if (!ok) return
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api'
+    const token = localStorage.getItem('ubpd_access_token')
+    const resp = await fetch(`${apiUrl}/admin/templates/${tmpl.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!resp.ok) {
+      if (resp.status === 409) {
+        const body = await resp.json().catch(() => ({}))
+        throw new Error(body.detail || 'El template aún tiene registros.')
+      }
+      throw new Error(`HTTP ${resp.status}`)
+    }
+    const data = await resp.json()
+    notifications.success('Template eliminado', data.mensaje || '')
+    await loadTemplates()
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'No se pudo eliminar.'
+    notifications.error('Error', msg)
+  }
+}
+
+async function downloadTemplateForms(tmpl: Template, format: 'excel' | 'zip') {
+  const key = `${tmpl.id}:${format}`
+  downloadingKey.value = key
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api'
+    const token = localStorage.getItem('ubpd_access_token')
+    const endpoint = format === 'excel' ? 'export-excel' : 'export-zip'
+    const response = await fetch(`${apiUrl}/admin/templates/${tmpl.id}/${endpoint}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!response.ok) {
+      if (response.status === 404) throw new Error('Template no encontrado')
+      if (response.status === 403) throw new Error('No tienes permiso para esta descarga')
+      throw new Error(`HTTP ${response.status}`)
+    }
+    const disposition = response.headers.get('Content-Disposition') || ''
+    const match = disposition.match(/filename="([^"]+)"/)
+    const defaultName = format === 'excel'
+      ? `formularios_${tmpl.codigo || tmpl.id}.xlsx`
+      : `formularios_${tmpl.codigo || tmpl.id}.zip`
+    const filename = match?.[1] || defaultName
+
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+
+    notifications.success(
+      'Descarga iniciada',
+      format === 'excel'
+        ? 'Excel con los formularios respondidos descargado.'
+        : 'ZIP con Excel + evidencias por formulario descargado.',
+    )
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'No se pudo descargar el archivo.'
+    notifications.error('Error al descargar', msg)
+  } finally {
+    downloadingKey.value = null
+  }
+}
 
 const filteredTemplates = computed(() => {
   const q = templateSearch.value.trim().toLowerCase()
@@ -464,6 +704,14 @@ async function loadTemplates() {
     notifications.error('No se pudo cargar los formularios')
   } finally {
     loadingTemplates.value = false
+  }
+  // Cargar conteos por template (solo admin) para habilitar/deshabilitar acciones
+  if (isAdmin.value) {
+    try {
+      templateCounts.value = await get<Record<string, TemplateCount>>('/admin/templates/counts')
+    } catch {
+      templateCounts.value = {}
+    }
   }
 }
 

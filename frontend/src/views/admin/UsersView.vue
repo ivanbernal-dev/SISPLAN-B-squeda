@@ -202,6 +202,18 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </button>
+                  <!-- Eliminar permanente -->
+                  <button
+                    @click="openHardDelete(user)"
+                    class="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                    :aria-label="`Eliminar permanentemente ${user.nombre_completo}`"
+                    title="Eliminar permanentemente"
+                  >
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a2 2 0 012-2h2a2 2 0 012 2v3" />
+                    </svg>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -289,6 +301,84 @@
       @confirm="handleResetPassword"
       @cancel="showResetConfirm = false"
     />
+
+    <!-- Modal: eliminar permanentemente usuario -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div
+          v-if="showHardDelete"
+          class="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog" aria-modal="true"
+        >
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeHardDelete" />
+          <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full z-10 overflow-hidden">
+            <div class="bg-red-600 px-6 py-4">
+              <h2 class="font-subtitulo font-bold text-white text-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Eliminar usuario permanentemente
+              </h2>
+              <p class="font-cuerpo text-white/85 text-sm mt-0.5">Esta acción NO se puede deshacer</p>
+            </div>
+
+            <div class="px-6 py-5 space-y-4">
+              <p class="font-cuerpo text-sm text-gray-700">
+                Vas a eliminar de forma permanente a
+                <strong class="text-ubpd-gris">{{ hardDeleteData.nombre }}</strong>
+                (<code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{{ hardDeleteData.username }}</code>).
+              </p>
+
+              <div v-if="hardDeleteError" class="bg-amber-50 border border-amber-300 rounded-lg p-3">
+                <p class="font-cuerpo text-xs text-amber-800">
+                  <strong>⚠️ {{ hardDeleteError }}</strong>
+                </p>
+                <label class="mt-3 flex items-start gap-2 cursor-pointer">
+                  <input v-model="hardDeleteForce" type="checkbox" class="mt-1" />
+                  <span class="font-cuerpo text-xs text-gray-700">
+                    Sí, quiero eliminar TAMBIÉN los formularios y archivos asociados.
+                    Entiendo que esta acción es irreversible.
+                  </span>
+                </label>
+              </div>
+
+              <div class="bg-red-50 border border-red-200 rounded-lg p-3 space-y-1">
+                <p class="font-cuerpo text-xs text-red-800 font-semibold">Se eliminarán:</p>
+                <ul class="font-cuerpo text-xs text-red-700 ml-4 list-disc space-y-0.5">
+                  <li>La cuenta del usuario (registros de login, permisos, etc.)</li>
+                  <li v-if="hardDeleteForce">Todos los formularios creados por este usuario</li>
+                  <li v-if="hardDeleteForce">Todos los archivos adjuntos asociados (MinIO)</li>
+                </ul>
+                <p class="font-cuerpo text-xs text-gray-600 mt-2">
+                  Los registros de auditoría se mantienen (el historial se preserva con la referencia al usuario en null).
+                </p>
+              </div>
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 flex justify-end gap-2">
+              <button
+                @click="closeHardDelete"
+                class="px-4 py-2 text-sm font-cuerpo font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                @click="handleHardDelete"
+                :disabled="hardDeleteLoading"
+                class="px-4 py-2 text-sm font-cuerpo font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+              >
+                <svg v-if="hardDeleteLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25" />
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                {{ hardDeleteLoading ? 'Eliminando…' : 'Eliminar definitivamente' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- Modal: mostrar nueva contraseña temporal -->
     <Teleport to="body">
@@ -545,6 +635,63 @@ async function handleResetPassword() {
     notifications.error('No se pudo resetear la contraseña')
   } finally {
     resetLoading.value = false
+  }
+}
+
+// ── Hard delete (eliminar usuario permanentemente) ──────────────────────────
+const showHardDelete = ref(false)
+const hardDeleteLoading = ref(false)
+const hardDeleteError = ref<string | null>(null)
+const hardDeleteForce = ref(false)
+const hardDeleteData = reactive({ id: '', nombre: '', username: '' })
+
+function openHardDelete(user: User) {
+  hardDeleteData.id = user.id
+  hardDeleteData.nombre = user.nombre_completo
+  hardDeleteData.username = user.username
+  hardDeleteError.value = null
+  hardDeleteForce.value = false
+  showHardDelete.value = true
+}
+
+function closeHardDelete() {
+  showHardDelete.value = false
+  hardDeleteError.value = null
+  hardDeleteForce.value = false
+}
+
+async function handleHardDelete() {
+  hardDeleteLoading.value = true
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL || '/api'
+    const token = localStorage.getItem('ubpd_access_token')
+    const url = `${apiUrl}/admin/users/${hardDeleteData.id}/hard${hardDeleteForce.value ? '?force=true' : ''}`
+    const resp = await fetch(url, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const data = await resp.json().catch(() => ({}))
+
+    if (resp.status === 409) {
+      // Tiene forms → mostrar confirmación de force
+      hardDeleteError.value = typeof data.detail === 'string'
+        ? data.detail
+        : 'El usuario tiene datos asociados.'
+      return
+    }
+    if (!resp.ok) {
+      notifications.error('Error', typeof data.detail === 'string' ? data.detail : 'No se pudo eliminar.')
+      return
+    }
+
+    notifications.success('Usuario eliminado', data.mensaje || 'Eliminación completada.')
+    // Remover de la lista local
+    users.value = users.value.filter((u) => u.id !== hardDeleteData.id)
+    closeHardDelete()
+  } catch {
+    notifications.error('Error', 'No se pudo conectar con el servidor.')
+  } finally {
+    hardDeleteLoading.value = false
   }
 }
 

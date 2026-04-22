@@ -16,6 +16,10 @@ backend/**/__pycache__/
 backend/*.pyc
 backend/.venv/
 backend/venv/
+**/__pycache__/
+*.pyc
+.ipynb_checkpoints/
+analitica_bi/.venv/
 
 # Migraciones generadas (opcional, depende del equipo)
 # backend/alembic/versions/

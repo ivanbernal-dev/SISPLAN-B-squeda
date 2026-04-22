@@ -305,6 +305,93 @@ async def clear_bi(
     return {"ok": True, "mensaje": "Datos BI eliminados."}
 
 
+# ── RAW: dump de las 3 tablas en el mismo formato del Excel original ──────
+@admin_router.get("/raw")
+async def bi_raw_dump(
+    current_user: User = Depends(_get_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    [ADMIN] Devuelve las 3 tablas BI tal cual fueron cargadas desde el Excel,
+    con los MISMOS nombres de columna que el Excel original. Útil para
+    consumirlo desde notebooks de analítica y contrastar contra el BI.
+
+    Estructura de respuesta:
+    {
+      "PRB":                   [{...}, ...],
+      "EstructuraIndicadores": [{...}, ...],
+      "Historico":             [{...}, ...],
+      "meta": { filename, uploaded_at, total_rows, total_prb, total_indicadores, anio }
+    }
+    """
+    # PRB
+    prb_rows = (await db.execute(select(BiPRB).order_by(BiPRB.cod))).scalars().all()
+    prb = [
+        {"COD": p.cod, "PRB": p.prb, "Regional": p.regional, "GITT": p.gitt}
+        for p in prb_rows
+    ]
+
+    # Estructura
+    est_rows = (await db.execute(select(BiEstructura).order_by(BiEstructura.cod_indicador))).scalars().all()
+    est = [
+        {
+            "Cod_Linea": e.cod_linea,
+            "Linea": e.linea,
+            "Cod_Resultado_estrategico": e.cod_resultado,
+            "Resultado_Estrategico": e.resultado,
+            "Cod_Indicador": e.cod_indicador,
+            "Código del Indicador": e.codigo_indicador,
+            "Indicador": e.indicador,
+        }
+        for e in est_rows
+    ]
+
+    # Historico
+    hist_rows = (await db.execute(
+        select(BiHistorico).order_by(BiHistorico.cod_prb, BiHistorico.cod_indicador)
+    )).scalars().all()
+    hist = [
+        {
+            "CodPRB": h.cod_prb,
+            "PRB": h.prb,
+            "Cod_Indicador": h.cod_indicador,
+            "Código del Indicador": h.codigo_indicador,
+            "Indicador": h.indicador,
+            "Línea Base 2025": h.linea_base,
+            "Meta": h.meta,
+            "Mes 1": h.mes_1, "Mes 2": h.mes_2, "Mes 3": h.mes_3, "Mes 4": h.mes_4,
+            "Mes 5": h.mes_5, "Mes 6": h.mes_6, "Mes 7": h.mes_7, "Mes 8": h.mes_8,
+            "Mes 9": h.mes_9, "Mes 10": h.mes_10, "Mes 11": h.mes_11, "Mes 12": h.mes_12,
+            "Trim I": h.trim_i, "Trim II": h.trim_ii, "Trim III": h.trim_iii, "Trim IV": h.trim_iv,
+            "Avance Total": h.avance_total,
+            "% de Avance": h.pct_avance,
+            "Variación Respectp a 2025": h.variacion,
+            "AÑO": h.anio,
+        }
+        for h in hist_rows
+    ]
+
+    ds_result = await db.execute(
+        select(BiDataset).order_by(BiDataset.uploaded_at.desc()).limit(1)
+    )
+    ds = ds_result.scalar_one_or_none()
+    meta = {
+        "filename": ds.filename if ds else None,
+        "uploaded_at": ds.uploaded_at.isoformat() if ds and ds.uploaded_at else None,
+        "total_rows": ds.total_rows if ds else len(hist),
+        "total_prb": ds.total_prb if ds else len(prb),
+        "total_indicadores": ds.total_indicadores if ds else len(est),
+        "anio": ds.anio if ds else None,
+    }
+
+    return {
+        "PRB": prb,
+        "EstructuraIndicadores": est,
+        "Historico": hist,
+        "meta": meta,
+    }
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Público: filtros disponibles
 # ══════════════════════════════════════════════════════════════════════════════

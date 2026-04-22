@@ -1,11 +1,14 @@
 """
 app/routers/admin.py — Endpoints de administración: usuarios, dependencias, pipelines y auditoría.
 """
+import logging
 import secrets
 import string
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
@@ -232,6 +235,125 @@ async def deactivate_user(
         ip=get_client_ip(request),
     )
     return {"detail": "Usuario desactivado exitosamente"}
+
+
+@router.delete("/users/{user_id}/hard", status_code=status.HTTP_200_OK)
+async def delete_user_hard(
+    request: Request,
+    user_id: uuid.UUID,
+    force: bool = False,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Elimina PERMANENTEMENTE un usuario de la base de datos.
+
+    Protecciones:
+      - No puedes eliminar tu propio usuario.
+      - No puedes eliminar al último administrador activo del sistema.
+      - Si el usuario tiene formularios respondidos asociados:
+          - Sin ?force=true → responde 409 con el conteo
+          - Con ?force=true → borra formularios, archivos (MinIO) y el usuario
+      - Los logs de auditoría del usuario se preservan (FK se pone en NULL).
+    """
+    from sqlalchemy import delete as sa_delete, func
+    from app.models.form import Form
+    from app.models.file import Archivo
+    from app.services.minio_service import get_minio_service
+
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes eliminar tu propio usuario.",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    # No permitir eliminar al último admin activo
+    if user.role == UserRole.admin:
+        n_admins = await db.scalar(
+            select(func.count(User.id)).where(
+                User.role == UserRole.admin,
+                User.activo == True,
+                User.id != user_id,
+            )
+        ) or 0
+        if n_admins == 0:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "No puedes eliminar al último administrador activo del sistema. "
+                    "Crea otro administrador antes."
+                ),
+            )
+
+    # Contar formularios del usuario
+    n_forms = await db.scalar(
+        select(func.count(Form.id)).where(Form.usuario_id == user_id)
+    ) or 0
+
+    if n_forms > 0 and not force:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"El usuario tiene {n_forms} formulario(s) respondido(s) asociado(s). "
+                f"Para eliminarlo junto con sus formularios y archivos, repite la solicitud con ?force=true."
+            ),
+        )
+
+    # Si force=true, borrar los formularios y archivos MinIO
+    n_archivos_borrados = 0
+    if n_forms > 0 and force:
+        forms_res = await db.execute(
+            select(Form).where(Form.usuario_id == user_id)
+        )
+        forms_to_delete = list(forms_res.scalars().all())
+        minio = get_minio_service()
+        for f in forms_to_delete:
+            for arch in (f.archivos or []):
+                try:
+                    minio.delete_file(arch)
+                    n_archivos_borrados += 1
+                except Exception as exc:
+                    logger.warning("No se pudo eliminar archivo %s en MinIO: %s", arch.id, exc)
+        form_ids = [f.id for f in forms_to_delete]
+        if form_ids:
+            await db.execute(sa_delete(Form).where(Form.id.in_(form_ids)))
+
+    username = user.username
+    user_email = user.email
+
+    await _log_audit(
+        db,
+        accion="USER_DELETE_HARD",
+        usuario_id=current_user.id,
+        entidad_tipo="usuario",
+        entidad_id=user.id,
+        detalle={
+            "username": username,
+            "email": user_email,
+            "forms_eliminados": n_forms,
+            "archivos_eliminados": n_archivos_borrados,
+        },
+        ip=get_client_ip(request),
+    )
+
+    await db.execute(sa_delete(User).where(User.id == user_id))
+    await db.commit()
+
+    return {
+        "ok": True,
+        "mensaje": (
+            f"Usuario '{username}' eliminado permanentemente. "
+            + (f"Se borraron {n_forms} formulario(s) y {n_archivos_borrados} archivo(s) asociados." if force and n_forms > 0 else "")
+        ),
+        "usuario_eliminado": username,
+        "forms_eliminados": n_forms if force else 0,
+        "archivos_eliminados": n_archivos_borrados,
+    }
 
 
 # ── Dependencias ──────────────────────────────────────────────────────────────
