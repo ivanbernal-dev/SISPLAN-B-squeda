@@ -120,8 +120,9 @@
       <!-- Indicadores de interés -->
       <section>
         <h2 class="font-cuerpo italic text-sm text-gray-500 mb-3 mt-2">Indicadores de interés</h2>
+        <!-- 12 primeros en grid 4xN -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div v-for="card in indicadoresCards" :key="card.cod" class="kpi-card">
+          <div v-for="card in indicadoresCards.slice(0, 12)" :key="card.cod" class="kpi-card">
             <p class="kpi-title" :title="card.nombre">{{ cardTitle(card) }}</p>
             <div class="flex justify-between items-start mt-2 gap-2">
               <div class="text-center flex-1">
@@ -144,6 +145,35 @@
             <p class="text-center mt-2 font-subtitulo text-lg font-bold text-gray-800">{{ formatPct(card.pct) }}</p>
             <p class="text-center text-[10px] italic text-gray-400">% Avance 2026</p>
           </div>
+        </div>
+
+        <!-- 13ª tarjeta centrada (Cuerpos Recuperados — como en el BI) -->
+        <div v-if="indicadoresCards.length > 12" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          <div /><div />
+          <div class="kpi-card">
+            <p class="kpi-title" :title="indicadoresCards[12].nombre">{{ cardTitle(indicadoresCards[12]) }}</p>
+            <div class="flex justify-between items-start mt-2 gap-2">
+              <div class="text-center flex-1">
+                <p class="kpi-num">{{ formatNum(indicadoresCards[12].dato_2025) }}</p>
+                <p class="kpi-lbl">Dato 2025</p>
+              </div>
+              <div class="text-center flex-1">
+                <p class="kpi-num">{{ formatNum(indicadoresCards[12].avance) }}</p>
+                <p class="kpi-lbl">Avance 2026</p>
+              </div>
+              <div class="text-center flex-1">
+                <p class="kpi-num">{{ formatMeta(indicadoresCards[12].meta) }}</p>
+                <p class="kpi-lbl">Meta 2026</p>
+              </div>
+            </div>
+            <div class="mt-3 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+              <div class="h-full bg-[#5B2B5E] transition-all duration-500"
+                   :style="{ width: Math.min(100, indicadoresCards[12].pct) + '%' }" />
+            </div>
+            <p class="text-center mt-2 font-subtitulo text-lg font-bold text-gray-800">{{ formatPct(indicadoresCards[12].pct) }}</p>
+            <p class="text-center text-[10px] italic text-gray-400">% Avance 2026</p>
+          </div>
+          <div />
         </div>
       </section>
 
@@ -200,6 +230,11 @@
           Seleccione ambos grupos para generar la comparación.
         </div>
         <div v-else class="space-y-3">
+          <!-- Banner morado superior con la comparación general -->
+          <div class="bg-[#C0A7B8] text-gray-800 rounded p-4 font-cuerpo text-sm leading-relaxed">
+            {{ comparison.banner }}
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="cmp-box">
               <p class="cmp-lbl">Hallazgo Principal</p>
@@ -207,20 +242,19 @@
             </div>
             <div class="cmp-box">
               <p class="cmp-lbl">Resumen Desempeño</p>
-              <p class="cmp-text">
-                Grupo A alcanza {{ formatPct(comparison.a.pct) }} y Grupo B {{ formatPct(comparison.b.pct) }} del total de meta.
-                Diferencia absoluta: {{ formatNum(Math.abs(comparison.a.total - comparison.b.total)) }} unidades.
-              </p>
+              <p class="cmp-text">{{ comparison.resumen || '—' }}</p>
             </div>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="cmp-box">
               <p class="cmp-lbl">Estado Selección Filtro A</p>
-              <p class="cmp-text">{{ comparison.estado_a }}</p>
+              <p class="cmp-text font-semibold">{{ comparison.estado_a }}</p>
+              <p class="cmp-text mt-1 text-xs">{{ comparison.estado_a_explicacion }}</p>
             </div>
             <div class="cmp-box">
               <p class="cmp-lbl">Estado Selección Filtro B</p>
-              <p class="cmp-text">{{ comparison.estado_b }}</p>
+              <p class="cmp-text font-semibold">{{ comparison.estado_b }}</p>
+              <p class="cmp-text mt-1 text-xs">{{ comparison.estado_b_explicacion }}</p>
             </div>
           </div>
           <div class="cmp-box text-center">
@@ -342,11 +376,28 @@ interface MonthlyRow {
   mes: number; mes_nombre: string; valor: number;
   acumulado: number; meta_acumulada: number; dato_2025: number
 }
+interface ComparisonIndicador {
+  codigo:       string
+  nombre:       string         // etiqueta corta de la página 2 ("SIF (Confirmados…")
+  nombre_largo: string         // nombre original del Excel (para tooltip / resumen)
+  avance_a:     number; meta_a: number; pct_a: number   // pct = avance/meta (0..1)
+  avance_b:     number; meta_b: number; pct_b: number
+  base_2025_a:  number; base_2025_b: number
+  // legacy (pct * 100)
+  a: number; b: number
+}
 interface ComparisonResp {
-  a: { tipo: string; valor: string | null; total: number; pct: number }
-  b: { tipo: string; valor: string | null; total: number; pct: number }
-  indicadores: Array<{ codigo: string; nombre: string; a: number; b: number }>
-  hallazgo: string; estado_a: string; estado_b: string; brecha: string
+  a: { tipo: string; valor: string | null; label: string; total_avance: number; total_meta: number; pct: number }
+  b: { tipo: string; valor: string | null; label: string; total_avance: number; total_meta: number; pct: number }
+  indicadores: ComparisonIndicador[]
+  banner:                string
+  hallazgo:              string
+  resumen:               string
+  estado_a:              string
+  estado_b:              string
+  estado_a_explicacion:  string
+  estado_b_explicacion:  string
+  brecha:                string
 }
 
 const { get } = useApi()
@@ -483,24 +534,28 @@ function clearFilters() {
   refreshPage1()
 }
 
-// ── Mapeo indicador → título corto (como el BI) ────────────
+// ── Etiquetas y orden canónicos del BI oficial ──────────────────────────
+// El backend ya devuelve los indicadores en este orden y con estos nombres
+// (ver BI_DISPLAY_ORDER y BI_SHORT_LABELS en bi_dashboard.py). Mantenemos
+// SHORT_LABELS aquí solo como respaldo para etiquetas de gráficas/tooltips.
 const SHORT_LABELS: Record<string, string> = {
-  'L1P-002': 'PDD con solicitud de búsqueda',
-  'L1A-021': 'SB Mejoradas Pendientes',
-  'L1A-020a': 'PDD con muestra biológica asociada',
-  'L1P-010': 'No. de lugares de IF caracterizados',
+  'L1P-002':     'PDD con solictud de búsqueda',
+  'L1A-021':     'SB Mejoradas Pendientes',
+  'L1A-020a':    'PDD con muestra biológica asociada',
+  'L1P-010':     'No. de lugares de IF caracterizados',
   'L1R-006-007': 'SIF (confirmados y descartados)',
-  'L1R-001': 'PEV PRB Asignado',
-  'L1R-005': 'Entrega Digna GITT asignada PDD',
-  'L1A-022': 'Postulados Búsq Inversa para Verificación',
-  'L1R-004': 'Personas con contacto exitosos o reencuentro',
-  'L1R-003': 'Informes de lo acaecido entregados',
-  'L1P-006': 'Planes de trabajo formulados con aportantes',
+  'L1R-001':     'PEV PRB Asignado',
+  'L1R-005':     'Entrega Digna GITT asignada PDD',
+  'L1A-022':     'Postulados Búsq Inversa para Verificación',
+  'L1R-004':     'Personas con contacto exitosos o reencuentro',
+  'L1R-003':     'Informes de lo acaecido entregados',
+  'L1P-006':     'Planes de trabajo formulados con aportantes',
   'L1P-008-009': 'Informe de Investigación con Hipótesis',
-  'L1R-008': 'Cuerpos Recuperados',
+  'L1R-008':     'Cuerpos Recuperados',
 }
 function cardTitle(c: IndicadorCard) {
-  return SHORT_LABELS[c.codigo] || truncate(c.nombre, 55)
+  // El backend ya envía 'nombre' como la etiqueta canónica del BI.
+  return c.nombre || SHORT_LABELS[c.codigo] || ''
 }
 
 // ── Formatters ─────────────────────────────────────────────
@@ -566,13 +621,16 @@ const ejecucionOpt = computed(() => {
 })
 
 // ── ECharts: Comparación — dos barras espejadas con labels al centro ──
+// IMPORTANTE: las barras representan pct = avance/meta (fracción 0..1) tal
+// como hace el BI oficial. El tooltip muestra Avance, Meta y Base 2025.
 const comparisonOpt = computed(() => {
   if (!comparison.value) return null
   const inds = [...comparison.value.indicadores]
-  const nombres = inds.map((i) => SHORT_LABELS[i.codigo] || truncate(i.nombre || i.codigo, 45))
-  const valoresA = inds.map((i) => Math.abs(i.a))
-  const valoresB = inds.map((i) => Math.abs(i.b))
-  const maxAbs = Math.max(1, ...inds.map((i) => Math.max(Math.abs(i.a), Math.abs(i.b))))
+  // Etiqueta del eje Y = etiqueta corta de Página 2 (viene en `nombre`)
+  const nombres = inds.map((i) => i.nombre || truncate(i.nombre_largo || i.codigo, 45))
+  const valoresA = inds.map((i) => i.pct_a)
+  const valoresB = inds.map((i) => i.pct_b)
+  const maxAbs = Math.max(0.05, ...inds.map((i) => Math.max(i.pct_a, i.pct_b)))
   return {
     tooltip: {
       trigger: 'axis', axisPointer: { type: 'shadow' },
@@ -580,7 +638,12 @@ const comparisonOpt = computed(() => {
         const idx = params[0]?.dataIndex ?? 0
         const row = inds[idx]
         if (!row) return ''
-        return `<b>${row.codigo}</b><br/>${truncate(row.nombre || '', 60)}<br/>Grupo A: ${formatNum(row.a)}<br/>Grupo B: ${formatNum(row.b)}`
+        const pa = (row.pct_a * 100).toFixed(1)
+        const pb = (row.pct_b * 100).toFixed(1)
+        return `<b>${row.nombre_largo || row.codigo}</b><br/>` +
+          `<b>Grupo A:</b> ${row.pct_a.toFixed(2)} &nbsp; (Avance ${formatNum(row.avance_a)}, Meta ${formatNum(row.meta_a)}, Base 2025 ${formatNum(row.base_2025_a)})<br/>` +
+          `<b>Grupo B:</b> ${row.pct_b.toFixed(2)} &nbsp; (Avance ${formatNum(row.avance_b)}, Meta ${formatNum(row.meta_b)}, Base 2025 ${formatNum(row.base_2025_b)})<br/>` +
+          `<i>${pa}% vs ${pb}%</i>`
       },
     },
     legend: {
@@ -602,24 +665,24 @@ const comparisonOpt = computed(() => {
     xAxis: [
       {
         gridIndex: 0, type: 'value', inverse: true, min: 0, max: maxAbs,
-        axisLabel: { formatter: (v: number) => formatNum(v), fontSize: 10, color: '#888' },
+        axisLabel: { formatter: (v: number) => v.toFixed(2), fontSize: 10, color: '#888' },
         splitLine: { lineStyle: { type: 'dashed', color: '#EEE' } },
         axisLine: { show: false }, axisTick: { show: false },
       },
       {
         gridIndex: 1, type: 'value', min: 0, max: maxAbs,
-        axisLabel: { formatter: (v: number) => formatNum(v), fontSize: 10, color: '#888' },
+        axisLabel: { formatter: (v: number) => v.toFixed(2), fontSize: 10, color: '#888' },
         splitLine: { lineStyle: { type: 'dashed', color: '#EEE' } },
         axisLine: { show: false }, axisTick: { show: false },
       },
     ],
     yAxis: [
       // Eje del grid izquierdo: labels al lado DERECHO (pasillo central)
+      // inverse:true → primer indicador (SIF) ARRIBA, último (Cuerpos Recuperados) ABAJO,
+      // igual que el BI oficial.
       {
         gridIndex: 0, type: 'category', data: nombres, position: 'right',
-        // margin separa la etiqueta del borde derecho del grid A
-        // Con grid A ending en 38% y chart max-width ~1336px → 38% ≈ 507px;
-        // 50% (centro canvas) ≈ 668px; margin = 160px ubica el ancla en el centro
+        inverse: true,
         axisLabel: {
           fontSize: 11, color: '#333',
           width: 180, overflow: 'break',
@@ -632,6 +695,7 @@ const comparisonOpt = computed(() => {
       // Eje del grid derecho: sin labels, pero con mismas categorías para alinear
       {
         gridIndex: 1, type: 'category', data: nombres, position: 'left',
+        inverse: true,
         axisLabel: { show: false },
         axisLine: { show: false }, axisTick: { show: false },
       },
@@ -645,7 +709,7 @@ const comparisonOpt = computed(() => {
         barWidth: 12,
         label: {
           show: true, position: 'left',
-          formatter: (p: any) => p.value ? formatNum(p.value) : '',
+          formatter: (p: any) => (p.value > 0 ? p.value.toFixed(2) : ''),
           fontSize: 10, color: '#666',
         },
       },
@@ -657,7 +721,7 @@ const comparisonOpt = computed(() => {
         barWidth: 12,
         label: {
           show: true, position: 'right',
-          formatter: (p: any) => p.value ? formatNum(p.value) : '',
+          formatter: (p: any) => (p.value > 0 ? p.value.toFixed(2) : ''),
           fontSize: 10, color: '#666',
         },
       },

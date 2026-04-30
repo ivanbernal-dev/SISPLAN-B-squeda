@@ -36,6 +36,74 @@ logger = logging.getLogger(__name__)
 admin_router = APIRouter(prefix="/admin/bi", tags=["BI Admin"])
 public_router = APIRouter(prefix="/bi", tags=["BI Público"])
 
+# ── Orden y nombres cortos canónicos del BI oficial ──────────────────────────
+# Replica EXACTAMENTE la disposición y los textos visibles en el Power BI.
+# Cualquier consumidor (frontend, notebooks, endpoints) debe respetar este orden.
+BI_DISPLAY_ORDER = [
+    "L1P-002",
+    "L1A-021",
+    "L1A-020a",
+    "L1P-010",
+    "L1R-006-007",
+    "L1R-001",
+    "L1R-005",
+    "L1A-022",
+    "L1R-004",
+    "L1R-003",
+    "L1P-006",
+    "L1P-008-009",
+    "L1R-008",
+]
+BI_SHORT_LABELS: dict[str, str] = {
+    "L1P-002":     "PDD con solictud de búsqueda",
+    "L1A-021":     "SB Mejoradas Pendientes",
+    "L1A-020a":    "PDD con muestra biológica asociada",
+    "L1P-010":     "No. de lugares de IF caracterizados",
+    "L1R-006-007": "SIF (confirmados y descartados)",
+    "L1R-001":     "PEV PRB Asignado",
+    "L1R-005":     "Entrega Digna GITT asignada PDD",
+    "L1A-022":     "Postulados Búsq Inversa para Verificación",
+    "L1R-004":     "Personas con contacto exitosos o reencuentro",
+    "L1R-003":     "Informes de lo acaecido entregados",
+    "L1P-006":     "Planes de trabajo formulados con aportantes",
+    "L1P-008-009": "Informe de Investigación con Hipótesis",
+    "L1R-008":     "Cuerpos Recuperados",
+}
+_BI_ORDER_MAP: dict[str, int] = {c: i for i, c in enumerate(BI_DISPLAY_ORDER)}
+
+# ── Página 2 del BI usa otros nombres y otro orden ──────────────────────────
+BI_PAGE2_ORDER = [
+    "L1R-006-007",   # SIF (Confirmados +
+    "L1A-021",       # SB Mejoradas
+    "L1A-022",       # Postulados BI para verificación
+    "L1R-001",       # Encontradas con vida asignadas
+    "L1R-004",       # Personas con contacto exitoso
+    "L1P-002",       # PDD con solicitud de Búsqueda
+    "L1A-020a",      # PDD con Muestra asociada
+    "L1P-006",       # Planes Formulados con Aportantes
+    "L1P-010",       # Lugares Caracterizados
+    "L1R-003",       # Informes acaecidos finalizados
+    "L1P-008-009",   # Informes Investigación con Hipótesis
+    "L1R-005",       # Entregas Dignas Asignadas
+    "L1R-008",       # Cuerpos Recuperados
+]
+BI_PAGE2_LABELS: dict[str, str] = {
+    "L1R-006-007": "SIF (Confirmados y descartados)",
+    "L1A-021":     "SB Mejoradas",
+    "L1A-022":     "Postulados BI para verificación",
+    "L1R-001":     "Encontradas con vida asignadas",
+    "L1R-004":     "Personas con contacto exitoso",
+    "L1P-002":     "PDD con solicitud de Búsqueda",
+    "L1A-020a":    "PDD con Muestra asociada",
+    "L1P-006":     "Planes Formulados con Aportantes",
+    "L1P-010":     "Lugares Caracterizados",
+    "L1R-003":     "Informes acaecidos finalizados",
+    "L1P-008-009": "Informes Investigación con Hipótesis",
+    "L1R-005":     "Entregas Dignas Asignadas",
+    "L1R-008":     "Cuerpos Recuperados",
+}
+_BI_PAGE2_ORDER_MAP: dict[str, int] = {c: i for i, c in enumerate(BI_PAGE2_ORDER)}
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Helpers
@@ -736,14 +804,16 @@ async def indicadores_summary(
         BiHistorico.cod_indicador,
         BiHistorico.codigo_indicador,
         BiHistorico.indicador,
-    ).order_by(BiHistorico.cod_indicador)  # orden natural del Excel (111..123)
+    )
 
     rows = (await db.execute(q)).all()
-    return [
+    cards = [
         {
             "cod": r.cod,
             "codigo": r.codigo,
-            "nombre": r.nombre,
+            # Etiqueta corta canónica del BI (con cualquier "typo" original).
+            "nombre": BI_SHORT_LABELS.get(r.codigo, r.nombre),
+            "nombre_largo": r.nombre,
             "dato_2025": float(r.dato_2025 or 0),
             "avance": float(r.avance or 0),
             "meta": float(r.meta or 0),
@@ -751,6 +821,9 @@ async def indicadores_summary(
         }
         for r in rows
     ]
+    # Orden custom igual al BI oficial. Indicadores no listados van al final.
+    cards.sort(key=lambda c: _BI_ORDER_MAP.get(c["codigo"], 9999))
+    return cards
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -759,28 +832,31 @@ async def indicadores_summary(
 
 @public_router.get("/comparison")
 async def comparison(
-    a_tipo: str = Query(..., description="'gitt' | 'prb' | 'regional' | 'meta'"),
+    a_tipo: str = Query(..., description="'gitt' | 'prb' | 'regional'"),
     a_valor: Optional[str] = None,
-    b_tipo: str = Query(..., description="'gitt' | 'prb' | 'regional' | 'meta'"),
+    b_tipo: str = Query(..., description="'gitt' | 'prb' | 'regional'"),
     b_valor: Optional[str] = None,
     anio: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
-    Compara dos selecciones jerárquicas (GITT, PRB, Regional, o META global)
-    devolviendo, por cada indicador, el avance de cada grupo.
+    Compara dos grupos (GITT|valor, PRB|valor o Regional|valor) replicando la
+    Página 2 del Power BI oficial. Por cada indicador devuelve el avance, la
+    meta y el % (avance/meta) — las barras del BI usan el %, no el avance crudo.
+
+    Genera además todos los textos analíticos visibles en el BI:
+        banner, hallazgo principal, resumen de desempeño por grupo,
+        estados (Óptimo/Moderado/En progreso/Crítico) y brecha en %.
     """
     async def _fetch(tipo: str, valor: Optional[str]):
         q = select(
             BiHistorico.codigo_indicador.label("codigo"),
-            BiHistorico.indicador.label("nombre"),
+            BiHistorico.indicador.label("nombre_largo"),
             func.coalesce(func.sum(BiHistorico.avance_total), 0).label("avance"),
             func.coalesce(func.sum(BiHistorico.meta), 0).label("meta"),
+            func.coalesce(func.sum(BiHistorico.linea_base), 0).label("base_2025"),
         )
-        if tipo == "meta":
-            # Grupo META → usa la META global (total de metas)
-            pass
-        elif tipo == "regional":
+        if tipo == "regional":
             q = q.join(BiPRB, BiPRB.cod == BiHistorico.cod_prb)
             if valor:
                 q = q.where(BiPRB.regional == valor)
@@ -794,83 +870,187 @@ async def comparison(
         if anio:
             q = q.where(BiHistorico.anio == anio)
 
-        q = q.group_by(BiHistorico.codigo_indicador, BiHistorico.indicador) \
-             .order_by(BiHistorico.codigo_indicador)
+        q = q.group_by(BiHistorico.codigo_indicador, BiHistorico.indicador)
         rows = (await db.execute(q)).all()
-        return {r.codigo: {"codigo": r.codigo, "nombre": r.nombre,
-                           "avance": float(r.avance or 0),
-                           "meta": float(r.meta or 0)} for r in rows}
+        return {
+            r.codigo: {
+                "codigo":       r.codigo,
+                "nombre_largo": r.nombre_largo,
+                "avance":       float(r.avance or 0),
+                "meta":         float(r.meta or 0),
+                "base_2025":    float(r.base_2025 or 0),
+            }
+            for r in rows
+        }
 
     a_data = await _fetch(a_tipo, a_valor)
     b_data = await _fetch(b_tipo, b_valor)
 
-    # Para el grupo META el "valor" es la meta sumada → lo usamos como barra
-    if a_tipo == "meta":
-        for k, v in a_data.items():
-            v["avance"] = v["meta"]
-    if b_tipo == "meta":
-        for k, v in b_data.items():
-            v["avance"] = v["meta"]
+    codigos = sorted(set(list(a_data.keys()) + list(b_data.keys())),
+                     key=lambda c: _BI_PAGE2_ORDER_MAP.get(c, 9999))
 
-    # Unión de indicadores
-    codigos = sorted(set(list(a_data.keys()) + list(b_data.keys())))
     indicadores = []
-    sum_a = 0.0
-    sum_b = 0.0
-    max_gap = (0.0, None, None)  # gap absoluto, indicador, ventaja
+    sum_avance_a = sum_avance_b = 0.0
+    sum_meta_a   = sum_meta_b   = 0.0
     for cod in codigos:
-        a = a_data.get(cod)
-        b = b_data.get(cod)
-        nombre = (a or b).get("nombre") if (a or b) else cod
-        av_a = a["avance"] if a else 0.0
-        av_b = b["avance"] if b else 0.0
-        sum_a += av_a
-        sum_b += av_b
-        gap = av_a - av_b
-        if abs(gap) > abs(max_gap[0]):
-            max_gap = (gap, cod, nombre)
+        a = a_data.get(cod, {})
+        b = b_data.get(cod, {})
+        av_a, mt_a = a.get("avance", 0.0), a.get("meta", 0.0)
+        av_b, mt_b = b.get("avance", 0.0), b.get("meta", 0.0)
+        pct_a = (av_a / mt_a) if mt_a > 0 else 0.0   # fracción 0..1
+        pct_b = (av_b / mt_b) if mt_b > 0 else 0.0
+        sum_avance_a += av_a; sum_meta_a += mt_a
+        sum_avance_b += av_b; sum_meta_b += mt_b
+
+        nombre = (a.get("nombre_largo") or b.get("nombre_largo") or cod)
         indicadores.append({
-            "codigo": cod,
-            "nombre": nombre,
-            "a": av_a,
-            "b": av_b,
+            "codigo":       cod,
+            "nombre":       BI_PAGE2_LABELS.get(cod, nombre),  # etiqueta corta de pagina 2
+            "nombre_largo": nombre,
+            "avance_a":     av_a,
+            "meta_a":       mt_a,
+            "pct_a":        pct_a,
+            "avance_b":     av_b,
+            "meta_b":       mt_b,
+            "pct_b":        pct_b,
+            "base_2025_a":  a.get("base_2025", 0.0),
+            "base_2025_b":  b.get("base_2025", 0.0),
+            # campos legacy para compatibilidad — son los % multiplicados por 100
+            "a":            pct_a * 100,
+            "b":            pct_b * 100,
         })
 
-    # Narrativa
-    hallazgo = ""
-    if max_gap[1]:
-        ventaja = "A supera a B" if max_gap[0] > 0 else "B supera a A"
-        pct_gap = (abs(max_gap[0]) / max(abs(sum_a), abs(sum_b)) * 100) if max(sum_a, sum_b) else 0
-        hallazgo = f"La mayor diferencia se observa en el indicador '{max_gap[2]}', donde {ventaja} en {pct_gap:.1f}%."
+    pct_global_a = (sum_avance_a / sum_meta_a * 100) if sum_meta_a > 0 else 0.0
+    pct_global_b = (sum_avance_b / sum_meta_b * 100) if sum_meta_b > 0 else 0.0
 
-    def _estado(tot, label):
-        if tot >= 70:
-            return f"{label} | 🟢 Óptimo"
-        if tot >= 40:
-            return f"{label} | 🟡 Moderado"
-        if tot > 0:
-            return f"{label} | 🟠 En progreso"
-        return f"{label} | 🔴 Crítico"
+    # ── Banner y nombres legibles ─────────────────────────────────────────────
+    # BI preserva el case original del valor (PRBs en Title Case, GITTs en MAYUS).
+    label_a = a_valor if a_valor else a_tipo.upper()
+    label_b = b_valor if b_valor else b_tipo.upper()
+    a_grupo_txt = f"{a_tipo.upper()} {label_a}" if a_valor else label_a
+    b_grupo_txt = f"{b_tipo.upper()} {label_b}" if b_valor else label_b
 
-    total_pct_a = (sum_a / sum(d["meta"] for d in a_data.values()) * 100) if a_data and sum(d["meta"] for d in a_data.values()) else 0
-    total_pct_b = (sum_b / sum(d["meta"] for d in b_data.values()) * 100) if b_data and sum(d["meta"] for d in b_data.values()) else 0
-
-    brecha = sum_a - sum_b
-    if brecha > 0:
-        brecha_txt = f"A supera a B en {brecha:,.0f} unidades de avance."
-    elif brecha < 0:
-        brecha_txt = f"B supera a A en {abs(brecha):,.0f} unidades de avance."
+    diff_global = pct_global_a - pct_global_b
+    if abs(diff_global) < 1e-9:
+        banner = (
+            f"Comparando {a_grupo_txt} con {b_grupo_txt}, ambos presentan el mismo "
+            f"nivel de avance 2026."
+        )
+    elif diff_global > 0:
+        banner = (
+            f"Comparando {a_grupo_txt} con {b_grupo_txt}, {label_a} presenta un mejor "
+            f"nivel de avance 2026, con una diferencia de {abs(diff_global):.1f}%."
+        )
     else:
-        brecha_txt = "A y B tienen el mismo nivel de avance."
+        banner = (
+            f"Comparando {a_grupo_txt} con {b_grupo_txt}, {label_b} presenta un mejor "
+            f"nivel de avance 2026, con una diferencia de {abs(diff_global):.1f}%."
+        )
+
+    # ── Hallazgo Principal: indicador con mayor brecha de % ──────────────────
+    hallazgo = ""
+    if indicadores:
+        diffs = sorted(indicadores, key=lambda i: abs(i["pct_a"] - i["pct_b"]), reverse=True)
+        top = diffs[0]
+        gap_pct = (top["pct_a"] - top["pct_b"]) * 100
+        if abs(gap_pct) >= 0.05:   # ignorar diferencias insignificantes
+            ventaja_label = label_a if gap_pct > 0 else label_b
+            otro_label    = label_b if gap_pct > 0 else label_a
+            hallazgo = (
+                f"La mayor ventaja se observa en el indicador "
+                f"'{top['nombre_largo']}', donde {ventaja_label} supera a "
+                f"{otro_label} en {abs(gap_pct):.1f}%."
+            )
+
+    # ── Resumen Desempeño: mejor/peor indicador por grupo ───────────────────
+    # Empate en pct → desempata por orden de Página 2 (primero del orden gana,
+    # como hace el .pbix oficial). Aunque todos sean 0 igual elegimos un primero.
+    def _mejor_peor(items, key_pct):
+        if not items:
+            return None, None
+        mejor = min(items, key=lambda i: (-i[key_pct], _BI_PAGE2_ORDER_MAP.get(i["codigo"], 9999)))
+        peor  = min(items, key=lambda i: ( i[key_pct], _BI_PAGE2_ORDER_MAP.get(i["codigo"], 9999)))
+        return mejor["nombre_largo"], peor["nombre_largo"]
+
+    mejor_a, peor_a = _mejor_peor(indicadores, "pct_a")
+    mejor_b, peor_b = _mejor_peor(indicadores, "pct_b")
+
+    resumen_parts = []
+    if mejor_a or peor_a:
+        partes = []
+        if mejor_a: partes.append(f"mejor desempeño en '{mejor_a}'")
+        if peor_a:  partes.append(f"mayor rezago en '{peor_a}'")
+        resumen_parts.append(f"{label_a}: {', '.join(partes)}.")
+    if mejor_b or peor_b:
+        partes = []
+        if mejor_b: partes.append(f"mejor desempeño en '{mejor_b}'")
+        if peor_b:  partes.append(f"mayor rezago en '{peor_b}'")
+        resumen_parts.append(f"{label_b}: {', '.join(partes)}.")
+    resumen = " ".join(resumen_parts)
+
+    # ── Estado: clasificación (umbrales del BI) ──────────────────────────────
+    # Si un grupo no tiene avance ni meta → "Sin dato" (igual que el .pbix).
+    def _tier(pct: float, avance: float, meta: float) -> tuple[str, str]:
+        if avance <= 0 and meta <= 0:
+            return ("SIN DATO", "Sin dato")
+        if avance <= 0:
+            return ("SIN DATO", "Sin dato")
+        if pct >= 70:  return ("ÓPTIMO",     "🟢 Óptimo")
+        if pct >= 40:  return ("MODERADO",   "🟡 Moderado")
+        if pct >= 10:  return ("EN PROGRESO","🟠 En progreso")
+        return ("CRÍTICO", "🔴 Crítico")
+
+    tier_a_key, tier_a_lbl = _tier(pct_global_a, sum_avance_a, sum_meta_a)
+    tier_b_key, tier_b_lbl = _tier(pct_global_b, sum_avance_b, sum_meta_b)
+
+    estado_a_titulo = f"{label_a} | {tier_a_lbl}"
+    estado_b_titulo = f"{label_b} | {tier_b_lbl}"
+
+    def _explicacion(label: str, key: str, pct: float, peor: str | None) -> str:
+        if key == "SIN DATO":
+            return f"{label}: sin información disponible."
+        if peor:
+            return (
+                f"{label} se clasifica como {key} ({pct:.1f}%), "
+                f"explicado principalmente por rezagos en '{peor}' y bajos niveles de ejecución general."
+            )
+        return f"{label} se clasifica como {key} ({pct:.1f}%)."
+
+    estado_a_explicacion = _explicacion(label_a, tier_a_key, pct_global_a, peor_a)
+    estado_b_explicacion = _explicacion(label_b, tier_b_key, pct_global_b, peor_b)
+
+    # ── Brecha A vs B (en %) ─────────────────────────────────────────────────
+    if abs(diff_global) < 1e-9:
+        brecha = "A y B presentan el mismo % de avance."
+    elif diff_global > 0:
+        brecha = f"A supera a B en {abs(diff_global):.1f}%"
+    else:
+        brecha = f"B supera a A en {abs(diff_global):.1f}%"
 
     return {
-        "a": {"tipo": a_tipo, "valor": a_valor, "total": sum_a, "pct": total_pct_a},
-        "b": {"tipo": b_tipo, "valor": b_valor, "total": sum_b, "pct": total_pct_b},
+        "a": {
+            "tipo": a_tipo, "valor": a_valor,
+            "label": label_a,
+            "total_avance": sum_avance_a,
+            "total_meta":   sum_meta_a,
+            "pct":          pct_global_a,
+        },
+        "b": {
+            "tipo": b_tipo, "valor": b_valor,
+            "label": label_b,
+            "total_avance": sum_avance_b,
+            "total_meta":   sum_meta_b,
+            "pct":          pct_global_b,
+        },
         "indicadores": indicadores,
+        "banner":   banner,
         "hallazgo": hallazgo,
-        "estado_a": _estado(total_pct_a, f"{a_tipo.upper()}{(' | ' + a_valor) if a_valor else ''}"),
-        "estado_b": _estado(total_pct_b, f"{b_tipo.upper()}{(' | ' + b_valor) if b_valor else ''}"),
-        "brecha": brecha_txt,
+        "resumen":  resumen,
+        "estado_a": estado_a_titulo,
+        "estado_b": estado_b_titulo,
+        "estado_a_explicacion": estado_a_explicacion,
+        "estado_b_explicacion": estado_b_explicacion,
+        "brecha":   brecha,
     }
 
 
