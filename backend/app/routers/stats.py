@@ -141,11 +141,20 @@ async def get_stats_by_template(
     )
 
 
+_PERIODO_TRIM_MAP = {
+    "trim1": "TRIMESTRE 1",
+    "trim2": "TRIMESTRE 2",
+    "trim3": "TRIMESTRE 3",
+    "trim4": "TRIMESTRE 4",
+}
+
+
 @router.get("/detail", response_model=DetailedFormResponse)
 async def get_stats_detail(
     template_id: str = Query(...),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
+    periodo: Optional[str] = Query(None, description="anual | trim1 | trim2 | trim3 | trim4"),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
@@ -175,6 +184,10 @@ async def get_stats_detail(
         query = query.where(Form.fecha_validacion >= datetime.combine(start_date, datetime.min.time()))
     if end_date:
         query = query.where(Form.fecha_validacion <= datetime.combine(end_date, datetime.max.time()))
+
+    trim_value = _PERIODO_TRIM_MAP.get((periodo or "").lower())
+    if trim_value:
+        query = query.where(Form.datos_dinamicos["periodo_reporte"].astext == trim_value)
 
     if search:
         query = query.where(
@@ -218,6 +231,7 @@ async def export_stats_excel(
     template_id: str = Query(...),
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
+    periodo: Optional[str] = Query(None, description="anual | trim1..4"),
     search: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
@@ -239,6 +253,7 @@ async def export_stats_excel(
         template_id=template_id,
         start_date=start_date,
         end_date=end_date,
+        periodo=periodo,
         page=1,
         size=10000,
         search=search,

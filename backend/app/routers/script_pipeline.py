@@ -593,15 +593,18 @@ async def get_kpi_forms(
     kpi_key: str,
     page: int = 1,
     size: int = 20,
-    start_date: Optional[str] = Query(None, description="Fecha inicio YYYY-MM-DD"),
-    end_date: Optional[str] = Query(None, description="Fecha fin YYYY-MM-DD"),
+    periodo: Optional[str] = Query(None, description="anual | trim1 | trim2 | trim3 | trim4"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Devuelve formularios aprobados asociados al template de este sub-KPI."""
+    """Devuelve formularios aprobados asociados al template de este sub-KPI.
+
+    Filtra por trimestre (`periodo_reporte` en datos_dinamicos) o muestra
+    todos los registros del año si periodo es 'anual' o None.
+    """
     from app.models.form import Form, FormStatus
     from app.models.template import Template
-    from sqlalchemy import and_, func as sqlfunc, cast, Date as SADate
-    from datetime import timedelta
+    from sqlalchemy import and_, func as sqlfunc
+    import uuid as _uuid
 
     # Buscar template_id del KPI. Si el script no lo guardó, hacer fallback por
     # código (kpi_key suele coincidir con Template.codigo en el PAI).
@@ -612,19 +615,26 @@ async def get_kpi_forms(
     template_id = kpi.template_id if kpi else None
     if not template_id:
         tpl_lookup = await db.execute(select(Template.id).where(Template.codigo == kpi_key))
-        tpl_id_row = tpl_lookup.scalar_one_or_none()
-        template_id = str(tpl_id_row) if tpl_id_row else None
+        template_id = tpl_lookup.scalar_one_or_none()
     if not template_id:
         return {"total": 0, "page": page, "size": size, "items": [],
                 "kpi_label": kpi.kpi_label if kpi else kpi_key, "template_nombre": None}
+    # Asegurar UUID (puede venir como str del KpiResultado)
+    if isinstance(template_id, str):
+        try:
+            template_id = _uuid.UUID(template_id)
+        except ValueError:
+            return {"total": 0, "page": page, "size": size, "items": [],
+                    "kpi_label": kpi.kpi_label if kpi else kpi_key, "template_nombre": None}
 
-    # Build base filters — cast a DATE para evitar problemas de timezone
-    from datetime import date as PyDate
     base_filters = [Form.plantilla_id == template_id, Form.estado == FormStatus.approved]
-    if start_date:
-        base_filters.append(cast(Form.fecha_carga, SADate) >= datetime.strptime(start_date, "%Y-%m-%d").date())
-    if end_date:
-        base_filters.append(cast(Form.fecha_carga, SADate) <= datetime.strptime(end_date, "%Y-%m-%d").date())
+    # Filtro por trimestre: revisa datos_dinamicos->>'periodo_reporte'
+    periodo_norm = (periodo or "anual").lower()
+    trim_value = _PERIODO_TRIM.get(periodo_norm)
+    if trim_value:
+        base_filters.append(
+            Form.datos_dinamicos["periodo_reporte"].astext == trim_value
+        )
 
     total = await db.scalar(
         select(sqlfunc.count(Form.id)).where(and_(*base_filters))
