@@ -15,42 +15,61 @@
 
     <!-- Header con resumen ───────────────────────────────────── -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-5">
-      <!-- Barra de avance general -->
       <div class="flex-1">
         <h1 class="text-xl font-bold font-montserrat text-ubpd-gris leading-snug">{{ pageTitle }}</h1>
         <p class="text-sm font-barlow text-gray-500 mt-0.5">
-          Formularios aprobados asociados a este indicador
+          Actividades reportadas — periodo
+          <span class="font-semibold text-ubpd-gris">{{ periodoLabel }}</span>
           <span v-if="!loading" class="font-semibold text-ubpd-gris">— {{ total }} registros</span>
         </p>
+
+        <!-- Selector temporal -->
+        <div class="mt-3 inline-flex bg-gray-100 rounded-xl p-1 gap-1" role="tablist">
+          <button
+            v-for="opt in periodoOptions"
+            :key="opt.value"
+            type="button"
+            @click="setPeriodo(opt.value)"
+            :class="[
+              'px-3 py-1 rounded-lg text-xs font-cuerpo font-semibold transition-all',
+              periodo === opt.value
+                ? 'bg-white text-ubpd-teal shadow-sm'
+                : 'text-gray-500 hover:text-ubpd-gris',
+            ]"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+
         <!-- Barra de avance promedio -->
-        <div v-if="!loading && promedioVar1 !== null" class="mt-4">
+        <div v-if="!loading && promedioFinal !== null" class="mt-4">
           <div class="flex items-center justify-between mb-1">
-            <span class="font-cuerpo text-xs text-gray-500 uppercase tracking-wide">Avance promedio (Variable 1)</span>
-            <span class="font-cuerpo text-sm font-bold" :class="colorText(promedioVar1)">
-              {{ promedioVar1.toFixed(1) }}%
+            <span class="font-cuerpo text-xs text-gray-500 uppercase tracking-wide">% Avance final promedio</span>
+            <span class="font-cuerpo text-sm font-bold" :class="colorText(promedioFinal)">
+              {{ promedioFinal.toFixed(1) }}%
             </span>
           </div>
           <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-700"
-              :class="colorBar(promedioVar1)"
-              :style="{ width: `${Math.min(100, promedioVar1)}%` }"
+              :class="colorBar(promedioFinal)"
+              :style="{ width: `${Math.min(100, promedioFinal)}%` }"
             />
           </div>
-          <p class="mt-1 text-xs font-cuerpo" :class="colorText(promedioVar1)">
-            {{ scoreLabel(promedioVar1) }}
+          <p class="mt-1 text-xs font-cuerpo" :class="colorText(promedioFinal)">
+            {{ scoreLabel(promedioFinal) }}
           </p>
         </div>
       </div>
       <!-- Badge estado -->
-      <div v-if="!loading && promedioVar1 !== null"
+      <div v-if="!loading && promedioFinal !== null"
         class="shrink-0 flex flex-col items-center justify-center
                w-24 h-24 rounded-2xl border-2"
-        :class="colorBadgeBg(promedioVar1)">
-        <span class="font-montserrat text-2xl font-bold" :class="colorText(promedioVar1)">
-          {{ promedioVar1.toFixed(0) }}<span class="text-base">%</span>
+        :class="colorBadgeBg(promedioFinal)">
+        <span class="font-montserrat text-2xl font-bold" :class="colorText(promedioFinal)">
+          {{ promedioFinal.toFixed(0) }}<span class="text-base">%</span>
         </span>
-        <span class="font-cuerpo text-xs mt-0.5" :class="colorText(promedioVar1)">avance</span>
+        <span class="font-cuerpo text-xs mt-0.5" :class="colorText(promedioFinal)">avance</span>
       </div>
     </div>
 
@@ -72,78 +91,79 @@
     <div v-else-if="items.length > 0" class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
       <!-- Cabecera de tabla -->
-      <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-ubpd-gris/5 border-b border-gray-100">
-        <div class="col-span-4 font-cuerpo text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Informe / Descripción
-        </div>
-        <div class="col-span-2 font-cuerpo text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:block">
-          Dependencia
-        </div>
-        <div class="col-span-2 font-cuerpo text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:block">
-          Fecha
-        </div>
-        <div class="col-span-3 font-cuerpo text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Avance (Var. 1)
-        </div>
-        <div class="col-span-1 font-cuerpo text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">
-          &nbsp;
-        </div>
+      <div class="grid grid-cols-12 gap-3 px-6 py-3 bg-ubpd-gris/5 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wide font-cuerpo">
+        <div class="col-span-4">Actividad clave</div>
+        <div class="col-span-2 hidden md:block">Dependencia / Trim</div>
+        <div class="col-span-1 text-right">Proyec.</div>
+        <div class="col-span-1 text-right">Alcanz.</div>
+        <div class="col-span-2">% Final</div>
+        <div class="col-span-2 text-center">Estado</div>
       </div>
 
       <!-- Filas -->
       <div
         v-for="item in items"
         :key="item.id"
-        class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-50
-               hover:bg-ubpd-teal/5 transition cursor-pointer items-center"
+        class="grid grid-cols-12 gap-3 px-6 py-4 border-b border-gray-50
+               hover:bg-ubpd-teal/5 transition cursor-pointer items-center text-sm font-cuerpo"
         @click="viewDetail(item.id)"
       >
-        <!-- Informe cualitativo -->
+        <!-- Actividad -->
         <div class="col-span-4">
-          <p class="font-cuerpo text-sm font-medium text-ubpd-gris leading-snug line-clamp-2">
-            {{ getInforme(item.datos_dinamicos) }}
+          <p class="font-medium text-ubpd-gris leading-snug line-clamp-2">
+            {{ getActividad(item.datos_dinamicos) }}
           </p>
-          <p v-if="item.datos_dinamicos?.fecha_referencia" class="font-cuerpo text-xs text-gray-400 mt-0.5 sm:hidden">
-            {{ formatDate(item.datos_dinamicos.fecha_referencia) }}
+          <p class="text-xs text-gray-400 mt-0.5 md:hidden">
+            {{ item.dependency || '—' }} · {{ getTrimestre(item.datos_dinamicos) }}
           </p>
         </div>
 
-        <!-- Dependencia -->
-        <div class="col-span-2 hidden sm:block">
-          <span class="font-cuerpo text-sm text-gray-600 truncate block">{{ item.dependency || '—' }}</span>
-        </div>
-
-        <!-- Fecha -->
+        <!-- Dependencia + trimestre -->
         <div class="col-span-2 hidden md:block">
-          <span class="font-cuerpo text-sm text-gray-500">
-            {{ formatDate(item.datos_dinamicos?.fecha_referencia || item.fecha_usuario || item.fecha_carga) }}
-          </span>
+          <p class="text-gray-700 truncate">{{ item.dependency || '—' }}</p>
+          <p class="text-xs text-gray-400">{{ getTrimestre(item.datos_dinamicos) }}</p>
         </div>
 
-        <!-- Barra de avance var1 -->
-        <div class="col-span-3">
-          <template v-if="getVar1(item.datos_dinamicos) !== null">
+        <!-- Proyectado -->
+        <div class="col-span-1 text-right text-gray-700 tabular-nums">
+          {{ formatPct(item.datos_dinamicos?.pct_avance_proyectado) }}
+        </div>
+
+        <!-- Alcanzado -->
+        <div class="col-span-1 text-right text-gray-700 tabular-nums">
+          {{ formatPct(item.datos_dinamicos?.pct_avance_alcanzado) }}
+        </div>
+
+        <!-- % Avance final con barra -->
+        <div class="col-span-2">
+          <template v-if="getPctFinal(item.datos_dinamicos) !== null">
             <div class="flex items-center gap-2">
               <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   class="h-full rounded-full"
-                  :class="colorBar(getVar1(item.datos_dinamicos)! * 100)"
-                  :style="{ width: `${Math.min(100, getVar1(item.datos_dinamicos)! * 100)}%` }"
+                  :class="colorBar(getPctFinal(item.datos_dinamicos)!)"
+                  :style="{ width: `${Math.min(100, getPctFinal(item.datos_dinamicos)!)}%` }"
                 />
               </div>
-              <span class="font-cuerpo text-xs font-bold shrink-0 w-10 text-right"
-                    :class="colorText(getVar1(item.datos_dinamicos)! * 100)">
-                {{ (getVar1(item.datos_dinamicos)! * 100).toFixed(0) }}%
+              <span class="text-xs font-bold shrink-0 w-10 text-right tabular-nums"
+                    :class="colorText(getPctFinal(item.datos_dinamicos)!)">
+                {{ getPctFinal(item.datos_dinamicos)!.toFixed(0) }}%
               </span>
             </div>
           </template>
-          <span v-else class="font-cuerpo text-xs text-gray-400">—</span>
+          <span v-else class="text-xs text-gray-400">—</span>
         </div>
 
-        <!-- Acción -->
-        <div class="col-span-1 flex justify-end">
+        <!-- Estado -->
+        <div class="col-span-2 flex items-center justify-center gap-2">
+          <span
+            class="text-xs font-semibold px-2.5 py-1 rounded-full"
+            :class="estadoClass(getEstado(item.datos_dinamicos))"
+          >
+            {{ getEstado(item.datos_dinamicos) || '—' }}
+          </span>
           <button
-            class="p-1.5 rounded-lg text-gray-400 hover:text-ubpd-teal hover:bg-ubpd-teal/10 transition"
+            class="p-1 rounded text-gray-300 hover:text-ubpd-teal transition"
             @click.stop="viewDetail(item.id)"
             title="Ver detalle"
           >
@@ -220,6 +240,14 @@ interface KpiForms {
   items: FormItem[]
 }
 
+const periodoOptions = [
+  { value: 'anual', label: 'Anual' },
+  { value: 'trim1', label: 'Trim 1' },
+  { value: 'trim2', label: 'Trim 2' },
+  { value: 'trim3', label: 'Trim 3' },
+  { value: 'trim4', label: 'Trim 4' },
+]
+
 const route = useRoute()
 const router = useRouter()
 const { get } = useApi()
@@ -233,6 +261,7 @@ const items = ref<FormItem[]>([])
 const kpiLabel = ref('')
 const templateNombre = ref<string | null>(null)
 const templateId = ref<string | null>(null)
+const periodo = ref<string>(filterStore.periodo || 'anual')
 
 const kpiKey = computed(() => route.params.kpiKey as string)
 const subKpiKey = computed(() => route.params.subKpiKey as string)
@@ -242,65 +271,97 @@ const pageTitle = computed(() =>
   kpiLabel.value || (route.query.subLabel as string) || subKpiKey.value
 )
 
-// Promedio de var1 (0-1) → % para mostrar en la barra del header
-const promedioVar1 = computed<number | null>(() => {
+const periodoLabel = computed(() =>
+  periodoOptions.find((o) => o.value === periodo.value)?.label ?? 'Anual',
+)
+
+// Promedio de pct_avance_final (0-100)
+const promedioFinal = computed<number | null>(() => {
   if (items.value.length === 0) return null
   const vals = items.value
-    .map((i) => getVar1(i.datos_dinamicos))
+    .map((i) => getPctFinal(i.datos_dinamicos))
     .filter((v): v is number => v !== null)
   if (vals.length === 0) return null
-  return (vals.reduce((a, b) => a + b, 0) / vals.length) * 100
+  return vals.reduce((a, b) => a + b, 0) / vals.length
 })
 
-// ── Helpers de datos ──────────────────────────────────────────
-function getVar1(dd: Record<string, any> | null): number | null {
-  if (!dd) return null
-  const raw = dd['reporte_cuantitativo_variable_1']
-  const n = parseFloat(raw)
+// ── Helpers de datos PAI ──────────────────────────────────────
+function toNum(v: any): number | null {
+  if (v === null || v === undefined || v === '') return null
+  const n = parseFloat(String(v).replace(',', '.'))
   return isNaN(n) ? null : n
 }
 
-function getInforme(dd: Record<string, any> | null): string {
+function getActividad(dd: Record<string, any> | null): string {
   if (!dd) return '—'
   return (
-    dd['informe_cualitativo'] ||
-    dd['nombre_caso'] ||
-    dd['nombre'] ||
-    dd['eje_tematico'] ||
+    dd['actividad_clave'] ||
+    dd['indicador'] ||
+    dd['entregable_trimestre'] ||
+    dd['entregable_total'] ||
     '—'
   )
 }
 
+function getTrimestre(dd: Record<string, any> | null): string {
+  if (!dd) return ''
+  return dd['periodo_reporte'] || dd['trimestre'] || ''
+}
+
+function getPctFinal(dd: Record<string, any> | null): number | null {
+  return toNum(dd?.['pct_avance_final'])
+}
+
+function getEstado(dd: Record<string, any> | null): string {
+  if (!dd) return ''
+  return dd['estado_actividad'] || dd['estado_ponderado'] || ''
+}
+
+function formatPct(v: any): string {
+  const n = toNum(v)
+  return n === null ? '—' : `${n.toFixed(0)}%`
+}
+
 // ── Helpers de color ──────────────────────────────────────────
 function colorBar(pct: number) {
-  if (pct >= 70) return 'bg-ubpd-verde'
-  if (pct >= 40) return 'bg-amber-400'
+  if (pct >= 90) return 'bg-ubpd-verde'
+  if (pct >= 60) return 'bg-amber-400'
   return 'bg-orange-500'
 }
 
 function colorText(pct: number) {
-  if (pct >= 70) return 'text-ubpd-verde'
-  if (pct >= 40) return 'text-amber-600'
+  if (pct >= 90) return 'text-ubpd-verde'
+  if (pct >= 60) return 'text-amber-600'
   return 'text-orange-600'
 }
 
 function colorBadgeBg(pct: number) {
-  if (pct >= 70) return 'border-ubpd-verde/30 bg-green-50'
-  if (pct >= 40) return 'border-amber-300 bg-amber-50'
+  if (pct >= 90) return 'border-ubpd-verde/30 bg-green-50'
+  if (pct >= 60) return 'border-amber-300 bg-amber-50'
   return 'border-orange-300 bg-orange-50'
 }
 
 function scoreLabel(pct: number) {
-  if (pct >= 70) return 'Avanzado'
-  if (pct >= 40) return 'En progreso'
-  return 'Inicial'
+  if (pct >= 90) return 'Cumple'
+  if (pct >= 60) return 'Cumple parcialmente'
+  if (pct >= 1) return 'No cumple'
+  return 'Sin avance'
 }
 
-function formatDate(s: string | null | undefined): string {
-  if (!s) return '—'
-  try {
-    return new Date(s).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
-  } catch { return s }
+function estadoClass(estado: string): string {
+  const s = (estado || '').toLowerCase()
+  if (s.includes('cumple parcial')) return 'bg-amber-50 text-amber-700'
+  if (s === 'cumple') return 'bg-green-50 text-green-700'
+  if (s.includes('no cumple')) return 'bg-orange-50 text-orange-700'
+  if (s.includes('no aplica')) return 'bg-gray-100 text-gray-500'
+  return 'bg-gray-50 text-gray-400'
+}
+
+function setPeriodo(p: string) {
+  periodo.value = p
+  filterStore.setPeriodo(p)
+  page.value = 1
+  loadForms()
 }
 
 function viewDetail(formId: string) {
@@ -310,6 +371,7 @@ function viewDetail(formId: string) {
       kpiLabel: route.query.kpiLabel,
       subLabel: kpiLabel.value,
       templateNombre: templateNombre.value ?? undefined,
+      periodo: periodo.value,
     },
   })
 }
@@ -322,9 +384,11 @@ function changePage(p: number) {
 async function loadForms() {
   loading.value = true
   try {
-    const params: Record<string, string | number> = { page: page.value, size: pageSize }
-    if (filterStore.startDate) params.start_date = filterStore.startDate
-    if (filterStore.endDate) params.end_date = filterStore.endDate
+    const params: Record<string, string | number> = {
+      page: page.value,
+      size: pageSize,
+      periodo: periodo.value,
+    }
     const data = await get<KpiForms>(`/stats/kpis/${subKpiKey.value}/forms`, { params })
     total.value = data.total
     items.value = data.items
@@ -341,5 +405,4 @@ async function loadForms() {
 
 onMounted(loadForms)
 watch(subKpiKey, () => { page.value = 1; loadForms() })
-watch(() => [filterStore.startDate, filterStore.endDate], () => { page.value = 1; loadForms() })
 </script>

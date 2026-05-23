@@ -23,7 +23,7 @@
           {{ templateNombre || 'Detalle de formularios' }}
         </h1>
         <p class="text-sm font-barlow text-gray-500 mt-0.5">
-          {{ statsFilter.startDate }} — {{ statsFilter.endDate }}
+          {{ periodoLabel }}
         </p>
       </div>
 
@@ -42,40 +42,23 @@
       </button>
     </div>
 
-    <!-- Filters row -->
-    <div class="flex flex-wrap items-center gap-3 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-      <div class="flex items-center gap-2">
-        <label class="text-xs font-barlow text-gray-500">Desde</label>
-        <input
-          type="date"
-          :value="statsFilter.startDate"
-          class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-barlow focus:outline-none focus:border-ubpd-verde focus:ring-2 focus:ring-teal-100"
-          @change="onStartDateChange"
-        />
-      </div>
-      <div class="flex items-center gap-2">
-        <label class="text-xs font-barlow text-gray-500">Hasta</label>
-        <input
-          type="date"
-          :value="statsFilter.endDate"
-          class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-barlow focus:outline-none focus:border-ubpd-verde focus:ring-2 focus:ring-teal-100"
-          @change="onEndDateChange"
-        />
-      </div>
-      <div class="flex flex-wrap gap-2 ml-auto">
-        <button
-          v-for="preset in PRESETS"
-          :key="preset.key"
-          type="button"
-          class="px-3 py-1.5 text-xs font-semibold font-barlow rounded-lg border transition-colors"
-          :class="activePreset === preset.key
-            ? 'bg-ubpd-teal text-white border-ubpd-teal'
-            : 'border-gray-300 text-gray-600 hover:border-ubpd-teal hover:text-ubpd-teal'"
-          @click="applyPreset(preset.key)"
-        >
-          {{ preset.label }}
-        </button>
-      </div>
+    <!-- Selector temporal -->
+    <div class="inline-flex bg-gray-100 rounded-xl p-1 gap-1" role="tablist">
+      <button
+        v-for="opt in periodoOptions"
+        :key="opt.value"
+        type="button"
+        @click="setPeriodo(opt.value)"
+        :class="[
+          'px-4 py-1.5 rounded-lg text-sm font-cuerpo font-semibold transition-all',
+          periodo === opt.value
+            ? 'bg-white text-ubpd-teal shadow-sm'
+            : 'text-gray-500 hover:text-ubpd-gris',
+        ]"
+        :aria-pressed="periodo === opt.value"
+      >
+        {{ opt.label }}
+      </button>
     </div>
 
     <!-- Data table -->
@@ -102,28 +85,46 @@
         </button>
       </template>
 
-      <!-- Fecha referencia -->
-      <template #cell-fecha_referencia="{ value }">
-        <span class="text-gray-600 whitespace-nowrap">{{ formatDate(String(value)) }}</span>
-      </template>
-
-      <!-- Campos completados -->
-      <template #cell-campos_completados="{ row }">
-        <span
-          class="font-semibold"
-          :class="Number(row.campos_completados_pct) >= 70 ? 'text-ubpd-verde' : Number(row.campos_completados_pct) >= 30 ? 'text-ubpd-lila' : 'text-ubpd-naranja'"
-        >
-          {{ row.campos_completados }}
+      <!-- Actividad clave -->
+      <template #cell-actividad="{ value }">
+        <span class="text-gray-700 text-sm line-clamp-2" :title="String(value)">
+          {{ truncate(String(value ?? ''), 120) }}
         </span>
       </template>
 
-      <!-- Informe cualitativo (truncated with tooltip) -->
-      <template #cell-informe_cualitativo="{ value }">
-        <div class="relative group max-w-xs">
-          <span class="text-gray-600 text-sm truncate block cursor-help" :title="String(value)">
-            {{ truncate(String(value ?? ''), 100) }}
-          </span>
-        </div>
+      <!-- Trimestre -->
+      <template #cell-trimestre="{ value }">
+        <span class="text-gray-600 text-sm whitespace-nowrap">{{ value }}</span>
+      </template>
+
+      <!-- % Final con barra -->
+      <template #cell-pct_final="{ value }">
+        <template v-if="value !== null && value !== undefined">
+          <div class="flex items-center gap-2">
+            <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden min-w-[70px]">
+              <div
+                class="h-full rounded-full"
+                :class="colorBar(Number(value))"
+                :style="{ width: `${Math.min(100, Number(value))}%` }"
+              />
+            </div>
+            <span class="text-xs font-bold shrink-0 tabular-nums w-10 text-right"
+                  :class="colorText(Number(value))">
+              {{ Number(value).toFixed(0) }}%
+            </span>
+          </div>
+        </template>
+        <span v-else class="text-gray-400">—</span>
+      </template>
+
+      <!-- Estado -->
+      <template #cell-estado="{ value }">
+        <span
+          class="text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+          :class="estadoClass(String(value))"
+        >
+          {{ value || '—' }}
+        </span>
       </template>
 
       <!-- Archivos -->
@@ -195,7 +196,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useApi } from '@/composables/useApi'
-import { useStatsFilter } from '@/stores/statsFilter'
+import { useStatsFilterStore } from '@/stores/statsFilter'
 import type { FileRecord } from '@/types/forms'
 import DataTable from '@/components/tables/DataTable.vue'
 
@@ -208,28 +209,29 @@ interface DetailItem {
   archivos_count: number
 }
 
-type PresetKey = 'this_month' | 'last_quarter' | 'this_year'
-
-const PRESETS: { key: PresetKey; label: string }[] = [
-  { key: 'this_month', label: 'Este mes' },
-  { key: 'last_quarter', label: 'Último trimestre' },
-  { key: 'this_year', label: 'Año actual' },
-]
-
 const PAGE_SIZE = 20
 
 const COLUMNS = [
   { key: 'dependencia', label: 'Dependencia', sortable: true },
-  { key: 'fecha_referencia', label: 'Fecha Referencia', sortable: true },
-  { key: 'campos_completados', label: 'Campos completados', sortable: false },
-  { key: 'informe_cualitativo', label: 'Informe cualitativo', sortable: false },
-  { key: 'archivos', label: 'Archivos', sortable: false, width: '100px' },
+  { key: 'actividad', label: 'Actividad clave', sortable: false },
+  { key: 'trimestre', label: 'Trimestre', sortable: false, width: '110px' },
+  { key: 'pct_final', label: '% Final', sortable: false, width: '160px' },
+  { key: 'estado', label: 'Estado', sortable: false, width: '160px' },
+  { key: 'archivos', label: 'Archivos', sortable: false, width: '90px' },
+]
+
+const periodoOptions = [
+  { value: 'anual', label: 'Anual' },
+  { value: 'trim1', label: 'Trim 1' },
+  { value: 'trim2', label: 'Trim 2' },
+  { value: 'trim3', label: 'Trim 3' },
+  { value: 'trim4', label: 'Trim 4' },
 ]
 
 const route = useRoute()
 const router = useRouter()
 const { get } = useApi()
-const statsFilter = useStatsFilter()
+const filterStore = useStatsFilterStore()
 
 const loading = ref(true)
 const exporting = ref(false)
@@ -237,9 +239,11 @@ const items = ref<DetailItem[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const searchQ = ref('')
-const activePreset = ref<PresetKey | null>(null)
 const indicadorNombre = ref('')
 const templateNombre = ref('')
+const periodo = ref<string>(
+  (route.query.periodo as string) || filterStore.periodo || 'anual',
+)
 
 const showFilesModal = ref(false)
 const loadingFiles = ref(false)
@@ -247,52 +251,59 @@ const modalFiles = ref<FileRecord[]>([])
 
 const templateId = computed(() => route.params.template_id as string)
 
+const periodoLabel = computed(() =>
+  periodoOptions.find((o) => o.value === periodo.value)?.label ?? 'Anual',
+)
+
+function toNum(v: any): number | null {
+  if (v === null || v === undefined || v === '') return null
+  const n = parseFloat(String(v).replace(',', '.'))
+  return isNaN(n) ? null : n
+}
+
 const tableRows = computed(() =>
   items.value.map((item) => {
-    const totalFields = Object.keys(item.datos_dinamicos ?? {}).length
-    const filledFields = Object.values(item.datos_dinamicos ?? {}).filter(
-      (v) => v !== null && v !== undefined && v !== '',
-    ).length
-    const pct = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0
+    const dd = (item.datos_dinamicos ?? {}) as Record<string, unknown>
+    const pctFinal = toNum(dd['pct_avance_final'])
     return {
       id: item.id,
       dependencia: item.dependencia,
-      fecha_referencia: item.fecha_referencia,
-      campos_completados: `${filledFields}/${totalFields} campos`,
-      campos_completados_pct: pct,
-      informe_cualitativo: item.informe_cualitativo,
+      actividad: (dd['actividad_clave'] as string) || (dd['indicador'] as string) || (dd['entregable_trimestre'] as string) || '—',
+      trimestre: (dd['periodo_reporte'] as string) || (dd['trimestre'] as string) || '—',
+      pct_final: pctFinal,
+      estado: (dd['estado_actividad'] as string) || (dd['estado_ponderado'] as string) || '',
       archivos_count: item.archivos_count,
     }
   }),
 )
+
+function colorBar(pct: number) {
+  if (pct >= 90) return 'bg-ubpd-verde'
+  if (pct >= 60) return 'bg-amber-400'
+  return 'bg-orange-500'
+}
+function colorText(pct: number) {
+  if (pct >= 90) return 'text-ubpd-verde'
+  if (pct >= 60) return 'text-amber-600'
+  return 'text-orange-600'
+}
+function estadoClass(estado: string): string {
+  const s = (estado || '').toLowerCase()
+  if (s.includes('cumple parcial')) return 'bg-amber-50 text-amber-700'
+  if (s === 'cumple') return 'bg-green-50 text-green-700'
+  if (s.includes('no cumple')) return 'bg-orange-50 text-orange-700'
+  if (s.includes('no aplica')) return 'bg-gray-100 text-gray-500'
+  return 'bg-gray-50 text-gray-400'
+}
 
 function truncate(str: string, max: number): string {
   if (!str) return '—'
   return str.length > max ? str.slice(0, max) + '…' : str
 }
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return '—'
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-CO', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
-}
-
-function onStartDateChange(e: Event) {
-  statsFilter.setDates((e.target as HTMLInputElement).value, statsFilter.endDate)
-  activePreset.value = null
-  loadData()
-}
-
-function onEndDateChange(e: Event) {
-  statsFilter.setDates(statsFilter.startDate, (e.target as HTMLInputElement).value)
-  activePreset.value = null
-  loadData()
-}
-
-function applyPreset(preset: PresetKey) {
-  statsFilter.setPreset(preset)
-  activePreset.value = preset
+function setPeriodo(p: string) {
+  periodo.value = p
+  filterStore.setPeriodo(p)
   currentPage.value = 1
   loadData()
 }
@@ -314,11 +325,11 @@ function onPageChange(page: number) {
 
 function navigateToDetail(formId: string) {
   const indicadorId = route.params.indicador_id as string
-  const templateId = route.params.template_id as string
+  const tplId = route.params.template_id as string
   router.push({
     name: 'FormDetail',
-    params: { indicador_id: indicadorId, template_id: templateId, form_id: formId },
-    query: statsFilter.queryParams,
+    params: { indicador_id: indicadorId, template_id: tplId, form_id: formId },
+    query: { periodo: periodo.value },
   })
 }
 
@@ -327,7 +338,6 @@ async function openFiles(formId: string) {
   loadingFiles.value = true
   try {
     const form = await get<{ archivos: FileRecord[] }>(`/forms/${formId}`)
-    // Get signed URLs for each file
     const filesWithUrls = await Promise.all(
       (form.archivos ?? []).map(async (f) => {
         try {
@@ -351,10 +361,9 @@ async function exportExcel() {
   try {
     const params = new URLSearchParams({
       template_id: templateId.value,
-      ...statsFilter.queryParams,
+      periodo: periodo.value,
       ...(searchQ.value ? { search: searchQ.value } : {}),
     })
-    // Use window.open to trigger download
     window.open(`${import.meta.env.VITE_API_URL || '/api'}/stats/export?${params}`, '_blank')
   } finally {
     exporting.value = false
@@ -366,7 +375,7 @@ async function loadData() {
   try {
     const params = new URLSearchParams({
       template_id: templateId.value,
-      ...statsFilter.queryParams,
+      periodo: periodo.value,
       page: String(currentPage.value),
       size: String(PAGE_SIZE),
     })
@@ -376,7 +385,6 @@ async function loadData() {
     items.value = result.items
     total.value = result.total
 
-    // Set names from route query
     if (route.query.indicador_nombre) indicadorNombre.value = String(route.query.indicador_nombre)
     if (route.query.template_nombre) templateNombre.value = String(route.query.template_nombre)
   } catch {
@@ -387,12 +395,7 @@ async function loadData() {
   }
 }
 
-onMounted(() => {
-  if (route.query.start_date) {
-    statsFilter.setDates(String(route.query.start_date), String(route.query.end_date ?? statsFilter.endDate))
-  }
-  loadData()
-})
+onMounted(loadData)
 
 watch(templateId, () => {
   currentPage.value = 1

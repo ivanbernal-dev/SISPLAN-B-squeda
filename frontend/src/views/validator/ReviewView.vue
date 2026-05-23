@@ -71,34 +71,74 @@
           </div>
         </div>
 
-        <!-- Campos dinámicos -->
+        <!-- Campos del template (excluyendo validator_only) — lectura -->
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
           <h3 class="font-subtitulo font-semibold text-ubpd-gris mb-3">Datos del Registro</h3>
           <div
-            v-for="(value, key) in formData.datos_dinamicos"
-            :key="String(key)"
+            v-for="field in dependencyFields"
+            :key="field.name"
             class="space-y-1"
           >
             <label class="font-cuerpo font-medium text-xs text-gray-500 uppercase tracking-wide">
-              {{ formatFieldName(String(key)) }}
+              {{ field.label || formatFieldName(field.name) }}
             </label>
             <div class="w-full font-cuerpo text-sm bg-gray-50 border border-gray-200
-                        rounded-lg px-4 py-2.5 text-gray-600">
-              {{ value ?? '—' }}
+                        rounded-lg px-4 py-2.5 text-gray-600 whitespace-pre-wrap">
+              {{ formData.datos_dinamicos?.[field.name] ?? '—' }}
             </div>
           </div>
         </div>
 
-        <!-- Informe Cualitativo -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h3 class="font-subtitulo font-semibold text-ubpd-gris mb-3">Informe Cualitativo</h3>
-          <textarea
-            v-autoresize
-            :value="formData.informe_cualitativo ?? '—'"
-            disabled
-            class="w-full font-cuerpo text-sm bg-gray-50 border border-gray-200
-                   rounded-lg px-4 py-3 text-gray-600 cursor-not-allowed min-h-[100px]"
-          />
+        <!-- Sección OAP — el validador completa estos campos al aprobar -->
+        <div
+          v-if="validatorFields.length"
+          class="bg-amber-50 rounded-2xl border-2 border-amber-300 shadow-sm p-5 space-y-4"
+        >
+          <div class="flex items-center gap-2 mb-1">
+            <svg class="w-5 h-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.069-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+            <h3 class="font-subtitulo font-semibold text-amber-900">
+              Observaciones del Validador (OAP)
+            </h3>
+          </div>
+          <p class="font-cuerpo text-xs text-amber-800/80 -mt-1 mb-2">
+            Completa estos campos antes de aprobar el formulario. La dependencia no los ve ni los puede modificar.
+          </p>
+          <div v-for="field in validatorFields" :key="field.name" class="space-y-1">
+            <label class="font-cuerpo font-medium text-sm text-amber-900">
+              {{ field.label || formatFieldName(field.name) }}
+              <span v-if="field.required" class="text-red-600">*</span>
+            </label>
+            <textarea
+              v-if="field.type === 'textarea'"
+              v-autoresize
+              v-model="validatorValues[field.name]"
+              class="w-full font-cuerpo text-sm bg-white border border-amber-300 rounded-lg
+                     px-4 py-3 min-h-[100px] focus:outline-none focus:border-amber-500
+                     focus:ring-2 focus:ring-amber-200"
+              :placeholder="`Escribe aquí las ${(field.label || '').toLowerCase()}...`"
+            />
+            <select
+              v-else-if="field.type === 'select'"
+              v-model="validatorValues[field.name]"
+              class="w-full font-cuerpo text-sm bg-white border border-amber-300 rounded-lg
+                     px-4 py-2.5 focus:outline-none focus:border-amber-500
+                     focus:ring-2 focus:ring-amber-200"
+            >
+              <option value="">— Seleccionar —</option>
+              <option v-for="opt in (field.options || [])" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
+            <input
+              v-else
+              :type="field.type === 'number' ? 'number' : (field.type === 'date' ? 'date' : 'text')"
+              v-model="validatorValues[field.name]"
+              class="w-full font-cuerpo text-sm bg-white border border-amber-300 rounded-lg
+                     px-4 py-2.5 focus:outline-none focus:border-amber-500
+                     focus:ring-2 focus:ring-amber-200"
+            />
+          </div>
         </div>
       </div>
 
@@ -337,7 +377,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useNotificationsStore } from '@/stores/notifications'
@@ -354,6 +394,17 @@ interface Archivo {
   tamaño_bytes?: number
 }
 
+interface FieldConfig {
+  name: string
+  label: string
+  type: string
+  readonly?: boolean
+  required?: boolean
+  validator_only?: boolean
+  options?: string[]
+  default?: unknown
+}
+
 interface FormData {
   id: string
   template_nombre: string
@@ -365,6 +416,7 @@ interface FormData {
   datos_dinamicos: Record<string, unknown>
   informe_cualitativo: string | null
   archivos: Archivo[]
+  plantilla?: { configuracion_campos?: { fields?: FieldConfig[]; campos?: FieldConfig[] } }
 }
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
@@ -384,6 +436,20 @@ const showApproveConfirm = ref(false)
 const showRejectionForm  = ref(false)
 const rejectionComment   = ref('')
 
+// Valores que el validador llenará para los campos validator_only del template
+const validatorValues = reactive<Record<string, unknown>>({})
+
+// Lista de campos del template (separados entre los que llena la dependencia y los del validador)
+const allTemplateFields = computed<FieldConfig[]>(() => {
+  const cfg = formData.value?.plantilla?.configuracion_campos
+  if (!cfg) return []
+  return (cfg.fields || cfg.campos || []) as FieldConfig[]
+})
+const validatorFields  = computed(() => allTemplateFields.value.filter((f) => f.validator_only))
+const dependencyFields = computed(() =>
+  allTemplateFields.value.filter((f) => !f.validator_only && f.type !== 'computed' && f.type !== 'archivos'),
+)
+
 // Estado para botones de archivo
 const activeFileId     = ref<string | null>(null)
 const activeFileAction = ref<'view' | 'download' | null>(null)
@@ -397,6 +463,11 @@ async function loadForm() {
   loading.value = true
   try {
     formData.value = await get<FormData>(`/forms/${formId}`)
+    // Pre-cargar valores actuales de campos validator_only (puede que ya tengan default)
+    const datos = formData.value?.datos_dinamicos || {}
+    for (const f of validatorFields.value) {
+      validatorValues[f.name] = datos[f.name] ?? f.default ?? ''
+    }
     // Pre-cargar thumbnails de imágenes en background (no bloqueante)
     if (formData.value?.archivos?.length) {
       loadImageThumbs(formData.value.archivos)
@@ -502,9 +573,25 @@ async function downloadFile(fileId: string, nombre?: string) {
 // ─── Acciones de validación ───────────────────────────────────────────────────
 
 async function handleApprove() {
+  // Validar campos validator_only requeridos
+  const faltantes = validatorFields.value.filter(
+    (f) => f.required && (validatorValues[f.name] === undefined || validatorValues[f.name] === ''),
+  )
+  if (faltantes.length) {
+    notifications.error(
+      'Campos obligatorios pendientes',
+      `Complete: ${faltantes.map((f) => f.label).join(', ')}`,
+    )
+    showApproveConfirm.value = false
+    return
+  }
+
   actionLoading.value = true
   try {
-    await patch(`/validation/${formId}/approve`, {})
+    const body = validatorFields.value.length
+      ? { validator_fields: { ...validatorValues } }
+      : {}
+    await patch(`/validation/${formId}/approve`, body)
     notifications.success('Registro validado', 'El registro ha sido aprobado.')
     router.push('/validator/inbox')
   } catch {

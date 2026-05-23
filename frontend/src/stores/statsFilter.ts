@@ -23,6 +23,8 @@ export const useStatsFilterStore = defineStore('statsFilter', () => {
 
   const startDate = ref<string>(toIsoDate(new Date(now.getFullYear(), 0, 1)))
   const endDate   = ref<string>(toIsoDate(now))
+  /** Selector temporal de KPIs del PAI: anual | trim1 | trim2 | trim3 | trim4 */
+  const periodo   = ref<string>('anual')
 
   // ─── Getters ──────────────────────────────────────────
 
@@ -31,6 +33,10 @@ export const useStatsFilterStore = defineStore('statsFilter', () => {
     start_date: startDate.value,
     end_date:   endDate.value,
   }))
+
+  function setPeriodo(p: string): void {
+    periodo.value = p
+  }
 
   /** Rango formateado legible */
   const formattedRange = computed(() => {
@@ -84,10 +90,12 @@ export const useStatsFilterStore = defineStore('statsFilter', () => {
   return {
     startDate,
     endDate,
+    periodo,
     apiParams,
     formattedRange,
     setRange,
     setPreset,
+    setPeriodo,
     reset,
   }
 })

@@ -20,6 +20,16 @@ class FieldConfig(BaseModel):
     default: Optional[Any] = None
     required: bool = True
     options: Optional[List[str]] = None  # Para campos select
+    # Campo cuyo valor sólo lo edita el VALIDADOR al aprobar el formulario.
+    # La dependencia NO lo ve / no lo puede modificar. Cuando es True el
+    # campo se considera siempre readonly desde el punto de vista de la dependencia.
+    validator_only: bool = False
+    # Fórmula de cálculo automático. El frontend y el backend lo recalculan
+    # SIEMPRE al guardar/cargar, sobreescribiendo cualquier valor enviado.
+    # Valores soportados:
+    #   "ratio_alcanzado_proyectado"           → pct_avance_alcanzado / pct_avance_proyectado
+    #   "estado_cumplimiento_from_pct_final"   → Cumple/Parcial/No Cumple según pct_avance_final
+    auto_calculate: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

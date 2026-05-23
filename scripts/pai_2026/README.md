@@ -27,6 +27,23 @@ constantes del producto (readonly, pre-llenados), variables de la actividad
 editables por la dependencia, ponderaciones calculadas, comentarios y
 observaciones del validador (OAP).
 
+## Campos especiales
+
+Cada template marca campos con dos flags personalizados:
+
+### `validator_only: true`
+La dependencia NO ve el campo. Sólo el validador lo edita al aprobar el form.
+Aplica a `obs_oap` y `obs_oap_estado` (las Observaciones y Recomendaciones OAP).
+
+### `auto_calculate: "<nombre>"`
+El frontend lo recalcula en tiempo real al editar los inputs, y el backend lo
+recalcula al guardar / cargar Excel (sobreescribe cualquier valor enviado).
+
+| Campo | Fórmula | Detalle |
+|---|---|---|
+| `pct_avance_final` | `ratio_alcanzado_proyectado` | `alcanzado / proyectado` (si proyectado=0 → `None` / "No Aplica") |
+| `estado_actividad` | `estado_cumplimiento_from_pct_final` | ≥90% Cumple, 70–89% Parcial, <70% No Cumple, sin dato → No Aplica |
+
 ## Cómo correr el setup desde cero
 
 > ⚠️ **Borra todos los formularios respondidos, KPIs y templates existentes.**

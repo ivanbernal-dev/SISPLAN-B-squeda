@@ -11,6 +11,25 @@
           Indicadores principales del proceso de búsqueda
           <span v-if="updatedAt" class="ml-2 text-gray-400">— Actualizado: {{ updatedAt }}</span>
         </p>
+
+        <!-- Selector temporal -->
+        <div class="mt-5 inline-flex bg-gray-100 rounded-xl p-1 gap-1" role="tablist">
+          <button
+            v-for="opt in periodoOptions"
+            :key="opt.value"
+            type="button"
+            @click="setPeriodo(opt.value)"
+            :class="[
+              'px-4 py-1.5 rounded-lg text-sm font-cuerpo font-semibold transition-all',
+              periodo === opt.value
+                ? 'bg-white text-ubpd-teal shadow-sm'
+                : 'text-gray-500 hover:text-ubpd-gris',
+            ]"
+            :aria-pressed="periodo === opt.value"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -84,7 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import GaugeChart from '@/components/charts/GaugeChart.vue'
@@ -96,6 +115,7 @@ interface KpiNivel1 {
   valor: number
   descripcion: string | null
   updated_at: string | null
+  periodo?: string
 }
 
 const router = useRouter()
@@ -105,6 +125,21 @@ const filterStore = useStatsFilterStore()
 const loading = ref(true)
 const kpis = ref<KpiNivel1[]>([])
 const updatedAt = ref<string | null>(null)
+const periodo = ref<string>(filterStore.periodo || 'anual')
+
+const periodoOptions = [
+  { value: 'anual', label: 'Anual' },
+  { value: 'trim1', label: 'Trim 1' },
+  { value: 'trim2', label: 'Trim 2' },
+  { value: 'trim3', label: 'Trim 3' },
+  { value: 'trim4', label: 'Trim 4' },
+]
+
+function setPeriodo(p: string) {
+  periodo.value = p
+  filterStore.setPeriodo(p)
+  loadKpis()
+}
 
 function gaugeColor(v: number): string {
   if (v >= 70) return '#3e9c45'
@@ -113,15 +148,13 @@ function gaugeColor(v: number): string {
 }
 
 function navigateToLevel2(kpiKey: string, label: string) {
-  router.push({ path: `/estadisticas/${kpiKey}`, query: { label } })
+  router.push({ path: `/estadisticas/${kpiKey}`, query: { label, periodo: periodo.value } })
 }
 
 async function loadKpis() {
   loading.value = true
   try {
-    // Los KPIs nivel 1 siempre muestran el último valor guardado del pipeline
-    // El filtro de fecha solo afecta la lista de formularios (nivel 3)
-    const data = await get<KpiNivel1[]>('/stats/kpis')
+    const data = await get<KpiNivel1[]>('/stats/kpis', { params: { periodo: periodo.value } })
     kpis.value = data
     const last = data.find((k) => k.updated_at)?.updated_at
     if (last) {

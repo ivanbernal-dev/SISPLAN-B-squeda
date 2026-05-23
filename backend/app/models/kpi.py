@@ -23,6 +23,11 @@ class KpiResultado(Base):
     nivel1_key = Column(String(120), nullable=True)   # FK lógica al KPI padre (nivel 2)
     template_id = Column(String(36), nullable=True)   # UUID del template DB asociado
     descripcion = Column(Text, nullable=True)
+    # Payload extendido (JSON) — el pipeline guarda aquí desglose por trimestre,
+    # anual, n_forms, estado, etc. para que el frontend pueda filtrar por período
+    # sin re-ejecutar el pipeline. Estructura:
+    #   { "anual": {"pct": .., "estado": ..}, "por_trimestre": {"TRIMESTRE 1": {...}, ...} }
+    payload_json = Column(Text, nullable=True)
     activo = Column(Boolean, default=True)            # Visible en la vista pública
     updated_at = Column(
         DateTime(timezone=True),

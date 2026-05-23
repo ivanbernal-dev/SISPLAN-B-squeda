@@ -15,9 +15,28 @@ from app.database import get_db
 from app.dependencies import get_client_ip, get_validator_user
 from app.models.audit_log import AuditLog
 from app.models.form import Form, FormStatus
+from app.models.template import Template
 from app.models.user import User
 from app.schemas.form import FormListResponse, FormResponse, RejectRequest
 from app.tasks.pipeline_tasks import process_form_approved, run_pipeline_on_approval
+
+
+class ApproveRequest(BaseModel):
+    """
+    Body opcional para el endpoint /approve. Permite que el validador
+    establezca los valores de los campos marcados como `validator_only: true`
+    en la configuración del template (típicamente las observaciones OAP).
+    """
+    validator_fields: Optional[Dict[str, Any]] = None
+    comentario: Optional[str] = None
+
+
+def _validator_only_names(tpl: Template | None) -> set[str]:
+    if tpl is None:
+        return set()
+    cfg = tpl.configuracion_campos or {}
+    fields = cfg.get("fields") or cfg.get("campos") or []
+    return {f.get("name") for f in fields if f.get("validator_only") and f.get("name")}
 
 router = APIRouter(prefix="/validation", tags=["Validación"])
 
@@ -126,12 +145,18 @@ async def get_validation_history(
 async def approve_form(
     request: Request,
     form_id: uuid.UUID,
+    body: ApproveRequest | None = None,
     current_user: User = Depends(get_validator_user),
     db: AsyncSession = Depends(get_db),
 ) -> FormResponse:
     """
     Aprueba un formulario pendiente.
-    Cambia el estado a 'approved' y dispara la tarea Celery de cálculo de estadísticas.
+
+    El body es opcional. Si incluye `validator_fields` con los nombres de los
+    campos marcados como `validator_only` en el template, esos valores se
+    almacenan en `datos_dinamicos` antes de aprobar.
+
+    Cambia el estado a 'approved' y dispara la tarea Celery de cálculo.
     """
     form = await _load_form(db, form_id)
     if form is None:
@@ -148,6 +173,16 @@ async def approve_form(
             detail=f"Este formulario fue cargado por Excel y debe validarse como lote completo. "
                    f"Usa la sección 'Carga Excel' del validador (lote: {form.lote_excel_id[:8]}...).",
         )
+
+    # Inyectar valores de campos validator_only (si se enviaron y existen en el template)
+    if body and body.validator_fields:
+        allowed = _validator_only_names(form.plantilla)
+        nuevos = dict(form.datos_dinamicos or {})
+        for nombre, valor in body.validator_fields.items():
+            if nombre in allowed:
+                nuevos[nombre] = valor
+        form.datos_dinamicos = nuevos
+        # SQLAlchemy detecta el cambio porque reemplazamos el dict completo
 
     form.estado = FormStatus.approved
     form.validado_por_id = current_user.id
@@ -237,6 +272,8 @@ class LoteDetalle(BaseModel):
     total_registros: int
     campos: List[str]
     registros: List[Dict[str, Any]]
+    plantilla_id: Optional[str] = None
+    template_fields: Optional[List[Dict[str, Any]]] = None
 
 
 @router.get("/lotes", response_model=List[LoteResumen])
@@ -318,6 +355,12 @@ async def get_batch_detail(
         datos["fecha_referencia"] = str(f.fecha_usuario) if f.fecha_usuario else ""
         registros.append(datos)
 
+    # Lista completa de campos del template (con validator_only) para el panel OAP
+    template_fields_full: list[dict] = []
+    if first.plantilla and first.plantilla.configuracion_campos:
+        cfg = first.plantilla.configuracion_campos
+        template_fields_full = cfg.get("fields") or cfg.get("campos") or []
+
     return LoteDetalle(
         lote_id=lote_id,
         template_nombre=first.plantilla.nombre if first.plantilla else "",
@@ -327,6 +370,8 @@ async def get_batch_detail(
         total_registros=len(forms),
         campos=campos,
         registros=registros,
+        plantilla_id=str(first.plantilla.id) if first.plantilla else None,
+        template_fields=template_fields_full,
     )
 
 
@@ -334,15 +379,21 @@ async def get_batch_detail(
 async def approve_batch(
     request: Request,
     lote_id: str,
+    body: ApproveRequest | None = None,
     current_user: User = Depends(get_validator_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """Aprueba todos los formularios de un lote Excel."""
+    """
+    Aprueba todos los formularios de un lote Excel.
+
+    `body.validator_fields` aplica los mismos valores (campos validator_only)
+    a TODOS los formularios del lote.
+    """
     result = await db.execute(
         select(Form).where(
             Form.lote_excel_id == lote_id,
             Form.estado == FormStatus.pending,
-        )
+        ).options(selectinload(Form.plantilla))
     )
     forms = result.scalars().all()
     if not forms:
@@ -352,6 +403,14 @@ async def approve_batch(
     now = datetime.now(timezone.utc)
     approved_ids = []
     for f in forms:
+        if body and body.validator_fields:
+            allowed = _validator_only_names(f.plantilla)
+            nuevos = dict(f.datos_dinamicos or {})
+            for nombre, valor in body.validator_fields.items():
+                if nombre in allowed:
+                    nuevos[nombre] = valor
+            f.datos_dinamicos = nuevos
+
         f.estado = FormStatus.approved
         f.validado_por_id = current_user.id
         f.fecha_validacion = now

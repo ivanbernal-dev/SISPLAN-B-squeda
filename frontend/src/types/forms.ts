@@ -11,6 +11,13 @@ export interface FieldConfig {
   required?: boolean
   options?: { value: string; label: string }[]
   formula?: string
+  /** Si true, sólo lo edita el validador al aprobar (no lo ve la dependencia). */
+  validator_only?: boolean
+  /** Fórmula de cálculo automático aplicada en frontend y backend.
+   *  Valores soportados:
+   *    'ratio_alcanzado_proyectado'           → pct_alcanzado / pct_proyectado
+   *    'estado_cumplimiento_from_pct_final'   → Cumple/Parcial/No Cumple/No Aplica */
+  auto_calculate?: string
 }
 
 export interface FormSchema {

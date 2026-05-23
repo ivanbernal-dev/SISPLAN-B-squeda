@@ -23,13 +23,30 @@
             <p class="text-xs font-barlow text-gray-400 mt-1 text-center">Avance general</p>
           </div>
           <!-- Título -->
-          <div class="flex flex-col justify-center">
+          <div class="flex flex-col justify-center flex-1">
             <h1 class="text-2xl font-bold font-montserrat text-ubpd-gris leading-snug">
               {{ kpiLabel }}
             </h1>
             <p class="text-sm font-barlow text-gray-500 mt-1">
               Sub-indicadores del indicador seleccionado
             </p>
+            <!-- Selector temporal -->
+            <div class="mt-3 inline-flex bg-gray-100 rounded-xl p-1 gap-1 self-start" role="tablist">
+              <button
+                v-for="opt in periodoOptions"
+                :key="opt.value"
+                type="button"
+                @click="setPeriodo(opt.value)"
+                :class="[
+                  'px-3 py-1 rounded-lg text-xs font-cuerpo font-semibold transition-all',
+                  periodo === opt.value
+                    ? 'bg-white text-ubpd-teal shadow-sm'
+                    : 'text-gray-500 hover:text-ubpd-gris',
+                ]"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -135,6 +152,23 @@ const filterStore = useStatsFilterStore()
 const loading = ref(true)
 const subKpis = ref<SubKpi[]>([])
 const parentKpi = ref<ParentKpi | null>(null)
+const periodo = ref<string>(
+  (route.query.periodo as string) || filterStore.periodo || 'anual',
+)
+
+const periodoOptions = [
+  { value: 'anual', label: 'Anual' },
+  { value: 'trim1', label: 'Trim 1' },
+  { value: 'trim2', label: 'Trim 2' },
+  { value: 'trim3', label: 'Trim 3' },
+  { value: 'trim4', label: 'Trim 4' },
+]
+
+function setPeriodo(p: string) {
+  periodo.value = p
+  filterStore.setPeriodo(p)
+  loadData()
+}
 
 const kpiKey = computed(() => route.params.indicadorId as string)
 const kpiLabel = computed(() =>
@@ -169,10 +203,13 @@ function navigateToForms(kpi: SubKpi) {
 async function loadData() {
   loading.value = true
   try {
-    // Los KPIs nivel 2 siempre muestran el último valor guardado del pipeline
-    // El filtro de fecha solo afecta la lista de formularios (nivel 3)
-    subKpis.value = await get<SubKpi[]>(`/stats/kpis/${kpiKey.value}`)
-    const nivel1 = await get<ParentKpi[]>('/stats/kpis')
+    subKpis.value = await get<SubKpi[]>(
+      `/stats/kpis/${kpiKey.value}`,
+      { params: { periodo: periodo.value } },
+    )
+    const nivel1 = await get<ParentKpi[]>(
+      '/stats/kpis', { params: { periodo: periodo.value } },
+    )
     parentKpi.value = nivel1.find((k) => k.key === kpiKey.value) ?? null
   } catch {
     subKpis.value = []

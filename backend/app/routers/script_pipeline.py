@@ -274,11 +274,14 @@ async def _load_dataframes(db: AsyncSession) -> tuple[dict, dict]:
         .join(Template, Form.plantilla_id == Template.id)
         .where(Form.estado == FormStatus.approved)
     )
+    # Agrupar por CÓDIGO del template (estable + corto). Si un template no tiene
+    # código, cae al nombre como fallback.
     grouped: dict[str, list] = {}
     meta: dict[str, dict] = {}
     for datos, nombre, tid, codigo in rows.all():
-        grouped.setdefault(nombre, []).append(datos or {})
-        meta[nombre] = {"id": str(tid), "nombre": nombre, "codigo": codigo}
+        key = codigo or nombre
+        grouped.setdefault(key, []).append(datos or {})
+        meta[key] = {"id": str(tid), "nombre": nombre, "codigo": codigo}
 
     dfs = {name: pd.DataFrame(rows) for name, rows in grouped.items()}
     return dfs, meta
@@ -379,6 +382,14 @@ async def run_script(
             }
         # Guardar en BD
         try:
+            import json as _json
+
+            def _payload(item: dict) -> str | None:
+                """Extrae anual + por_trimestre como JSON si están presentes."""
+                extra = {k: v for k, v in item.items()
+                         if k in ("anual", "por_trimestre", "n_forms")}
+                return _json.dumps(extra, ensure_ascii=False) if extra else None
+
             nivel1_items = resultado.get("nivel1", [])
             nivel2_map = resultado.get("nivel2", {})
 
@@ -393,6 +404,7 @@ async def run_script(
                     kpi.kpi_label = item.get("label", key)
                     kpi.valor = float(item.get("valor", 0.0))
                     kpi.descripcion = item.get("descripcion")
+                    kpi.payload_json = _payload(item)
                     kpi.updated_at = datetime.now(timezone.utc)
                 else:
                     db.add(KpiResultado(
@@ -400,6 +412,7 @@ async def run_script(
                         kpi_label=item.get("label", key),
                         valor=float(item.get("valor", 0.0)),
                         descripcion=item.get("descripcion"),
+                        payload_json=_payload(item),
                     ))
 
             # Upsert nivel 2
@@ -415,6 +428,7 @@ async def run_script(
                         kpi.kpi_label = item.get("label", key)
                         kpi.valor = float(item.get("valor", 0.0))
                         kpi.nivel1_key = parent_key
+                        kpi.payload_json = _payload(item)
                         if tid:
                             kpi.template_id = str(tid)
                         kpi.updated_at = datetime.now(timezone.utc)
@@ -425,6 +439,7 @@ async def run_script(
                             valor=float(item.get("valor", 0.0)),
                             nivel1_key=parent_key,
                             template_id=str(tid) if tid else None,
+                            payload_json=_payload(item),
                         ))
 
             await db.commit()
@@ -489,9 +504,54 @@ _LINEA_KEY_TO_PREFIX = {
     "kpi_linea5": "L5",
 }
 
+_PERIODO_TRIM = {
+    "trim1": "TRIMESTRE 1", "trim2": "TRIMESTRE 2",
+    "trim3": "TRIMESTRE 3", "trim4": "TRIMESTRE 4",
+    "t1":    "TRIMESTRE 1", "t2":    "TRIMESTRE 2",
+    "t3":    "TRIMESTRE 3", "t4":    "TRIMESTRE 4",
+}
+
+
+def _valor_por_periodo(kpi: KpiResultado, periodo: str | None) -> tuple[float, dict | None]:
+    """
+    Dado un KpiResultado y un período (None|anual|trim1..trim4) devuelve
+    (valor, payload_dict). Si no hay payload_json o el período no aplica,
+    devuelve el valor plano original.
+    """
+    import json as _json
+    payload = None
+    if kpi.payload_json:
+        try:
+            payload = _json.loads(kpi.payload_json)
+        except Exception:
+            payload = None
+
+    if not payload:
+        return (float(kpi.valor or 0), None)
+
+    if periodo in (None, "anual", "year", ""):
+        anual = payload.get("anual") or {}
+        return (float(anual.get("pct", kpi.valor or 0)), payload)
+
+    trim_key = _PERIODO_TRIM.get((periodo or "").lower())
+    if not trim_key:
+        return (float(kpi.valor or 0), payload)
+
+    pt = (payload.get("por_trimestre") or {}).get(trim_key) or {}
+    return (float(pt.get("pct", 0.0)), payload)
+
+
 @public_router.get("")
-async def get_kpis_nivel1(db: AsyncSession = Depends(get_db)):
-    """Devuelve los KPIs nivel 1 almacenados por el último pipeline ejecutado."""
+async def get_kpis_nivel1(
+    periodo: Optional[str] = Query(None, description="anual | trim1 | trim2 | trim3 | trim4"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    KPIs nivel 1 (Línea Estratégica) — velocímetros del primer nivel.
+
+    ?periodo=anual            → ratio acumulado año (default)
+    ?periodo=trim1..trim4     → % avance ponderado de ese trimestre
+    """
     result = await db.execute(
         select(KpiResultado)
         .where(KpiResultado.nivel == 1, KpiResultado.activo.isnot(False))
@@ -501,19 +561,29 @@ async def get_kpis_nivel1(db: AsyncSession = Depends(get_db)):
 
     if not kpis:
         defaults = [
-            ("kpi_linea1", "Línea 1 — Investigación Humanitaria y Extrajudicial", "IHE: investigación, forense, identificación y búsqueda territorial"),
-            ("kpi_linea2", "Línea 2 — Participación y Gestión Territorial",        "Articulación con víctimas, familias y organizaciones de búsqueda"),
-            ("kpi_linea3", "Línea 3 — Despliegue y Modelo Operativo",              "Consolidación del modelo operativo descentralizado"),
-            ("kpi_linea4", "Línea 4 — Gestión del Conocimiento",                   "Sistematización, aprendizaje institucional y gestión del dato"),
-            ("kpi_linea5", "Línea 5 — Coordinación y Articulación Interinstitucional", "Coordinación con entidades del SIVJRNR y cooperación internacional"),
+            ("L1", "Línea 1 — Investigación Humanitaria y Extrajudicial", ""),
+            ("L2", "Línea 2 — Memoria y Legado", ""),
+            ("L3", "Línea 3 — Articulación Interinstitucional", ""),
+            ("L4", "Línea 4 — Comunicaciones y Pedagogía", ""),
+            ("L5", "Línea 5 — Participación de Familias y Personas Buscadoras", ""),
+            ("L6", "Línea 6 — Soporte Estratégico y Operativo", ""),
         ]
-        return [{"key": k, "label": l, "valor": 0.0, "descripcion": d, "updated_at": None} for k, l, d in defaults]
+        return [{"key": k, "label": l, "valor": 0.0, "descripcion": d, "updated_at": None,
+                 "periodo": periodo or "anual"} for k, l, d in defaults]
 
-    return [
-        {"key": k.kpi_key, "label": k.kpi_label, "valor": k.valor,
-         "descripcion": k.descripcion, "updated_at": k.updated_at.isoformat() if k.updated_at else None}
-        for k in kpis
-    ]
+    items = []
+    for k in kpis:
+        valor, payload = _valor_por_periodo(k, periodo)
+        items.append({
+            "key": k.kpi_key, "label": k.kpi_label,
+            "valor": valor,
+            "descripcion": k.descripcion,
+            "periodo": periodo or "anual",
+            "anual": (payload or {}).get("anual"),
+            "por_trimestre": (payload or {}).get("por_trimestre"),
+            "updated_at": k.updated_at.isoformat() if k.updated_at else None,
+        })
+    return items
 
 
 # ── Público: GET formularios aprobados de un KPI nivel 2 ─────────────────────
@@ -533,17 +603,24 @@ async def get_kpi_forms(
     from sqlalchemy import and_, func as sqlfunc, cast, Date as SADate
     from datetime import timedelta
 
-    # Buscar template_id del KPI
+    # Buscar template_id del KPI. Si el script no lo guardó, hacer fallback por
+    # código (kpi_key suele coincidir con Template.codigo en el PAI).
     kpi_res = await db.execute(
         select(KpiResultado).where(KpiResultado.kpi_key == kpi_key)
     )
     kpi = kpi_res.scalar_one_or_none()
-    if not kpi or not kpi.template_id:
-        return {"total": 0, "page": page, "size": size, "items": [], "kpi_label": kpi_key, "template_nombre": None}
+    template_id = kpi.template_id if kpi else None
+    if not template_id:
+        tpl_lookup = await db.execute(select(Template.id).where(Template.codigo == kpi_key))
+        tpl_id_row = tpl_lookup.scalar_one_or_none()
+        template_id = str(tpl_id_row) if tpl_id_row else None
+    if not template_id:
+        return {"total": 0, "page": page, "size": size, "items": [],
+                "kpi_label": kpi.kpi_label if kpi else kpi_key, "template_nombre": None}
 
     # Build base filters — cast a DATE para evitar problemas de timezone
     from datetime import date as PyDate
-    base_filters = [Form.plantilla_id == kpi.template_id, Form.estado == FormStatus.approved]
+    base_filters = [Form.plantilla_id == template_id, Form.estado == FormStatus.approved]
     if start_date:
         base_filters.append(cast(Form.fecha_carga, SADate) >= datetime.strptime(start_date, "%Y-%m-%d").date())
     if end_date:
@@ -563,16 +640,16 @@ async def get_kpi_forms(
     forms = rows.scalars().all()
 
     # Nombre del template
-    tmpl_res = await db.execute(select(Template.nombre).where(Template.id == kpi.template_id))
+    tmpl_res = await db.execute(select(Template.nombre).where(Template.id == template_id))
     template_nombre = tmpl_res.scalar_one_or_none()
 
     return {
         "total": total,
         "page": page,
         "size": size,
-        "kpi_label": kpi.kpi_label,
+        "kpi_label": kpi.kpi_label if kpi else kpi_key,
         "template_nombre": template_nombre,
-        "template_id": kpi.template_id,
+        "template_id": template_id,
         "items": [
             {
                 "id": str(f.id),
@@ -591,8 +668,16 @@ async def get_kpi_forms(
 # ── Público: GET KPIs nivel 2 por padre ──────────────────────────────────────
 
 @public_router.get("/{kpi_key}")
-async def get_kpis_nivel2(kpi_key: str, db: AsyncSession = Depends(get_db)):
-    """Devuelve los KPIs nivel 2 almacenados por el último pipeline ejecutado."""
+async def get_kpis_nivel2(
+    kpi_key: str,
+    periodo: Optional[str] = Query(None, description="anual | trim1 | trim2 | trim3 | trim4"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    KPIs nivel 2 (Producto) — velocímetros del segundo nivel para una línea.
+
+    Acepta el mismo `?periodo=` que el endpoint nivel 1.
+    """
     result = await db.execute(
         select(KpiResultado)
         .where(
@@ -603,15 +688,20 @@ async def get_kpis_nivel2(kpi_key: str, db: AsyncSession = Depends(get_db)):
         .order_by(KpiResultado.kpi_key)
     )
     kpis = result.scalars().all()
-
     if not kpis:
         return []
 
-    return [
-        {
-            "key": k.kpi_key, "label": k.kpi_label, "valor": k.valor,
+    items = []
+    for k in kpis:
+        valor, payload = _valor_por_periodo(k, periodo)
+        items.append({
+            "key": k.kpi_key, "label": k.kpi_label,
+            "valor": valor,
             "nivel1_key": k.nivel1_key,
+            "template_id": k.template_id,
+            "periodo": periodo or "anual",
+            "anual": (payload or {}).get("anual"),
+            "por_trimestre": (payload or {}).get("por_trimestre"),
             "updated_at": k.updated_at.isoformat() if k.updated_at else None,
-        }
-        for k in kpis
-    ]
+        })
+    return items

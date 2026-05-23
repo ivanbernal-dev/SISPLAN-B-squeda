@@ -103,23 +103,13 @@ async def download_excel_example(
 
     fields = _get_fields(template)
 
-    # Columnas a exportar: campos editables + informe_cualitativo al final
-    # Los campos readonly se incluyen solo como referencia pero marcados en gris
-    export_cols: list[dict] = []
-    for f in fields:
-        export_cols.append(f)
-
-    # Agregar informe_cualitativo si no está ya en los campos
-    has_informe = any(_field_name(f) == "informe_cualitativo" for f in fields)
-    if not has_informe:
-        export_cols.append({
-            "name": "informe_cualitativo",
-            "label": "Informe cualitativo de la búsqueda",
-            "type": "textarea",
-            "readonly": False,
-            "required": True,
-            "default": None,
-        })
+    # Columnas a exportar: solo los campos que la dependencia debe rellenar.
+    # NO se exportan los validator_only (los llena el validador) ni los
+    # auto_calculate (los recalcula el sistema al guardar / cargar).
+    export_cols: list[dict] = [
+        f for f in fields
+        if not f.get("validator_only") and not f.get("auto_calculate")
+    ]
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -396,7 +386,7 @@ async def upload_excel_forms(
         h = header.strip()
         if not h:
             continue
-        # Detectar informe_cualitativo por label exacto, por name, o por campo del template
+        # Detectar informe_cualitativo por label exacto o por name (legado)
         mapped_f = field_by_label.get(h) or field_by_name.get(h)
         is_informe = (
             h == INFORME_LABEL
@@ -406,6 +396,13 @@ async def upload_excel_forms(
         if is_informe:
             informe_col = col_idx
             continue
+        # Las columnas que coincidan con campos validator_only o auto_calculate
+        # se IGNORAN: el validador llenará los OAP al aprobar y los calculados
+        # los recalcula el sistema. No se procesan, no se validan.
+        if mapped_f is not None and (mapped_f.get("validator_only") or mapped_f.get("auto_calculate")):
+            continue
+        # Columnas extra del Excel que no corresponden a ningún campo del template
+        # se IGNORAN silenciosamente (no error).
         if h in field_by_label:
             col_map[col_idx] = field_by_label[h]
         elif h in field_by_name:
@@ -445,12 +442,10 @@ async def upload_excel_forms(
 
         row_errors: list[str] = []
 
-        # Validar informe_cualitativo (solo obligatorio si NO está definido como campo del template)
+        # informe_cualitativo es opcional siempre (eliminado del flujo del PAI)
         informe_val = ""
         if informe_col is not None:
             informe_val = _str_val(_cell_val(row, informe_col))
-        if not informe_val and not template_has_informe_field:
-            row_errors.append("'Informe cualitativo de la búsqueda' es obligatorio")
 
         # Validar campos mapeados
         for col_idx, field_def in col_map.items():
@@ -464,8 +459,10 @@ async def upload_excel_forms(
             readonly = _is_readonly(field_def)
             required = _is_required(field_def)
 
-            if readonly:
-                continue  # no validar solo-lectura
+            # No validar campos readonly, ni validator_only (los llena el validador),
+            # ni auto_calculate (los recalcula el sistema)
+            if readonly or field_def.get("validator_only") or field_def.get("auto_calculate"):
+                continue
 
             # Requerido
             if required and not val:
@@ -607,8 +604,12 @@ async def upload_excel_forms(
         # Rellenar defaults de campos readonly no presentes en el Excel
         for f in all_fields:
             fname = _field_name(f)
-            if _is_readonly(f) and f.get("default") is not None:
+            if _is_readonly(f) and f.get("default") is not None and not f.get("auto_calculate"):
                 datos_dinamicos.setdefault(fname, f["default"])
+
+        # Recalcular campos auto_calculate (sobreescribe cualquier valor del Excel)
+        from app.services.auto_calc import recalc_auto_fields
+        recalc_auto_fields(datos_dinamicos, all_fields)
 
         form = Form(
             plantilla_id=template_id,
@@ -667,16 +668,8 @@ async def download_form_as_excel(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template no encontrado")
 
     all_fields = _get_fields(template)
-    has_informe = any(_field_name(f) == "informe_cualitativo" for f in all_fields)
-    export_cols = list(all_fields)
-    if not has_informe:
-        export_cols.append({
-            "name": "informe_cualitativo",
-            "label": "Informe cualitativo de la búsqueda",
-            "type": "textarea",
-            "readonly": False,
-            "required": True,
-        })
+    # Sólo exportar campos definidos en el template, excluyendo validator_only.
+    export_cols = [f for f in all_fields if not f.get("validator_only") and not f.get("auto_calculate")]
 
     datos = form.datos_dinamicos or {}
 
@@ -785,17 +778,8 @@ def _build_forms_workbook(template: Template, forms: list[Form]):
     from openpyxl.utils import get_column_letter
 
     fields = _get_fields(template)
-    export_cols: list[dict] = list(fields)
-    has_informe = any(_field_name(f) == "informe_cualitativo" for f in fields)
-    if not has_informe:
-        export_cols.append({
-            "name": "informe_cualitativo",
-            "label": "Informe cualitativo de la búsqueda",
-            "type": "textarea",
-            "readonly": False,
-            "required": True,
-            "default": None,
-        })
+    # Sólo exportar campos del template, sin validator_only.
+    export_cols: list[dict] = [f for f in fields if not f.get("validator_only") and not f.get("auto_calculate")]
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -1433,6 +1417,10 @@ async def upload_excel_with_attachments(
         if is_informe:
             informe_col = col_idx
             continue
+        # Ignorar columnas validator_only / auto_calculate (no las llena la dependencia)
+        if mapped_f is not None and (mapped_f.get("validator_only") or mapped_f.get("auto_calculate")):
+            continue
+        # Columnas no reconocidas → IGNORAR (no error)
         if h in field_by_label:
             col_map[col_idx] = field_by_label[h]
         elif h in field_by_name:
@@ -1486,16 +1474,18 @@ async def upload_excel_with_attachments(
         real_row_positions.append(row_idx)
 
         row_errors: list[str] = []
+        # informe_cualitativo es opcional (eliminado del flujo del PAI 2026)
         informe_val = _str_val(_cell_val(row, informe_col)) if informe_col is not None else ""
-        if not informe_val and not template_has_informe_field:
-            row_errors.append("'Informe cualitativo de la búsqueda' es obligatorio")
 
         for col_idx, field_def in col_map.items():
             raw = _cell_val(row, col_idx)
             val = _str_val(raw)
             ftype = _field_type(field_def)
             flabel = _field_label(field_def)
-            if _is_readonly(field_def):
+            # No validar readonly, validator_only ni auto_calculate
+            if (_is_readonly(field_def)
+                or field_def.get("validator_only")
+                or field_def.get("auto_calculate")):
                 continue
             if _is_required(field_def) and not val:
                 row_errors.append(f"El campo '{flabel}' es obligatorio")
@@ -1631,8 +1621,12 @@ async def upload_excel_with_attachments(
 
             for f in all_fields:
                 fname = _field_name(f)
-                if _is_readonly(f) and f.get("default") is not None:
+                if _is_readonly(f) and f.get("default") is not None and not f.get("auto_calculate"):
                     datos_dinamicos.setdefault(fname, f["default"])
+
+            # Recalcular campos auto_calculate (sobreescribe el valor del Excel)
+            from app.services.auto_calc import recalc_auto_fields
+            recalc_auto_fields(datos_dinamicos, all_fields)
 
             form = Form(
                 plantilla_id=template_id,

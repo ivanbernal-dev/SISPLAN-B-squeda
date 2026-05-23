@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div
-      v-for="field in schema.fields"
+      v-for="field in visibleFields"
       :key="field.name"
       class="flex flex-col gap-1"
     >
@@ -14,7 +14,16 @@
         {{ field.label }}
         <span v-if="field.required && !isReadonlyField(field)" class="text-ubpd-naranja">*</span>
         <span
-          v-if="isReadonlyField(field)"
+          v-if="isAutoCalculated(field)"
+          class="ml-1 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full
+                 bg-blue-50 text-blue-700 text-[10px] font-semibold uppercase tracking-wide
+                 border border-blue-200"
+          title="Campo calculado automáticamente"
+        >
+          ƒ Auto
+        </span>
+        <span
+          v-else-if="isReadonlyField(field)"
           class="inline-flex items-center text-gray-400"
           aria-label="Campo bloqueado"
         >
@@ -107,6 +116,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue'
 import type { FormSchema, FieldConfig } from '@/types/forms'
 
 interface Props {
@@ -114,19 +124,32 @@ interface Props {
   modelValue: Record<string, unknown>
   readOnly?: boolean
   highlightedFields?: string[]
+  /** Si true, muestra TODOS los campos (incluyendo validator_only).
+   *  Útil para la vista del validador al aprobar. */
+  showValidatorFields?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   readOnly: false,
   highlightedFields: () => [],
+  showValidatorFields: false,
 })
 
 const emit = defineEmits<{
   'update:modelValue': [value: Record<string, unknown>]
 }>()
 
+// Esconde los campos validator_only de la vista por defecto (los ve solo el validador)
+const visibleFields = computed(() =>
+  props.schema.fields.filter((f) => props.showValidatorFields || !(f as any).validator_only),
+)
+
 function isReadonlyField(field: { readonly: boolean }) {
   return props.readOnly || field.readonly
+}
+
+function isAutoCalculated(field: FieldConfig): boolean {
+  return !!(field as any).auto_calculate
 }
 
 function isHighlighted(fieldName: string) {
@@ -162,11 +185,64 @@ function computedValue(field: FieldConfig): string {
   return '—'
 }
 
+// ── Auto-cálculo de campos con `auto_calculate` ──────────────────────────
+// Las mismas reglas que aplica el backend (services/auto_calc.py).
+function toNum(v: unknown): number | null {
+  if (v === null || v === undefined || v === '') return null
+  const n = Number(String(v).replace(',', '.'))
+  return Number.isFinite(n) ? n : null
+}
+
+function applyAutoCalculate(values: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...values }
+  const fields = props.schema.fields as Array<FieldConfig & { auto_calculate?: string }>
+
+  // Paso 1: ratio alcanzado / proyectado → pct_avance_final
+  for (const f of fields) {
+    if (f.auto_calculate !== 'ratio_alcanzado_proyectado') continue
+    const proj = toNum(next['pct_avance_proyectado'])
+    const alc  = toNum(next['pct_avance_alcanzado'])
+    if (proj === null || alc === null || proj <= 0) {
+      next[f.name] = null
+    } else {
+      next[f.name] = Number((alc / proj).toFixed(4))
+    }
+  }
+
+  // Paso 2: estado cumplimiento desde pct_avance_final
+  for (const f of fields) {
+    if (f.auto_calculate !== 'estado_cumplimiento_from_pct_final') continue
+    const pctF = toNum(next['pct_avance_final'])
+    if (pctF === null) {
+      next[f.name] = 'No Aplica'
+    } else {
+      const pct = pctF * 100
+      if      (pct >= 90) next[f.name] = 'Cumple'
+      else if (pct >= 70) next[f.name] = 'Cumple Parcialmente'
+      else if (pct >  0)  next[f.name] = 'No Cumple'
+      else                next[f.name] = 'No Aplica'
+    }
+  }
+  return next
+}
+
 function onInput(fieldName: string, value: unknown) {
   if (props.readOnly) return
-  emit('update:modelValue', {
-    ...props.modelValue,
-    [fieldName]: value,
-  })
+  // Recalcular siempre — los campos auto_calculate se sobreescriben
+  const updated = applyAutoCalculate({ ...props.modelValue, [fieldName]: value })
+  emit('update:modelValue', updated)
 }
+
+// Recalcular al cargar el form la primera vez (sincroniza valores guardados)
+watch(
+  () => props.schema?.fields?.length,
+  () => {
+    if (props.readOnly) return
+    const recalc = applyAutoCalculate(props.modelValue)
+    // Solo emitir si efectivamente cambia algo
+    const changed = Object.keys(recalc).some((k) => recalc[k] !== props.modelValue[k])
+    if (changed) emit('update:modelValue', recalc)
+  },
+  { immediate: true },
+)
 </script>

@@ -260,22 +260,7 @@ formularios/3/informe.pdf</pre>
         />
       </div>
 
-      <!-- Informe cualitativo -->
-      <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-2">
-        <label for="informe_cualitativo" class="text-base font-semibold font-montserrat text-ubpd-gris">
-          Informe cualitativo de la búsqueda
-          <span class="text-ubpd-naranja">*</span>
-        </label>
-        <textarea
-          id="informe_cualitativo"
-          v-autoresize
-          v-model="informeCualitativo"
-          :disabled="isReadOnly"
-          placeholder="Describa los hallazgos, procesos y resultados de la búsqueda de manera cualitativa..."
-          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-barlow min-h-[120px] focus:outline-none focus:border-ubpd-verde focus:ring-2 focus:ring-teal-100"
-          :class="isReadOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'"
-        />
-      </div>
+      <!-- Informe cualitativo eliminado del flujo PAI 2026 -->
 
       <!-- File upload -->
       <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-2">
@@ -551,16 +536,43 @@ async function handleExcelFile(file: File) {
 
     if (rawData.length < 1) return
     const headers = (rawData[0] as unknown[]).map((h) => String(h ?? ''))
-    excelPreviewHeaders.value = headers
 
-    const rows = rawData.slice(1).map((row) => {
+    // Construir set de labels/names del template que SÍ se cargarán
+    // (excluyendo validator_only y auto_calculate — esos se ignoran en el upload)
+    const validLabels = new Set<string>()
+    if (schema.value) {
+      for (const f of schema.value.fields) {
+        const isExtra = (f as any).validator_only || (f as any).auto_calculate
+        if (isExtra || f.readonly) continue
+        validLabels.add(f.label)
+        validLabels.add(f.name)
+      }
+    }
+
+    // Detectar fila 2 como guía de tipos (la salta el backend) — la omitimos en preview
+    const skipRow2 = rawData.length > 1 && (rawData[1] as unknown[]).some((v) => {
+      const s = String(v ?? '').toLowerCase()
+      return /número|texto|fecha|opciones|solo lectura|seleccionar/.test(s)
+    })
+    const startIdx = skipRow2 ? 2 : 1
+
+    // Headers visibles: sólo los que mapean a campos editables del template
+    const visibleHeaderIdx = headers
+      .map((h, i) => ({ h: h.trim(), i }))
+      .filter(({ h }) => validLabels.size === 0 || validLabels.has(h))
+
+    excelPreviewHeaders.value = visibleHeaderIdx.map(({ h }) => h)
+
+    const rows = rawData.slice(startIdx).map((row) => {
       const obj: Record<string, unknown> = {}
-      ;(row as unknown[]).forEach((cell, i) => {
-        obj[headers[i]] = cell
-      })
+      for (const { h, i } of visibleHeaderIdx) {
+        obj[h] = (row as unknown[])[i]
+      }
       return obj
     })
-    excelPreviewRows.value = rows.filter((r) => Object.values(r).some((v) => v !== undefined && v !== ''))
+    excelPreviewRows.value = rows.filter((r) =>
+      Object.values(r).some((v) => v !== undefined && v !== ''),
+    )
   } catch {
     notifications.error('Error', 'No se pudo leer el archivo Excel.')
   }
@@ -682,6 +694,8 @@ function normalizeSchema(raw: Record<string, unknown> | null | undefined): FormS
         )
       : undefined,
     formula: f.formula ? String(f.formula) : undefined,
+    validator_only: Boolean(f.validator_only ?? false),
+    auto_calculate: f.auto_calculate ? String(f.auto_calculate) : undefined,
   }))
   return { fields }
 }
@@ -705,11 +719,14 @@ const isReadOnly = computed(() =>
 
 const canSubmit = computed(() => {
   if (!schema.value) return false
-  const required = schema.value.fields.filter((f) => f.required && !f.readonly)
+  // Validar campos requeridos del template, excluyendo readonly y validator_only
+  const required = schema.value.fields.filter(
+    (f) => f.required && !f.readonly && !(f as any).validator_only,
+  )
   return required.every((f) => {
     const val = dinamicValues.value[f.name]
     return val !== undefined && val !== null && val !== ''
-  }) && informeCualitativo.value.trim().length > 0
+  })
 })
 
 function formatDate(dateStr: string | null): string {

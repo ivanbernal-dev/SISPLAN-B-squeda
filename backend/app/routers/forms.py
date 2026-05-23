@@ -17,6 +17,7 @@ from app.models.form import Form, FormStatus
 from app.models.template import Template
 from app.models.user import User, UserRole
 from app.schemas.form import FormCreate, FormListResponse, FormResponse, FormUpdate
+from app.services.auto_calc import recalc_auto_fields
 
 router = APIRouter(prefix="/forms", tags=["Formularios"])
 
@@ -134,9 +135,12 @@ async def create_form(
 
     # Autocompletar campos readonly con sus defaults
     datos = dict(body.datos_dinamicos)
-    for field in template.configuracion_campos.get("fields", []):
-        if field.get("readonly") and field.get("default") is not None:
+    tpl_fields = template.configuracion_campos.get("fields", [])
+    for field in tpl_fields:
+        if field.get("readonly") and field.get("default") is not None and not field.get("auto_calculate"):
             datos.setdefault(field["name"], field["default"])
+    # Aplicar fórmulas auto_calculate (sobreescribe los valores enviados)
+    recalc_auto_fields(datos, tpl_fields)
 
     form = Form(
         plantilla_id=body.plantilla_id,
@@ -205,6 +209,14 @@ async def update_form(
     update_data = body.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(form, field, value)
+
+    # Recalcular campos auto_calculate del template (sobreescribe lo enviado)
+    if "datos_dinamicos" in update_data and form.plantilla is not None:
+        tpl_fields = form.plantilla.configuracion_campos.get("fields", []) if form.plantilla.configuracion_campos else []
+        nuevos = dict(form.datos_dinamicos or {})
+        recalc_auto_fields(nuevos, tpl_fields)
+        form.datos_dinamicos = nuevos
+
     form.fecha_edicion = datetime.now(timezone.utc)
 
     await _log_audit(
