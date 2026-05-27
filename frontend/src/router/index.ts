@@ -208,6 +208,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, roles: ['admin'] },
       },
       {
+        path: 'backup',
+        name: 'AdminBackup',
+        component: () => import('../views/admin/BackupView.vue'),
+        meta: { requiresAuth: true, roles: ['admin'] },
+      },
+      {
         path: 'registros/:templateId',
         name: 'AdminRegistrosTemplate',
         component: () => import('../views/shared/FormsBrowserView.vue'),

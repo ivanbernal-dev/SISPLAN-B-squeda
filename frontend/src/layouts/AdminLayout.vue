@@ -113,6 +113,7 @@ import {
   PhChartLineUp,
   PhFolderOpen,
   PhCode,
+  PhArchive,
 } from '@phosphor-icons/vue'
 
 // ─── Nav items ────────────────────────────────────────────
@@ -129,6 +130,7 @@ const navItems: NavItem[] = [
   { label: 'Dependencias', to: '/admin/dependencies',  icon: PhBuildings                   },
   { label: 'Templates',    to: '/admin/templates',     icon: PhFileText                    },
   { label: 'Registros',    to: '/admin/registros',     icon: PhFolderOpen                  },
+  { label: 'Backup / Restore', to: '/admin/backup',    icon: PhArchive                     },
   { label: 'Script Pipeline',  to: '/admin/script-pipeline',  icon: PhCode                        },
   { label: 'Indicadores',     to: '/admin/indicadores',      icon: PhChartBar                    },
   { label: 'Dashboard BI',    to: '/admin/bi-dashboard',     icon: PhChartLineUp                 },
