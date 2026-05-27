@@ -6,17 +6,60 @@
         <h1 class="font-subtitulo font-bold text-2xl text-ubpd-gris">Dependencias</h1>
         <p class="font-cuerpo text-sm text-gray-500 mt-1">Gestión de dependencias e instancias institucionales</p>
       </div>
-      <button
-        @click="openCreateModal"
-        class="inline-flex items-center gap-2 bg-ubpd-teal text-white font-cuerpo font-semibold text-sm
-               rounded-xl px-5 py-2.5 hover:bg-[#346d7a] transition"
-      >
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Nueva Dependencia
-      </button>
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Descargar JSON -->
+        <button
+          @click="exportJson"
+          :disabled="exporting || loading"
+          class="inline-flex items-center gap-2 bg-white border border-gray-200 text-ubpd-gris font-cuerpo
+                 font-semibold text-sm rounded-xl px-4 py-2.5 hover:border-ubpd-teal hover:text-ubpd-teal
+                 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          title="Descargar todas las dependencias como JSON"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          {{ exporting ? 'Descargando...' : 'Exportar JSON' }}
+        </button>
+
+        <!-- Cargar JSON (label + input hidden) -->
+        <label
+          class="inline-flex items-center gap-2 bg-white border border-gray-200 text-ubpd-gris font-cuerpo
+                 font-semibold text-sm rounded-xl px-4 py-2.5 hover:border-ubpd-teal hover:text-ubpd-teal
+                 cursor-pointer transition"
+          :class="importing && 'opacity-50 cursor-not-allowed'"
+          title="Cargar dependencias desde un JSON (upsert por código)"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5-5 5M12 3v12" />
+          </svg>
+          {{ importing ? 'Cargando...' : 'Importar JSON' }}
+          <input
+            ref="fileInput"
+            type="file"
+            accept="application/json,.json"
+            class="hidden"
+            :disabled="importing"
+            @change="onFileSelected"
+          />
+        </label>
+
+        <!-- Nueva dependencia -->
+        <button
+          @click="openCreateModal"
+          class="inline-flex items-center gap-2 bg-ubpd-teal text-white font-cuerpo font-semibold text-sm
+                 rounded-xl px-5 py-2.5 hover:bg-[#346d7a] transition"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Nueva Dependencia
+        </button>
+      </div>
     </div>
+
 
     <!-- Buscador -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
@@ -181,7 +224,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useApi } from '@/composables/useApi'
+import { useApi, apiPostForm } from '@/composables/useApi'
+import apiClient from '@/composables/useApi'
 import { useNotificationsStore } from '@/stores/notifications'
 import DependencyFormModal from '@/components/forms/DependencyFormModal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -208,6 +252,74 @@ const selectedDep = ref<Dependency | null>(null)
 const showConfirm = ref(false)
 const confirmLoading = ref(false)
 const confirmData = reactive({ id: '', nombre: '', is_active: true })
+
+const exporting = ref(false)
+const importing = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+
+async function exportJson() {
+  exporting.value = true
+  try {
+    // axios incluye el token automáticamente vía interceptor
+    const res = await apiClient.get('/admin/dependencies/export', { responseType: 'blob' })
+    const blob = res.data as Blob
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const cd = (res.headers['content-disposition'] || res.headers['Content-Disposition'] || '') as string
+    const match = cd.match(/filename="?([^";]+)"?/i)
+    a.download = match?.[1] || `dependencias_${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    notifications.success('Dependencias exportadas correctamente')
+  } catch (err) {
+    notifications.error('No se pudo exportar las dependencias')
+    console.error(err)
+  } finally {
+    exporting.value = false
+  }
+}
+
+async function onFileSelected(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  // Limpia el input para permitir reseleccionar el mismo archivo
+  target.value = ''
+
+  const replace = window.confirm(
+    `Se importará "${file.name}".\n\n` +
+    'Aceptar  → Reemplazar: además de crear/actualizar, se desactivarán\n' +
+    '             las dependencias que no estén en el archivo.\n\n' +
+    'Cancelar → Solo agregar y actualizar (recomendado).',
+  )
+
+  importing.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', file)
+    const result = await apiPostForm<{
+      creadas: number
+      actualizadas: number
+      desactivadas: number
+      omitidas: unknown[]
+      total_procesadas: number
+    }>(`/admin/dependencies/import?replace=${replace ? 'true' : 'false'}`, fd)
+    notifications.success(
+      `Importadas: ${result.creadas} nuevas, ${result.actualizadas} actualizadas` +
+      (result.desactivadas ? `, ${result.desactivadas} desactivadas` : '') +
+      (result.omitidas.length ? `. ${result.omitidas.length} omitidas` : ''),
+    )
+    await loadDeps()
+  } catch (err: any) {
+    const msg = err?.response?.data?.detail || err?.message || 'Error desconocido'
+    notifications.error(`No se pudo importar el JSON: ${msg}`)
+  } finally {
+    importing.value = false
+  }
+}
 
 async function loadDeps() {
   loading.value = true

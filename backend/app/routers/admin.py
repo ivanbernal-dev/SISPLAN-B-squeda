@@ -10,7 +10,9 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+import json as _json
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -433,6 +435,163 @@ async def update_dependency(
         ip=get_client_ip(request),
     )
     return DependencyResponse.model_validate(dep)
+
+
+# ── Export / Import de dependencias en JSON ──────────────────────────────────
+
+@router.get("/dependencies/export")
+async def export_dependencies(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """Exporta todas las dependencias como archivo JSON descargable."""
+    result = await db.execute(select(Dependency).order_by(Dependency.nombre))
+    deps = result.scalars().all()
+    payload = {
+        "version": 1,
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "count": len(deps),
+        "dependencies": [
+            {
+                "codigo": d.codigo,
+                "nombre": d.nombre,
+                "descripcion": d.descripcion,
+                "activa": d.activa,
+            }
+            for d in deps
+        ],
+    }
+    body = _json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
+    filename = f"dependencias_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
+    return StreamingResponse(
+        iter([body]),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/dependencies/import")
+async def import_dependencies(
+    request: Request,
+    file: UploadFile = File(..., description="Archivo JSON con la lista de dependencias"),
+    replace: bool = Query(
+        False,
+        description="Si es true desactiva las dependencias existentes que no estén en el archivo",
+    ),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Importa dependencias desde un archivo JSON.
+
+    Formato aceptado:
+      - Lista plana: ``[{"codigo": "...", "nombre": "...", "descripcion": "...", "activa": true}, ...]``
+      - O envoltorio: ``{"dependencies": [...]}`` (ej. el exportado por este endpoint)
+
+    Las dependencias se upsertan por ``codigo``: si existe se actualiza, si no se crea.
+    Si ``replace=true``, las dependencias que ya existían y NO vienen en el archivo
+    se marcan como inactivas (no se borran).
+    """
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo está vacío",
+        )
+    try:
+        data = _json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, _json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"JSON inválido: {exc}",
+        )
+
+    if isinstance(data, dict) and "dependencies" in data:
+        items = data["dependencies"]
+    elif isinstance(data, list):
+        items = data
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Estructura no reconocida. Se esperaba una lista o {dependencies:[...]}.",
+        )
+
+    if not isinstance(items, list):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="'dependencies' debe ser una lista",
+        )
+
+    # Index existente por codigo
+    existing_result = await db.execute(select(Dependency))
+    existing = {d.codigo: d for d in existing_result.scalars().all()}
+
+    created = 0
+    updated = 0
+    skipped: list[dict] = []
+    seen_codigos: set[str] = set()
+
+    for idx, raw_item in enumerate(items):
+        if not isinstance(raw_item, dict):
+            skipped.append({"index": idx, "reason": "no es un objeto"})
+            continue
+        codigo = (raw_item.get("codigo") or "").strip()
+        nombre = (raw_item.get("nombre") or "").strip()
+        if not codigo or not nombre:
+            skipped.append({"index": idx, "reason": "faltan codigo o nombre"})
+            continue
+
+        descripcion = raw_item.get("descripcion")
+        activa_raw = raw_item.get("activa", raw_item.get("is_active", True))
+        activa = bool(activa_raw) if activa_raw is not None else True
+        seen_codigos.add(codigo)
+
+        dep = existing.get(codigo)
+        if dep is None:
+            dep = Dependency(
+                codigo=codigo,
+                nombre=nombre,
+                descripcion=descripcion,
+                activa=activa,
+            )
+            db.add(dep)
+            created += 1
+        else:
+            dep.nombre = nombre
+            dep.descripcion = descripcion
+            dep.activa = activa
+            updated += 1
+
+    deactivated = 0
+    if replace:
+        for codigo, dep in existing.items():
+            if codigo not in seen_codigos and dep.activa:
+                dep.activa = False
+                deactivated += 1
+
+    await db.flush()
+    await _log_audit(
+        db,
+        accion="DEPENDENCY_IMPORT",
+        usuario_id=current_user.id,
+        entidad_tipo="dependencia",
+        entidad_id=None,
+        detalle={
+            "filename": file.filename,
+            "creadas": created,
+            "actualizadas": updated,
+            "desactivadas": deactivated,
+            "omitidas": len(skipped),
+            "replace": replace,
+        },
+        ip=get_client_ip(request),
+    )
+    return {
+        "creadas": created,
+        "actualizadas": updated,
+        "desactivadas": deactivated,
+        "omitidas": skipped,
+        "total_procesadas": created + updated,
+    }
 
 
 # ── Pipelines ─────────────────────────────────────────────────────────────────
