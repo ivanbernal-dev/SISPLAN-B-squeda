@@ -23,7 +23,7 @@ import zipfile
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form as FastForm, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy import delete as sa_delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -211,7 +211,7 @@ async def export_full_backup(
 async def import_full_backup(
     request: Request,
     file: UploadFile = File(..., description="ZIP exportado por /admin/backup/export-zip"),
-    replace: bool = FastForm(False),
+    replace: bool = False,
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:

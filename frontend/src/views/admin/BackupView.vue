@@ -277,11 +277,14 @@ async function onFileSelected(e: Event) {
   try {
     const fd = new FormData()
     fd.append('file', file)
-    fd.append('replace', importReplace.value ? 'true' : 'false')
-    const result = await post<ImportResult>('/admin/backup/import-zip', fd, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 600_000,
-    })
+    // No fijamos Content-Type: axios añade el boundary multipart automáticamente.
+    // Timeout amplio porque un backup con adjuntos puede tardar.
+    const res = await apiClient.post(
+      `/admin/backup/import-zip?replace=${importReplace.value ? 'true' : 'false'}`,
+      fd,
+      { timeout: 600_000 },
+    )
+    const result = res.data as ImportResult
     lastImportResult.value = result
     notifications.success(
       'Restauración completada',
