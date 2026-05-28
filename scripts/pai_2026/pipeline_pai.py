@@ -12,7 +12,7 @@ Cada nivel se calcula por TRIMESTRE (T1..T4) y como ANUAL (acumulado).
 El frontend escoge cuál mostrar según el selector temporal.
 
 Fórmulas (replican el Excel original):
-  pct_avance_ponderado(trim) = Σ pct_avance_alcanzado de las actividades de ese trim
+  pct_avance_ponderado(trim) = Σ alcanzado / Σ proyectado de las actividades de ese trim
   pct_avance_anual           = Σ pct_avance_alcanzado / Σ pct_avance_proyectado (todo el año)
   estado_ponderado(pct)      = >=90% Cumple, 70-89% Parcialmente, <70% No Cumple
 """
@@ -76,7 +76,9 @@ def _producto_metricas(df):
         if len(sub) == 0:
             por_trim[t] = {"pct": 0.0, "estado": "Sin Reporte", "n_forms": 0}
         else:
-            pct = float(sub["_alc"].sum()) * 100
+            sub_proy = float(sub["_proy"].sum())
+            sub_alc  = float(sub["_alc"].sum())
+            pct = (sub_alc / sub_proy * 100.0) if sub_proy > 0 else 0.0
             por_trim[t] = {
                 "pct":     round(pct, 2),
                 "estado":  _estado(pct),
