@@ -202,6 +202,8 @@ def _run_script_sync(code: str, dfs: dict) -> dict[str, Any]:
     except ImportError:
         pass
 
+    import builtins as _builtins
+
     safe_builtins: dict = {
         "print": captured_print,
         "len": len, "range": range, "enumerate": enumerate,
@@ -210,8 +212,15 @@ def _run_script_sync(code: str, dfs: dict) -> dict[str, Any]:
         "list": list, "dict": dict, "set": set, "tuple": tuple,
         "str": str, "int": int, "float": float, "bool": bool,
         "isinstance": isinstance, "type": type, "hasattr": hasattr,
-        "getattr": getattr, "vars": vars, "dir": dir,
+        "getattr": getattr, "setattr": setattr, "vars": vars, "dir": dir,
+        "map": map, "filter": filter, "any": any, "all": all,
+        "format": format, "repr": repr, "frozenset": frozenset,
+        "object": object, "super": super, "property": property,
+        "staticmethod": staticmethod, "classmethod": classmethod,
         "True": True, "False": False, "None": None,
+        # __build_class__ es indispensable para ejecutar sentencias `class`
+        "__build_class__": _builtins.__build_class__,
+        "__name__": "__pipeline__",
         "__import__": __import__,
     }
 
