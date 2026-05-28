@@ -85,7 +85,7 @@ print(f"\\n  Total registros aprobados: {total_registros}")
 
 # ── 2. Funciones auxiliares ───────────────────────────────────
 def calcular_completitud(df):
-    \\"\\"\\"% de campos no nulos en el DataFrame.\\"\\"\\"
+    # % de campos no nulos en el DataFrame
     if df.empty:
         return 0.0
     total = df.size
