@@ -63,14 +63,37 @@
             </details>
           </div>
 
-          <!-- Botón cerrar -->
-          <button
-            class="ml-1 mt-0.5 text-ubpd-gris/40 hover:text-ubpd-gris transition-colors shrink-0"
-            :aria-label="`Cerrar notificación: ${n.title || n.message}`"
-            @click="store.remove(n.id)"
-          >
-            <PhX :size="14" aria-hidden="true" />
-          </button>
+          <!-- Acciones (copiar + cerrar) -->
+          <div class="flex items-start gap-1 shrink-0 ml-1">
+            <!-- Copiar al portapapeles (título + mensaje + detalles) -->
+            <button
+              class="mt-0.5 text-ubpd-gris/40 hover:text-ubpd-teal transition-colors
+                     relative px-1 py-0.5 rounded hover:bg-ubpd-teal/10"
+              :aria-label="`Copiar notificación: ${n.title || n.message}`"
+              :title="copiedId === n.id ? '¡Copiado!' : 'Copiar texto'"
+              @click="copyToClipboard(n)"
+            >
+              <PhCheck v-if="copiedId === n.id" :size="14" class="text-ubpd-verde" aria-hidden="true" />
+              <PhCopy v-else :size="14" aria-hidden="true" />
+              <span
+                v-if="copiedId === n.id"
+                class="absolute -bottom-5 right-0 text-[10px] font-medium text-ubpd-verde
+                       bg-white rounded px-1.5 py-0.5 shadow-sm whitespace-nowrap"
+              >
+                Copiado
+              </span>
+            </button>
+
+            <!-- Botón cerrar -->
+            <button
+              class="mt-0.5 text-ubpd-gris/40 hover:text-ubpd-gris transition-colors
+                     px-1 py-0.5 rounded hover:bg-gray-100"
+              :aria-label="`Cerrar notificación: ${n.title || n.message}`"
+              @click="store.remove(n.id)"
+            >
+              <PhX :size="14" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </TransitionGroup>
     </div>
@@ -78,13 +101,16 @@
 </template>
 
 <script setup lang="ts">
-import { useNotificationsStore, type NotificationType } from '../../stores/notifications'
+import { ref } from 'vue'
+import { useNotificationsStore, type Notification, type NotificationType } from '../../stores/notifications'
 import {
   PhCheckCircle,
   PhWarningCircle,
   PhWarning,
   PhInfo,
   PhX,
+  PhCopy,
+  PhCheck,
 } from '@phosphor-icons/vue'
 
 const store = useNotificationsStore()
@@ -118,6 +144,54 @@ const ringMap: Record<NotificationType, string> = {
 }
 function ringColor(type: NotificationType): string {
   return ringMap[type]
+}
+
+// ─── Copiar al portapapeles ──────────────────────────────────────────────────
+const copiedId = ref<string | null>(null)
+
+/** Compone un texto plano con TODO el contenido de la notificación. */
+function _formatForClipboard(n: Notification): string {
+  const parts: string[] = []
+  if (n.title) parts.push(n.title)
+  if (n.message) parts.push(n.message)
+  if (n.details && n.details.length) {
+    parts.push('')
+    parts.push('Detalles:')
+    for (const d of n.details) parts.push(`  - ${d}`)
+  }
+  return parts.join('\n')
+}
+
+/** Copia el texto con fallback para navegadores sin Clipboard API
+ *  (HTTP plano, contexts no-seguros, etc.). */
+async function _writeText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch { /* fallback */ }
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.focus(); ta.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
+}
+
+async function copyToClipboard(n: Notification): Promise<void> {
+  const ok = await _writeText(_formatForClipboard(n))
+  if (ok) {
+    copiedId.value = n.id
+    setTimeout(() => { if (copiedId.value === n.id) copiedId.value = null }, 1800)
+  }
 }
 </script>
 
