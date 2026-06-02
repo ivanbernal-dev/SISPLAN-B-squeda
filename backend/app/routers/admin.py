@@ -720,29 +720,63 @@ async def get_system_overview(
     current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db),
 ) -> SystemOverviewResponse:
-    """Métricas globales del sistema."""
+    """Métricas globales del sistema para el dashboard de administración."""
     from app.models.template import Template
+    from app.schemas.stats import UltimoPipelineInfo
 
-    total_usuarios = await db.scalar(select(func.count(User.id)).where(User.activo == True))
-    total_deps = await db.scalar(select(func.count(Dependency.id)).where(Dependency.activa == True))
-    total_templates = await db.scalar(select(func.count(Template.id)).where(Template.activo == True))
+    # ── Usuarios ────────────────────────────────────────────────────────────
+    total_usuarios   = await db.scalar(select(func.count(User.id))) or 0
+    usuarios_activos = await db.scalar(
+        select(func.count(User.id)).where(User.activo == True)
+    ) or 0
 
-    async def _count_forms(estado: FormStatus) -> int:
-        return await db.scalar(select(func.count(Form.id)).where(Form.estado == estado)) or 0
+    # ── Templates ───────────────────────────────────────────────────────────
+    total_templates    = await db.scalar(select(func.count(Template.id))) or 0
+    templates_activos  = await db.scalar(
+        select(func.count(Template.id)).where(Template.activo == True)
+    ) or 0
+
+    # ── Dependencias ────────────────────────────────────────────────────────
+    total_deps = await db.scalar(
+        select(func.count(Dependency.id)).where(Dependency.activa == True)
+    ) or 0
+
+    # ── Formularios (por estado) ────────────────────────────────────────────
+    total_forms = await db.scalar(select(func.count(Form.id))) or 0
+    counts_by_estado = await db.execute(
+        select(Form.estado, func.count(Form.id)).group_by(Form.estado)
+    )
+    forms_by_estado = {e.value if hasattr(e, "value") else str(e): n
+                       for e, n in counts_by_estado.all()}
+
+    # ── Pipelines ───────────────────────────────────────────────────────────
+    now = datetime.now(timezone.utc)
+    inicio_dia = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    pipelines_hoy = await db.scalar(
+        select(func.count(PipelineRun.id))
+        .where(PipelineRun.iniciado_en >= inicio_dia)
+    ) or 0
 
     last_run_result = await db.execute(
         select(PipelineRun).order_by(PipelineRun.iniciado_en.desc()).limit(1)
     )
     last_run = last_run_result.scalar_one_or_none()
+    ultimo = None
+    if last_run is not None:
+        estado_val = last_run.estado.value if hasattr(last_run.estado, "value") else str(last_run.estado)
+        ultimo = UltimoPipelineInfo(estado=estado_val, iniciado=last_run.iniciado_en)
 
     return SystemOverviewResponse(
-        total_usuarios_activos=total_usuarios or 0,
-        total_dependencias=total_deps or 0,
-        total_templates=total_templates or 0,
-        formularios_draft=await _count_forms(FormStatus.draft),
-        formularios_pending=await _count_forms(FormStatus.pending),
-        formularios_approved=await _count_forms(FormStatus.approved),
-        formularios_rejected=await _count_forms(FormStatus.rejected),
-        ultimo_pipeline=last_run.iniciado_en if last_run else None,
-        estado_ultimo_pipeline=last_run.estado.value if last_run else None,
+        total_formularios=total_forms,
+        formularios_draft=forms_by_estado.get("draft", 0),
+        formularios_pending=forms_by_estado.get("pending", 0),
+        formularios_approved=forms_by_estado.get("approved", 0),
+        formularios_rejected=forms_by_estado.get("rejected", 0),
+        usuarios_activos=usuarios_activos,
+        total_usuarios=total_usuarios,
+        templates_activos=templates_activos,
+        total_templates=total_templates,
+        total_dependencias=total_deps,
+        pipelines_hoy=pipelines_hoy,
+        ultimo_pipeline=ultimo,
     )

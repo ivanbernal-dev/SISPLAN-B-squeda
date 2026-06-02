@@ -77,13 +77,26 @@ class IndicatorResponse(BaseModel):
 
 
 # ── Overview del Sistema (Admin) ──────────────────────────────────────────────
+class UltimoPipelineInfo(BaseModel):
+    estado:   str                 # "success" | "error" | "running"
+    iniciado: datetime
+
+
 class SystemOverviewResponse(BaseModel):
-    total_usuarios_activos: int
-    total_dependencias: int
-    total_templates: int
-    formularios_draft: int
-    formularios_pending: int
-    formularios_approved: int
-    formularios_rejected: int
-    ultimo_pipeline: Optional[datetime] = None
-    estado_ultimo_pipeline: Optional[str] = None
+    # Formularios
+    total_formularios:     int
+    formularios_draft:     int
+    formularios_pending:   int
+    formularios_approved:  int
+    formularios_rejected:  int
+    # Usuarios
+    usuarios_activos:      int
+    total_usuarios:        int
+    # Templates
+    templates_activos:     int
+    total_templates:       int
+    # Dependencias (opcional, mantenido para compatibilidad)
+    total_dependencias:    int = 0
+    # Pipelines
+    pipelines_hoy:         int = 0
+    ultimo_pipeline:       Optional[UltimoPipelineInfo] = None
