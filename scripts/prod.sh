@@ -382,13 +382,37 @@ print(json.dumps({'codigo': open('scripts/pai_2026/pipeline_pai.py').read(), 'mo
                     -d "$BODY")
                 OK=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok',False))" 2>/dev/null)
                 if [ "$OK" = "True" ]; then
-                    ok "Pipeline ejecutado y KPIs guardados en BD"
-                    echo "$RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print('  '+(d.get('stdout') or '').strip().split(chr(10))[-1])" 2>/dev/null || true
+                    ok "Pipeline ejecutado correctamente."
+                    echo "$RESP" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+out = (d.get('stdout') or '').strip()
+# Imprime el bloque '📊 KPIs nivel-1 guardados:' y siguientes
+for line in out.split(chr(10)):
+    s = line.strip()
+    if s.startswith('✅') or s.startswith('📊') or s.startswith('📝') or s.startswith('N1 ') or s.startswith('· ') or 'guardados' in s.lower():
+        print('  ' + line)
+" 2>/dev/null || true
                 else
-                    warn "Ejecución no fue exitosa. Respuesta:"
-                    echo "$RESP" | head -c 400
+                    warn "Ejecución NO fue exitosa. Respuesta del backend:"
+                    echo "$RESP" | python3 -m json.tool 2>/dev/null | head -40 || echo "$RESP" | head -c 800
                 fi
             fi
+
+            # ── VERIFICACIÓN POST-RUN: consultar kpi_resultados directo desde BD
+            echo ""
+            header "Verificación post-run — valores actuales en kpi_resultados"
+            $COMPOSE exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -c "
+SELECT nivel,
+       kpi_key,
+       round(valor::numeric, 2) AS valor,
+       LEFT(kpi_label, 70) AS label,
+       updated_at
+  FROM kpi_resultados
+ ORDER BY nivel, kpi_key;" 2>&1 | head -50
+            echo ""
+            info "Si los velocímetros del navegador no coinciden con estos valores,"
+            info "es CACHÉ del navegador — recarga con Cmd/Ctrl + Shift + R."
         else
             info "Para refrescar los KPIs ejecuta:  ./scripts/prod.sh pipeline-sync run"
         fi
