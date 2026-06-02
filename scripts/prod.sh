@@ -296,6 +296,13 @@ print('ausente')
         fi
 
         # 1) Compilar SQL con dollar quoting
+        #    - desactiva scripts activos previos
+        #    - inserta el PAI como nuevo activo
+        #    - LIMPIA kpi_resultados de KPIs huérfanos del script ejemplo
+        #      (kpi_cobertura, kpi_completitud, kpi_calidad, kpi_gestion,
+        #       kpi_oportunidad y todos sus sub-KPIs kpi_cob_*, kpi_comp_*,…)
+        #      para que al re-ejecutar el pipeline PAI no se mezclen con
+        #      los L1..L6 / L1-P1..L6-P2.
         SQL_FILE=$(mktemp)
         # shellcheck disable=SC2046
         {
@@ -306,16 +313,22 @@ print('ausente')
             cat scripts/pai_2026/pipeline_pai.py
             echo ""
             echo "\$pipeline\$, true, now(), now());"
+            echo "-- Limpiar KPIs que NO son del PAI 2026 (deja solo L1..L6 y L?-P?-...)"
+            echo "DELETE FROM kpi_resultados"
+            echo "WHERE kpi_key !~ '^L[1-6]\$'"
+            echo "  AND kpi_key !~ '^L[1-6]-P[0-9]+-[A-Z]+-2026\$';"
             echo "COMMIT;"
-            echo "SELECT id, nombre, length(codigo) AS chars, activo, updated_at FROM pipeline_scripts ORDER BY updated_at DESC LIMIT 5;"
+            echo "SELECT 'Scripts:' AS info; SELECT id, nombre, length(codigo) AS chars, activo, updated_at FROM pipeline_scripts ORDER BY updated_at DESC LIMIT 5;"
+            echo "SELECT 'KPIs restantes:' AS info; SELECT nivel, kpi_key, valor FROM kpi_resultados ORDER BY nivel, kpi_key;"
         } > "$SQL_FILE"
 
         # 2) Copiar al contenedor postgres y ejecutar
-        info "Aplicando SQL en postgres (UPDATE + INSERT del script activo)..."
+        info "Aplicando SQL en postgres (desactiva activo + inserta PAI + limpia KPIs huérfanos)..."
         $COMPOSE cp "$SQL_FILE" postgres:/tmp/sync_pipeline.sql
         $COMPOSE exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -f /tmp/sync_pipeline.sql
         $COMPOSE exec -T postgres rm -f /tmp/sync_pipeline.sql 2>/dev/null || true
         rm -f "$SQL_FILE"
+        ok "Script PAI cargado como activo y KPIs no-PAI eliminados."
 
         # 3) Si pidió 'run', ejecutar el pipeline vía API
         if [ "${SERVICE:-}" = "--run" ] || [ "${SERVICE:-}" = "run" ]; then
