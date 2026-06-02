@@ -20,7 +20,12 @@
         <p class="text-sm font-barlow text-gray-500 mt-0.5">
           Actividades reportadas — periodo
           <span class="font-semibold text-ubpd-gris">{{ periodoLabel }}</span>
-          <span v-if="!loading" class="font-semibold text-ubpd-gris">— {{ total }} registros</span>
+          <span v-if="!loading" class="font-semibold text-ubpd-gris">
+            — {{ productoMetricas?.aplica ?? 0 }} aplicable{{ (productoMetricas?.aplica ?? 0) === 1 ? '' : 's' }}
+            <span v-if="total > (productoMetricas?.aplica ?? 0)" class="text-gray-400 font-normal">
+              ({{ total - (productoMetricas?.aplica ?? 0) }} sin proyectado, omitidas del cálculo)
+            </span>
+          </span>
         </p>
 
         <!-- Selector temporal -->
@@ -109,12 +114,15 @@
         <div class="col-span-2 text-center">Estado</div>
       </div>
 
-      <!-- Filas -->
+      <!-- Filas. Las que tienen proy<=0/vacío salen atenuadas y NO se suman
+           al avance del producto (badge / barra de arriba). -->
       <div
         v-for="item in items"
         :key="item.id"
         class="grid grid-cols-12 gap-3 px-6 py-4 border-b border-gray-50
                hover:bg-ubpd-teal/5 transition cursor-pointer items-center text-sm font-cuerpo"
+        :class="isAplica(item.datos_dinamicos) ? '' : 'opacity-50 bg-gray-50/50'"
+        :title="isAplica(item.datos_dinamicos) ? '' : 'Esta actividad no aplica (% proyectado vacío o 0). NO se suma al avance.'"
         @click="viewDetail(item.id)"
       >
         <!-- Actividad -->
@@ -167,13 +175,13 @@
           <span v-else class="text-xs text-gray-400">—</span>
         </div>
 
-        <!-- Estado -->
+        <!-- Estado: las filas no aplicables (sin proy) salen como "No aplica" -->
         <div class="col-span-2 flex items-center justify-center gap-2">
           <span
             class="text-xs font-semibold px-2.5 py-1 rounded-full"
-            :class="estadoClass(getEstado(item.datos_dinamicos))"
+            :class="estadoClass(isAplica(item.datos_dinamicos) ? getEstado(item.datos_dinamicos) : 'No Aplica')"
           >
-            {{ getEstado(item.datos_dinamicos) || '—' }}
+            {{ isAplica(item.datos_dinamicos) ? (getEstado(item.datos_dinamicos) || '—') : 'No aplica' }}
           </span>
           <button
             class="p-1 rounded text-gray-300 hover:text-ubpd-teal transition"
@@ -364,6 +372,15 @@ function getTrimestre(dd: Record<string, any> | null): string {
 // — se mantiene solo por compatibilidad.
 function getPctFinal(dd: Record<string, any> | null): number | null {
   return toNum(dd?.['pct_avance_final'])
+}
+
+// ¿La actividad aplica para este periodo? (= proyectado reportado y > 0)
+// Si NO aplica, NO se suma al avance del producto. Las filas no aplicables
+// se muestran atenuadas en la tabla con el badge "No aplica".
+function isAplica(dd: Record<string, any> | null): boolean {
+  if (!dd) return false
+  const proy = toNum(dd['pct_avance_proyectado'])
+  return proy !== null && proy > 0
 }
 
 // Versión LIVE: siempre calcula desde alcanzado/proyectado. Devuelve el

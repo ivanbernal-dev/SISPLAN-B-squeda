@@ -279,17 +279,27 @@ function liveEstado(pct: number | null): string {
   return 'No Aplica'
 }
 
+function isAplica(dd: Record<string, unknown>): boolean {
+  const proy = toNum(dd['pct_avance_proyectado'])
+  return proy !== null && proy > 0
+}
+
+// Filas que NO aplican (proy vacío o 0) salen al final con estado "No aplica"
+// y NO entran al cálculo de avance del producto. Se siguen mostrando en la
+// tabla con marca clara — el operador puede verlas pero sabe que se omiten.
 const tableRows = computed(() =>
   items.value.map((item) => {
     const dd = (item.datos_dinamicos ?? {}) as Record<string, unknown>
-    const pctFinal = liveFinal(dd)
+    const aplica = isAplica(dd)
+    const pctFinal = aplica ? liveFinal(dd) : null
     return {
       id: item.id,
       dependencia: item.dependencia,
       actividad: (dd['actividad_clave'] as string) || (dd['indicador'] as string) || (dd['entregable_trimestre'] as string) || '—',
       trimestre: (dd['periodo_reporte'] as string) || (dd['trimestre'] as string) || '—',
       pct_final: pctFinal,
-      estado: liveEstado(pctFinal),
+      estado: aplica ? liveEstado(pctFinal) : 'No aplica',
+      aplica,
       archivos_count: item.archivos_count,
     }
   }),
