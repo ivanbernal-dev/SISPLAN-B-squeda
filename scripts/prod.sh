@@ -278,33 +278,79 @@ print('ausente')
 
     pipeline-sync)
         header "Sincronizando pipeline_pai.py → BD (script activo)..."
-        # El backend ya tiene psycopg2 + requests instalados. Copiamos los 2
-        # archivos al contenedor y ejecutamos ahí (resuelve postgres por
-        # nombre de servicio del compose, no hace falta IP).
-        RUN_FLAG=""
-        if [ "${SERVICE:-}" = "--run" ] || [ "${SERVICE:-}" = "run" ]; then
-            RUN_FLAG="--run"
-            info "Modo --run: tras guardar se ejecutará el pipeline en producción."
+        # Estrategia (sin depender de psycopg2 dentro del backend):
+        #   1. Generamos un SQL con dollar-quoting de Postgres ($pipeline$...$pipeline$)
+        #      que mete el contenido del .py como literal sin escapado.
+        #   2. Lo ejecutamos con `psql` desde el contenedor postgres (que lo
+        #      tiene nativo). Esto desactiva los scripts activos previos y
+        #      crea uno nuevo activo.
+        #   3. Si el usuario pasa 'run' como 2º arg, hacemos login como admin
+        #      y POST al endpoint /run vía curl para refrescar los KPIs.
+
+        PG_USER=$(grep -E '^POSTGRES_USER=' .env | cut -d= -f2- | tr -d '"' | tr -d "'")
+        PG_DB=$(grep -E '^POSTGRES_DB=' .env | cut -d= -f2- | tr -d '"' | tr -d "'")
+        [ -z "$PG_USER" ] && { err "POSTGRES_USER no está en .env"; exit 1; }
+        [ -z "$PG_DB" ]   && { err "POSTGRES_DB no está en .env"; exit 1; }
+        if [ ! -f "scripts/pai_2026/pipeline_pai.py" ]; then
+            err "No encuentro scripts/pai_2026/pipeline_pai.py"; exit 1
         fi
-        # Crear estructura temporal en el contenedor
-        $COMPOSE exec -T backend mkdir -p /tmp/pai_sync || true
-        $COMPOSE cp scripts/pai_2026/pipeline_pai.py        backend:/tmp/pai_sync/pipeline_pai.py
-        $COMPOSE cp scripts/pai_2026/sync_pipeline_to_db.py backend:/tmp/pai_sync/sync_pipeline_to_db.py
-        # Stub del .env adentro del contenedor: las credenciales reales están
-        # en las variables de entorno del contenedor; el script las puede leer
-        # con os.environ.
-        $COMPOSE exec -T \
-            -e POSTGRES_HOST=postgres \
-            -e POSTGRES_PORT=5432 \
-            -e UBPD_BASE_URL=http://nginx \
-            backend sh -c "cd /tmp/pai_sync && cp /app/.env . 2>/dev/null || (cat > .env <<EOF
-POSTGRES_USER=\$POSTGRES_USER
-POSTGRES_PASSWORD=\$POSTGRES_PASSWORD
-POSTGRES_DB=\$POSTGRES_DB
-INITIAL_ADMIN_USERNAME=\$INITIAL_ADMIN_USERNAME
-INITIAL_ADMIN_PASSWORD=\$INITIAL_ADMIN_PASSWORD
-EOF
-) && mkdir -p ./scripts/pai_2026 && cp pipeline_pai.py ./scripts/pai_2026/ && python sync_pipeline_to_db.py $RUN_FLAG"
+
+        # 1) Compilar SQL con dollar quoting
+        SQL_FILE=$(mktemp)
+        # shellcheck disable=SC2046
+        {
+            echo "BEGIN;"
+            echo "UPDATE pipeline_scripts SET activo = false WHERE activo = true;"
+            echo "INSERT INTO pipeline_scripts (id, nombre, codigo, activo, created_at, updated_at)"
+            echo "VALUES (gen_random_uuid(), 'Pipeline PAI 2026 (sync)', \$pipeline\$"
+            cat scripts/pai_2026/pipeline_pai.py
+            echo ""
+            echo "\$pipeline\$, true, now(), now());"
+            echo "COMMIT;"
+            echo "SELECT id, nombre, length(codigo) AS chars, activo, updated_at FROM pipeline_scripts ORDER BY updated_at DESC LIMIT 5;"
+        } > "$SQL_FILE"
+
+        # 2) Copiar al contenedor postgres y ejecutar
+        info "Aplicando SQL en postgres (UPDATE + INSERT del script activo)..."
+        $COMPOSE cp "$SQL_FILE" postgres:/tmp/sync_pipeline.sql
+        $COMPOSE exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -f /tmp/sync_pipeline.sql
+        $COMPOSE exec -T postgres rm -f /tmp/sync_pipeline.sql 2>/dev/null || true
+        rm -f "$SQL_FILE"
+
+        # 3) Si pidió 'run', ejecutar el pipeline vía API
+        if [ "${SERVICE:-}" = "--run" ] || [ "${SERVICE:-}" = "run" ]; then
+            header "Ejecutando pipeline en modo producción (refresca /estadisticas)..."
+            ADMIN_USER=$(grep -E '^INITIAL_ADMIN_USERNAME=' .env | cut -d= -f2- | tr -d '"' | tr -d "'")
+            ADMIN_PASS=$(grep -E '^INITIAL_ADMIN_PASSWORD=' .env | cut -d= -f2- | tr -d '"' | tr -d "'")
+            TOKEN=$(curl -s -X POST http://localhost/api/auth/login \
+                -H "Content-Type: application/json" \
+                -d "{\"username\":\"$ADMIN_USER\",\"password\":\"$ADMIN_PASS\"}" \
+                | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('access_token',''))" 2>/dev/null)
+            if [ -z "$TOKEN" ]; then
+                warn "No se pudo obtener token de admin para ejecutar. Hazlo manual:"
+                warn "  → Admin → Script Pipeline → Ejecutar (modo producción)"
+            else
+                # Construir body { codigo: <python>, modo: "produccion" }
+                BODY=$(python3 -c "
+import json
+print(json.dumps({'codigo': open('scripts/pai_2026/pipeline_pai.py').read(), 'modo':'produccion'}))
+")
+                RESP=$(curl -s -X POST http://localhost/api/admin/script-pipeline/run \
+                    -H "Authorization: Bearer $TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "$BODY")
+                OK=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('ok',False))" 2>/dev/null)
+                if [ "$OK" = "True" ]; then
+                    ok "Pipeline ejecutado y KPIs guardados en BD"
+                    echo "$RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print('  '+(d.get('stdout') or '').strip().split(chr(10))[-1])" 2>/dev/null || true
+                else
+                    warn "Ejecución no fue exitosa. Respuesta:"
+                    echo "$RESP" | head -c 400
+                fi
+            fi
+        else
+            info "Para refrescar los KPIs ejecuta:  ./scripts/prod.sh pipeline-sync run"
+        fi
         ;;
 
     destroy|nuke)
