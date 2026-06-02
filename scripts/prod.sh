@@ -313,10 +313,11 @@ print('ausente')
             cat scripts/pai_2026/pipeline_pai.py
             echo ""
             echo "\$pipeline\$, true, now(), now());"
-            echo "-- Limpiar KPIs que NO son del PAI 2026 (deja solo L1..L6 y L?-P?-...)"
-            echo "DELETE FROM kpi_resultados"
-            echo "WHERE kpi_key !~ '^L[1-6]\$'"
-            echo "  AND kpi_key !~ '^L[1-6]-P[0-9]+-[A-Z]+-2026\$';"
+            echo "-- Limpieza total: borra TODOS los kpi_resultados (script ejemplo,"
+            echo "-- runs viejos, KPIs huérfanos, todo). El PAI los reconstruye al"
+            echo "-- correr con 'pipeline-sync run'. Si no se pasa run, el endpoint"
+            echo "-- /stats/kpis devuelve los 6 defaults L1..L6 en 0% (sin datos)."
+            echo "DELETE FROM kpi_resultados;"
             echo "COMMIT;"
             echo "SELECT 'Scripts:' AS info; SELECT id, nombre, length(codigo) AS chars, activo, updated_at FROM pipeline_scripts ORDER BY updated_at DESC LIMIT 5;"
             echo "SELECT 'KPIs restantes:' AS info; SELECT nivel, kpi_key, valor FROM kpi_resultados ORDER BY nivel, kpi_key;"
@@ -328,7 +329,7 @@ print('ausente')
         $COMPOSE exec -T postgres psql -U "$PG_USER" -d "$PG_DB" -f /tmp/sync_pipeline.sql
         $COMPOSE exec -T postgres rm -f /tmp/sync_pipeline.sql 2>/dev/null || true
         rm -f "$SQL_FILE"
-        ok "Script PAI cargado como activo y KPIs no-PAI eliminados."
+        ok "Script PAI cargado como activo. Tabla kpi_resultados limpia (0 filas)."
 
         # 3) Si pidió 'run', ejecutar el pipeline vía API
         if [ "${SERVICE:-}" = "--run" ] || [ "${SERVICE:-}" = "run" ]; then
