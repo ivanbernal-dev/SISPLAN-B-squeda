@@ -417,6 +417,7 @@ interface FormData {
   informe_cualitativo: string | null
   archivos: Archivo[]
   plantilla?: { configuracion_campos?: { fields?: FieldConfig[]; campos?: FieldConfig[] } }
+  template_fields?: FieldConfig[]
 }
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
@@ -439,8 +440,11 @@ const rejectionComment   = ref('')
 // Valores que el validador llenará para los campos validator_only del template
 const validatorValues = reactive<Record<string, unknown>>({})
 
-// Lista de campos del template (separados entre los que llena la dependencia y los del validador)
+// Lista de campos del template (separados entre los que llena la dependencia y los del validador).
+// El backend ahora devuelve `template_fields` directamente en /forms/{id}; se mantiene el fallback
+// a `plantilla.configuracion_campos` por compatibilidad con respuestas viejas.
 const allTemplateFields = computed<FieldConfig[]>(() => {
+  if (formData.value?.template_fields?.length) return formData.value.template_fields
   const cfg = formData.value?.plantilla?.configuracion_campos
   if (!cfg) return []
   return (cfg.fields || cfg.campos || []) as FieldConfig[]

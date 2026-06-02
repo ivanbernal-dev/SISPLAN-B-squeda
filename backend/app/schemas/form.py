@@ -54,6 +54,9 @@ class FormResponse(BaseModel):
     validador_nombre: Optional[str] = None
     validador_correo: Optional[str] = None
     archivos: List[FileResponse] = []
+    # Lista completa de campos del template (incluye validator_only) — la usa el
+    # validador para renderizar el panel OAP al aprobar un formulario individual.
+    template_fields: List[Dict[str, Any]] = []
 
     model_config = {"from_attributes": True}
 
@@ -63,6 +66,8 @@ class FormResponse(BaseModel):
         instance = handler(value)
         if hasattr(value, "plantilla") and value.plantilla is not None:
             instance.template_nombre = value.plantilla.nombre
+            cfg = value.plantilla.configuracion_campos or {}
+            instance.template_fields = list(cfg.get("fields") or cfg.get("campos") or [])
         if hasattr(value, "dependency") and value.dependency is not None:
             instance.dependencia_nombre = value.dependency.nombre
         if hasattr(value, "usuario") and value.usuario is not None:
