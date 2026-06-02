@@ -137,12 +137,24 @@ case "$CMD" in
 
     restart)
         header "Reiniciando ${SERVICE:-todos los servicios}..."
-        $COMPOSE restart $SERVICE
+        # `restart` solo reinicia el contenedor con la imagen actual; si
+        # acabas de hacer `build`, además hay que recrear el contenedor con
+        # `up -d` para que tome la imagen nueva. Lo hacemos aquí para que el
+        # operador no se pregunte por qué su cambio no aparece.
+        $COMPOSE up -d $SERVICE
+        info "(usado 'up -d' para garantizar que se aplique cualquier imagen recién construida)"
         ;;
 
     build)
         header "Construyendo imágenes..."
         $COMPOSE build $SERVICE
+        header "Aplicando la imagen nueva (up -d)..."
+        # `build` por sí solo NO actualiza el contenedor en ejecución: produce
+        # una imagen nueva, pero el contenedor sigue corriendo con la vieja.
+        # Hacer `up -d` después es idempotente: si nada cambió no hace nada,
+        # si la imagen cambió recrea el contenedor automáticamente. Así un
+        # `./scripts/prod.sh build frontend` despliega el cambio de una.
+        $COMPOSE up -d $SERVICE
         ;;
 
     rebuild)
@@ -275,9 +287,9 @@ print('ausente')
         echo ""
         echo "  start   | up      Levantar servicios"
         echo "  stop    | down    Detener servicios"
-        echo "  restart [svc]     Reiniciar todos o uno"
-        echo "  build   [svc]     Construir imágenes"
-        echo "  rebuild [svc]     Reconstruir sin caché"
+        echo "  restart [svc]     Reiniciar (recrea contenedor → aplica imagen nueva)"
+        echo "  build   [svc]     Construir imagen y aplicarla (build + up -d)"
+        echo "  rebuild [svc]     Igual que build pero SIN caché de Docker"
         echo "  logs    [svc]     Logs en tiempo real"
         echo "  ps      | status  Estado + URLs"
         echo "  shell   [svc]     Shell (default: backend)"
