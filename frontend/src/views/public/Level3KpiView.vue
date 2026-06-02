@@ -124,30 +124,34 @@
           <p class="text-xs text-gray-400">{{ getTrimestre(item.datos_dinamicos) }}</p>
         </div>
 
-        <!-- Proyectado -->
+        <!-- Proyectado (con decimales) -->
         <div class="col-span-1 text-right text-gray-700 tabular-nums">
           {{ formatPct(item.datos_dinamicos?.pct_avance_proyectado) }}
         </div>
 
-        <!-- Alcanzado -->
+        <!-- Alcanzado (con decimales) -->
         <div class="col-span-1 text-right text-gray-700 tabular-nums">
           {{ formatPct(item.datos_dinamicos?.pct_avance_alcanzado) }}
         </div>
 
-        <!-- % Avance final con barra -->
+        <!-- % Avance final con barra:
+             - Calculado AL VUELO desde alcanzado/proyectado (no depende del
+               valor guardado en datos_dinamicos, que puede estar stale).
+             - La barra muestra alcanzado SOBRE proyectado (el 100% del
+               ancho representa el proyectado). 100% = se cumplió la meta. -->
         <div class="col-span-2">
-          <template v-if="getPctFinal(item.datos_dinamicos) !== null">
+          <template v-if="getPctFinalLive(item.datos_dinamicos) !== null">
             <div class="flex items-center gap-2">
-              <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div class="relative flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   class="h-full rounded-full"
-                  :class="colorBar(getPctFinal(item.datos_dinamicos)!)"
-                  :style="{ width: `${Math.min(100, getPctFinal(item.datos_dinamicos)!)}%` }"
+                  :class="colorBar(getPctFinalLive(item.datos_dinamicos)!)"
+                  :style="{ width: `${Math.min(100, getPctFinalLive(item.datos_dinamicos)!)}%` }"
                 />
               </div>
-              <span class="text-xs font-bold shrink-0 w-10 text-right tabular-nums"
-                    :class="colorText(getPctFinal(item.datos_dinamicos)!)">
-                {{ getPctFinal(item.datos_dinamicos)!.toFixed(0) }}%
+              <span class="text-xs font-bold shrink-0 w-14 text-right tabular-nums"
+                    :class="colorText(getPctFinalLive(item.datos_dinamicos)!)">
+                {{ getPctFinalLive(item.datos_dinamicos)!.toFixed(1) }}%
               </span>
             </div>
           </template>
@@ -321,18 +325,46 @@ function getTrimestre(dd: Record<string, any> | null): string {
   return dd['periodo_reporte'] || dd['trimestre'] || ''
 }
 
+// Lee el pct_avance_final guardado (puede ser fracción 0..1 de versiones
+// viejas, o porcentaje 0..100 de la versión nueva). NO se usa para mostrar
+// — se mantiene solo por compatibilidad.
 function getPctFinal(dd: Record<string, any> | null): number | null {
   return toNum(dd?.['pct_avance_final'])
 }
 
-function getEstado(dd: Record<string, any> | null): string {
-  if (!dd) return ''
-  return dd['estado_actividad'] || dd['estado_ponderado'] || ''
+// Versión LIVE: siempre calcula desde alcanzado/proyectado. Devuelve el
+// porcentaje 0..100 (puede ser >100 si superó la meta). Devuelve null si
+// proyectado es 0 o no aplica ("actividad no aplica este periodo").
+function getPctFinalLive(dd: Record<string, any> | null): number | null {
+  if (!dd) return null
+  const proy = toNum(dd['pct_avance_proyectado'])
+  const alc  = toNum(dd['pct_avance_alcanzado'])
+  if (proy === null || proy <= 0) return null
+  return (alc ?? 0) / proy * 100
 }
 
-function formatPct(v: any): string {
+// Estado derivado de getPctFinalLive (consistente con la barra y la
+// fórmula nueva, no depende de estado_actividad que puede estar stale).
+function getEstadoLive(dd: Record<string, any> | null): string {
+  const pct = getPctFinalLive(dd)
+  if (pct === null) return 'No Aplica'
+  if (pct >= 90) return 'Cumple'
+  if (pct >= 70) return 'Cumple Parcialmente'
+  if (pct >  0)  return 'No Cumple'
+  return 'No Aplica'
+}
+
+function getEstado(dd: Record<string, any> | null): string {
+  // Mantenido por compatibilidad — ahora usa la versión live.
+  return getEstadoLive(dd)
+}
+
+// Formatea con 2 decimales por defecto (los valores reportados suelen
+// venir con decimales que se pierden si se redondea a entero).
+function formatPct(v: any, digits = 2): string {
   const n = toNum(v)
-  return n === null ? '—' : `${n.toFixed(0)}%`
+  if (n === null) return '—'
+  return `${n.toFixed(digits)}%`
 }
 
 // ── Helpers de color ──────────────────────────────────────────

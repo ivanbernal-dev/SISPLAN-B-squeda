@@ -108,9 +108,9 @@
                 :style="{ width: `${Math.min(100, Number(value))}%` }"
               />
             </div>
-            <span class="text-xs font-bold shrink-0 tabular-nums w-10 text-right"
+            <span class="text-xs font-bold shrink-0 tabular-nums w-14 text-right"
                   :class="colorText(Number(value))">
-              {{ Number(value).toFixed(0) }}%
+              {{ Number(value).toFixed(1) }}%
             </span>
           </div>
         </template>
@@ -261,17 +261,35 @@ function toNum(v: any): number | null {
   return isNaN(n) ? null : n
 }
 
+// Calcula pct_avance_final SIEMPRE al vuelo desde alcanzado/proyectado.
+// Así no depende del valor guardado en datos_dinamicos (que en datos
+// viejos venía como fracción 0..1 y rompía la UI). Devuelve null si la
+// actividad no aplica este periodo (proyectado vacío o 0).
+function liveFinal(dd: Record<string, unknown>): number | null {
+  const proy = toNum(dd['pct_avance_proyectado'])
+  const alc  = toNum(dd['pct_avance_alcanzado'])
+  if (proy === null || proy <= 0) return null
+  return (alc ?? 0) / proy * 100
+}
+function liveEstado(pct: number | null): string {
+  if (pct === null) return 'No Aplica'
+  if (pct >= 90) return 'Cumple'
+  if (pct >= 70) return 'Cumple Parcialmente'
+  if (pct >  0)  return 'No Cumple'
+  return 'No Aplica'
+}
+
 const tableRows = computed(() =>
   items.value.map((item) => {
     const dd = (item.datos_dinamicos ?? {}) as Record<string, unknown>
-    const pctFinal = toNum(dd['pct_avance_final'])
+    const pctFinal = liveFinal(dd)
     return {
       id: item.id,
       dependencia: item.dependencia,
       actividad: (dd['actividad_clave'] as string) || (dd['indicador'] as string) || (dd['entregable_trimestre'] as string) || '—',
       trimestre: (dd['periodo_reporte'] as string) || (dd['trimestre'] as string) || '—',
       pct_final: pctFinal,
-      estado: (dd['estado_actividad'] as string) || (dd['estado_ponderado'] as string) || '',
+      estado: liveEstado(pctFinal),
       archivos_count: item.archivos_count,
     }
   }),
