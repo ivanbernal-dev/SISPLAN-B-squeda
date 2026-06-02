@@ -276,6 +276,57 @@ print('ausente')
         ./scripts/reset-fresh.sh
         ;;
 
+    pipeline-reset)
+        header "Reset definitivo del pipeline PAI (seed → BD → ejecución)..."
+        # Una sola llamada al endpoint POST /admin/script-pipeline/reset-to-default
+        # que hace TODO in-process en el backend:
+        #   1. Lee el seed app/seeds/pipeline_pai_default.py (que se incluye en
+        #      la imagen del backend al hacer build).
+        #   2. Borra todos los pipeline_scripts e inserta el seed como activo.
+        #   3. Borra todos los kpi_resultados.
+        #   4. Ejecuta el script in-process y persiste los KPIs nuevos.
+        #   5. Devuelve los valores guardados como verificación.
+        ADMIN_USER=$(grep -E '^INITIAL_ADMIN_USERNAME=' .env | cut -d= -f2- | tr -d '"' | tr -d "'")
+        ADMIN_PASS=$(grep -E '^INITIAL_ADMIN_PASSWORD=' .env | cut -d= -f2- | tr -d '"' | tr -d "'")
+        TOKEN=$(curl -s -X POST http://localhost/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"$ADMIN_USER\",\"password\":\"$ADMIN_PASS\"}" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null)
+        if [ -z "$TOKEN" ]; then
+            err "No se pudo obtener token de admin."
+            exit 1
+        fi
+        info "Token OK. Llamando POST /admin/script-pipeline/reset-to-default..."
+        RESP=$(curl -s -X POST http://localhost/api/admin/script-pipeline/reset-to-default \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json")
+        echo "$RESP" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+except Exception as e:
+    print('Respuesta no es JSON:', e); print(sys.stdin.read()[:500]); sys.exit(1)
+if not d.get('ok'):
+    print('✗ Falló:'); print(json.dumps(d, ensure_ascii=False, indent=2)[:1500])
+    sys.exit(1)
+print(f'✅ Reset OK')
+print(f'   Seed: {d.get(\"seed_path\")} ({d.get(\"seed_chars\")} chars)')
+print(f'   Scripts viejos borrados: {d.get(\"deleted_scripts\")}')
+print(f'   KPIs viejos borrados:    {d.get(\"deleted_kpis\")}')
+print()
+print('📊 KPIs nivel-1 guardados:')
+for k in d['new_kpis']['nivel1']:
+    print(f'   {k[\"key\"]:4s}  valor={k[\"valor\"]:6.2f}  label={k[\"label\"][:70]}')
+print()
+print('📊 KPIs nivel-2 guardados:')
+for k in d['new_kpis']['nivel2']:
+    print(f'   {k[\"key\"]:18s}  valor={k[\"valor\"]:6.2f}  label={k[\"label\"][:55]}')
+print()
+print(f'📝 Log: {d.get(\"log_file\")}')
+"
+        echo ""
+        info "Si el navegador sigue mostrando otros valores → caché. Recarga con Cmd/Ctrl+Shift+R."
+        ;;
+
     pipeline-sync)
         header "Sincronizando pipeline_pai.py → BD (script activo)..."
         # Estrategia (sin depender de psycopg2 dentro del backend):
@@ -446,6 +497,10 @@ SELECT nivel,
         echo "  backup            Backup de base de datos"
         echo "  test              Ejecutar tests"
         echo "  reset-db          Resetear BD (requiere ALLOW_DB_RESET=true en .env)"
+        echo "  pipeline-reset    DEFINITIVO. Borra pipeline_scripts y kpi_resultados,"
+        echo "                    carga el seed app/seeds/pipeline_pai_default.py,"
+        echo "                    lo ejecuta y devuelve los valores guardados."
+        echo "                    Usa esto si los velocímetros no se actualizan."
         echo "  pipeline-sync [run]"
         echo "                    Sincroniza scripts/pai_2026/pipeline_pai.py"
         echo "                    como el script ACTIVO del pipeline en BD."

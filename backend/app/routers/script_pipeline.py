@@ -595,6 +595,143 @@ async def run_script(
         }
 
 
+# ── Admin: POST reset-to-default ──────────────────────────────────────────────
+#
+# Endpoint definitivo para "dejar el pipeline como debe estar":
+#   1. Lee el archivo backend/app/seeds/pipeline_pai_default.py
+#      (que es la versión OFICIAL del pipeline PAI 2026, sincronizada
+#      con scripts/pai_2026/pipeline_pai.py en cada commit).
+#   2. Borra TODOS los scripts de pipeline_scripts y guarda el seed como
+#      ÚNICO activo (así no quedan ratones de runs viejos).
+#   3. Borra TODOS los kpi_resultados (limpieza total — sin huérfanos).
+#   4. Ejecuta el script in-process (sin ir y volver por la API) y
+#      persiste los KPIs nuevos.
+#   5. Devuelve los valores REALES guardados en BD para verificación.
+#
+# Esto elimina toda la cadena de "qué script está activo / cuál se está
+# ejecutando / por qué los valores no cambian": después de llamar a este
+# endpoint los KPIs en la BD coinciden EXACTAMENTE con el seed del repo.
+
+@admin_router.post("/reset-to-default")
+async def reset_to_default_pai(
+    db: AsyncSession = Depends(get_db),
+    current: User = Depends(get_admin_user),
+):
+    from pathlib import Path as _Path
+    from sqlalchemy import delete as _sa_delete
+
+    seed = _Path(__file__).resolve().parent.parent / "seeds" / "pipeline_pai_default.py"
+    if not seed.exists():
+        raise HTTPException(
+            status_code=500,
+            detail=f"No existe el seed del pipeline en {seed}. ¿Falta el archivo?",
+        )
+    try:
+        codigo = seed.read_text(encoding="utf-8")
+        compile(codigo, str(seed), "exec")
+    except (OSError, SyntaxError) as exc:
+        raise HTTPException(status_code=500, detail=f"Seed inválido: {exc}")
+
+    with pipeline_run(mode="reset-default", user=current.username or current.email) as plog:
+        plog.info("Reset to default — seed: %s (%d chars)", seed, len(codigo))
+
+        # 1) Reemplazar TODOS los pipeline_scripts por uno nuevo activo.
+        #    Borrar (no solo desactivar) para no acumular basura histórica.
+        n_old = await db.scalar(select(func.count(PipelineScript.id)))
+        await db.execute(_sa_delete(PipelineScript))
+        new_script = PipelineScript(
+            codigo=codigo,
+            nombre="Pipeline PAI 2026 (default)",
+            activo=True,
+        )
+        db.add(new_script)
+        await db.flush()
+        plog.info("pipeline_scripts: %d filas previas borradas, 1 nueva activa.", n_old or 0)
+
+        # 2) Limpiar kpi_resultados (cualquier KPI viejo desaparece).
+        n_kpis_old = await db.scalar(select(func.count(KpiResultado.id)))
+        await db.execute(_sa_delete(KpiResultado))
+        await db.flush()
+        plog.info("kpi_resultados: %d filas previas borradas.", n_kpis_old or 0)
+
+        # 3) Cargar datos y ejecutar el seed in-process.
+        dfs, template_meta = await _load_dataframes(db, plog=plog)
+        combined = {"dfs": dfs, "meta": template_meta}
+        plog.info("Ejecutando el seed PAI directamente (sin pasar por /run)...")
+        result = _run_script_sync(codigo, combined)
+        if result["error"]:
+            await db.rollback()
+            annotated = annotate_script_error(codigo, result["error"])
+            plog.error("Falló la ejecución del seed:\n%s", annotated)
+            raise HTTPException(status_code=500, detail=annotated)
+
+        resultado = result["resultado"]
+        if not isinstance(resultado, dict) or "nivel1" not in resultado:
+            await db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail="El seed se ejecutó pero `resultado` no tiene la forma esperada.",
+            )
+
+        # 4) Persistir KPIs nuevos.
+        import json as _json
+        def _payload(item: dict) -> str | None:
+            extra = {k: v for k, v in item.items()
+                     if k in ("anual", "por_trimestre", "n_forms")}
+            return _json.dumps(extra, ensure_ascii=False) if extra else None
+
+        nivel1_items = resultado.get("nivel1", [])
+        nivel2_map = resultado.get("nivel2", {})
+        for item in nivel1_items:
+            db.add(KpiResultado(
+                nivel=1,
+                kpi_key=item.get("key", ""),
+                kpi_label=item.get("label", item.get("key", "")),
+                valor=float(item.get("valor", 0.0)),
+                descripcion=item.get("descripcion"),
+                payload_json=_payload(item),
+            ))
+        for parent_key, sub_items in nivel2_map.items():
+            for item in sub_items:
+                tid = item.get("template_id")
+                db.add(KpiResultado(
+                    nivel=2,
+                    kpi_key=item.get("key", ""),
+                    kpi_label=item.get("label", item.get("key", "")),
+                    valor=float(item.get("valor", 0.0)),
+                    nivel1_key=parent_key,
+                    template_id=str(tid) if tid else None,
+                    payload_json=_payload(item),
+                ))
+        await db.commit()
+
+        # 5) Releer KPIs guardados para devolverlos como verificación.
+        saved = (await db.execute(
+            select(KpiResultado).order_by(KpiResultado.nivel, KpiResultado.kpi_key)
+        )).scalars().all()
+
+        plog.info("Persistencia OK: %d KPIs (%d nivel-1 + %d nivel-2).",
+                  len(saved), len(nivel1_items),
+                  sum(len(v) for v in nivel2_map.values()))
+
+        return {
+            "ok": True,
+            "seed_path": str(seed),
+            "seed_chars": len(codigo),
+            "deleted_scripts": int(n_old or 0),
+            "deleted_kpis": int(n_kpis_old or 0),
+            "new_kpis": {
+                "nivel1": [{"key": k.kpi_key, "label": k.kpi_label, "valor": k.valor}
+                           for k in saved if k.nivel == 1],
+                "nivel2": [{"key": k.kpi_key, "label": k.kpi_label,
+                            "valor": k.valor, "nivel1_key": k.nivel1_key}
+                           for k in saved if k.nivel == 2],
+            },
+            "stdout": (result.get("stdout") or "").strip(),
+            "log_file": str(getattr(plog, "run_file", "")),
+        }
+
+
 # ── Admin: GET tablas de BD ───────────────────────────────────────────────────
 
 @admin_router.get("/tables")
