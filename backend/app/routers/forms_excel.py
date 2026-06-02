@@ -310,8 +310,34 @@ async def upload_excel_forms(
     - informe_cualitativo obligatorio
 
     Si hay errores retorna 422 con detalle por fila.
+
+    Cada intento queda registrado en logs/backend/uploads/upload_<ts>_<id>.log
+    con el detalle de qué fila falló y por qué (incluso si la respuesta HTTP
+    es 400/422), para auditar uploads sin tener que reproducir el caso.
     """
     openpyxl = _get_openpyxl()
+    # ── Logger por intento de upload ──────────────────────────────────────
+    import logging.handlers as _logh
+    from pathlib import Path as _Path
+    from datetime import datetime as _dt
+    import uuid as _uuid
+    _uplog_dir = _Path("/app/logs/uploads")
+    try:
+        _uplog_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        _uplog_dir = _Path("/tmp/ubpd_uploads")
+        _uplog_dir.mkdir(parents=True, exist_ok=True)
+    _upid = _uuid.uuid4().hex[:8]
+    _upfile = _uplog_dir / f"upload_{_dt.utcnow().strftime('%Y%m%d_%H%M%S')}_{_upid}.log"
+    _uplog = logging.getLogger(f"ubpd.upload.{_upid}")
+    _uplog.setLevel(logging.INFO)
+    _uph = logging.FileHandler(_upfile, encoding="utf-8")
+    _uph.setFormatter(logging.Formatter("%(asctime)s | %(levelname)-7s | %(message)s",
+                                        "%Y-%m-%d %H:%M:%S"))
+    _uplog.addHandler(_uph)
+    _uplog.info("═══ UPLOAD-EXCEL start | id=%s | user=%s | template=%s | file=%s ═══",
+                _upid, current_user.username or current_user.email,
+                template_id, file.filename)
 
     # Validar tipo MIME
     allowed_types = {
@@ -321,9 +347,11 @@ async def upload_excel_forms(
         "application/zip",  # algunos sistemas envían .xlsx como zip
     }
     if file.content_type not in allowed_types and not (file.filename or "").endswith((".xlsx", ".xls")):
+        _uplog.error("400 — tipo MIME no aceptado: %s (filename=%s)",
+                     file.content_type, file.filename)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Solo se aceptan archivos Excel (.xlsx / .xls)",
+            detail=f"Solo se aceptan archivos Excel (.xlsx / .xls). Se recibió: {file.content_type} ({file.filename})",
         )
 
     # Cargar template
@@ -332,9 +360,12 @@ async def upload_excel_forms(
     )
     template = t_result.scalar_one_or_none()
     if template is None:
+        _uplog.error("404 — template %s no encontrado o inactivo", template_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template no encontrado")
 
     all_fields = _get_fields(template)
+    _uplog.info("Template OK: %s (%s), %d campos definidos",
+                template.codigo or template.nombre, template_id, len(all_fields))
 
     # Campos disponibles por label y por name
     field_by_label: dict[str, dict] = {_field_label(f): f for f in all_fields}
@@ -345,22 +376,27 @@ async def upload_excel_forms(
 
     # Leer Excel
     content = await file.read()
+    _uplog.info("Archivo recibido: %d bytes", len(content))
     try:
         wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
         ws = wb.active
     except Exception as e:
+        _uplog.exception("400 — openpyxl no pudo leer el .xlsx")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"No se pudo leer el archivo Excel: {e}",
         )
 
     all_rows = list(ws.iter_rows(values_only=True))
+    _uplog.info("Hoja '%s': %d filas leídas, %d columnas",
+                ws.title, len(all_rows), len(all_rows[0]) if all_rows else 0)
 
     # Debe tener al menos fila 1 (headers) + fila 3 (datos) — saltamos fila 2 (tipo/guía)
     if len(all_rows) < 2:
+        _uplog.error("400 — archivo con %d fila(s) (mínimo 2)", len(all_rows))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El archivo debe tener al menos la fila de encabezados y una fila de datos.",
+            detail=f"El archivo solo tiene {len(all_rows)} fila(s). Necesita encabezados + al menos una fila de datos.",
         )
 
     header_row = all_rows[0]
@@ -525,12 +561,18 @@ async def upload_excel_forms(
             })
 
     if validation_errors:
+        _uplog.warning("422 — %d fila(s) con errores de validación:", len(validation_errors))
+        for ve in validation_errors:
+            _uplog.warning("  Fila %s:", ve["fila"])
+            for er in ve["errores"]:
+                _uplog.warning("    · %s", er)
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "message": f"Se encontraron errores en {len(validation_errors)} fila(s). "
                            "Corrígelos y vuelve a cargar el archivo.",
                 "errores_por_fila": validation_errors,
+                "log_file": str(_upfile),
             },
         )
 
@@ -634,10 +676,13 @@ async def upload_excel_forms(
 
     await db.commit()
 
+    _uplog.info("═══ UPLOAD-EXCEL OK: %d formulario(s) creados, lote=%s ═══",
+                len(created_ids), lote_id)
     return {
         "created": len(created_ids),
         "lote_id": lote_id,
         "form_ids": created_ids,
+        "log_file": str(_upfile),
         "mensaje": f"Se cargaron {len(created_ids)} registro(s) correctamente y están en revisión. El validador revisará el lote completo.",
     }
 

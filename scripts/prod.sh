@@ -105,6 +105,11 @@ show_log_paths() {
     echo "    ${base}/backend/pipeline/runs/                (un archivo por ejecución:"
     echo "                                              run_<fecha>_<modo>_<id>.log)"
     echo ""
+    echo -e "  ${BOLD}${YELLOW}Cargas de Excel (dependencias):${NC}"
+    echo "    ${base}/backend/uploads/upload_<fecha>_<id>.log"
+    echo "                          (un archivo por intento de upload-excel,"
+    echo "                           con el detalle de fila/columna que falló)"
+    echo ""
     echo -e "  ${BOLD}Nginx:${NC}"
     echo "    ${base}/nginx/access.log             (accesos HTTP del proxy)"
     echo "    ${base}/nginx/error.log              (errores del proxy)"
@@ -122,7 +127,7 @@ case "$CMD" in
         # Asegurar que la carpeta de logs del pipeline existe antes de arrancar
         # (los volúmenes se montan automáticamente, pero esto evita que el
         # primer arranque escriba en una ruta inexistente en algunos hosts).
-        mkdir -p logs/backend/pipeline/runs logs/nginx 2>/dev/null || true
+        mkdir -p logs/backend/pipeline/runs logs/backend/uploads logs/nginx 2>/dev/null || true
         $COMPOSE up -d $SERVICE
         echo ""
         echo -e "${GREEN}✅  Servicios levantados correctamente.${NC}"
