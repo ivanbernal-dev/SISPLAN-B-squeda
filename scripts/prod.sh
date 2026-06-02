@@ -18,6 +18,8 @@
 #   test               Ejecutar tests del backend
 #   reset-db           Eliminar BD y recrear (requiere ALLOW_DB_RESET=true en .env)
 #   reset-fresh        Reset TOTAL a estado de instalación limpia (frase + PIN)
+#   destroy [all]      DESTRUIR contenedores, imágenes y volúmenes (frase + PIN).
+#                       Añade 'all' para borrar también imágenes 3rd party.
 #
 # Ejemplos:
 #   ./scripts/prod.sh start
@@ -255,6 +257,18 @@ print('ausente')
         ./scripts/reset-fresh.sh
         ;;
 
+    destroy|nuke)
+        header "DESTRUCCIÓN TOTAL de Docker (UBPD)..."
+        chmod +x scripts/destroy-all.sh
+        # Permitir pasar bandera al script:
+        #   ./scripts/prod.sh destroy --all-images
+        if [ "${SERVICE:-}" = "--all-images" ] || [ "${SERVICE:-}" = "all" ]; then
+            DESTROY_INCLUDE_3RD=yes ./scripts/destroy-all.sh
+        else
+            ./scripts/destroy-all.sh
+        fi
+        ;;
+
     help|--help|-h|*)
         echo ""
         echo "Uso: ./scripts/prod.sh <comando> [servicio]"
@@ -274,6 +288,10 @@ print('ausente')
         echo "  reset-fresh       Reset TOTAL a estado de instalación limpia"
         echo "                    (pide frase 'BORRAR TODO' + PIN definido en .env"
         echo "                     como RESET_PIN; borra postgres + minio + valkey)"
+        echo "  destroy [all]     DESTRUIR contenedores, imágenes locales y volúmenes"
+        echo "                    del proyecto. Frase 'DESTRUIR TODO' + 'si' + PIN."
+        echo "                    Añade 'all' (o --all-images) para borrar también"
+        echo "                    las imágenes 3rd party (postgres, nginx, minio,…)"
         echo ""
         echo "Servicios: nginx | backend | frontend | celery | celery-beat | postgres | valkey | minio"
         echo ""
