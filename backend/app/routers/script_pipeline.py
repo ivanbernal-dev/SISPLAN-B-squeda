@@ -493,13 +493,42 @@ async def run_script(
                                 payload_json=_payload(item),
                             ))
 
+                # ── Limpiar KPIs huérfanos ──────────────────────────────
+                # Cualquier kpi_key que YA existía en la BD pero NO fue
+                # producido por este run se considera huérfano (script anterior
+                # con keys distintas, p.ej. el ejemplo genérico que generaba
+                # kpi_cobertura, kpi_completitud, etc.). Se borra para que la
+                # tabla refleje exactamente lo que produjo el script activo.
+                current_keys: set[str] = set()
+                for it in nivel1_items:
+                    if it.get("key"):
+                        current_keys.add(it["key"])
+                for sub in nivel2_map.values():
+                    for it in sub:
+                        if it.get("key"):
+                            current_keys.add(it["key"])
+
+                from sqlalchemy import delete as sa_delete
+                if current_keys:
+                    purge = await db.execute(
+                        sa_delete(KpiResultado).where(
+                            KpiResultado.kpi_key.notin_(list(current_keys))
+                        )
+                    )
+                    n_purged = purge.rowcount or 0
+                else:
+                    n_purged = 0
+
                 await db.commit()
-                plog.info("Persistencia OK: KPIs guardados y visibles en /estadisticas")
+                plog.info("Persistencia OK: KPIs guardados; %d huérfano(s) eliminados.", n_purged)
                 output += f"\n\n✅ Producción: {len(nivel1_items)} KPIs nivel-1 y {sum(len(v) for v in nivel2_map.values())} KPIs nivel-2 guardados en la base de datos."
+                if n_purged:
+                    output += f"\n🧹 {n_purged} KPI(s) huérfano(s) de runs anteriores eliminados."
                 output += f"\n📝 Log: {getattr(plog, 'run_file', '')}"
                 return {
                     "ok": True, "stdout": output, "stderr": None,
                     "modo": body.modo, "guardado": True,
+                    "purged": n_purged,
                     "log_file": str(getattr(plog, "run_file", "")),
                 }
 
