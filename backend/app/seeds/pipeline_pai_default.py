@@ -56,20 +56,25 @@ def _estado(pct):
 def _producto_metricas(df):
     """Calcula avance por trimestre y anual de un producto.
 
-    Regla clave: una actividad/fila SOLO entra al cálculo si
-    `pct_avance_proyectado` está reportado y > 0. Si la celda está vacía
-    (o el proyectado es 0) significa que esa actividad NO APLICA ese
-    periodo → se omite por completo. Si `pct_avance_alcanzado` está vacío
-    pero el proyectado existe → cuenta como 0 logrado (no aplica = 0%).
+    Semántica: los valores `pct_avance_proyectado` y `pct_avance_alcanzado`
+    de cada fila son CONTRIBUCIONES (pesos) al 100% del producto. Por eso
+    el avance del producto en un periodo es la SUMA de los alcanzados de
+    las actividades de ese periodo, NO el ratio.
 
-    Si en un trimestre/anual no queda NINGUNA fila con proyección válida,
-    el resultado es `pct: None, estado: "Sin Reporte"`. Esos productos NO
-    deben entrar al promedio de la línea (se filtran en _linea_metricas).
+    Reglas:
+      - Una fila solo entra si pct_avance_proyectado > 0 (sino "no aplica").
+      - Si alcanzado está vacío y proyectado existe, cuenta como 0 logrado.
+      - pct = Σ alc (suma directa, sin dividir por proy).
+      - estado se evalúa con el RATIO Σalc/Σproy (cumplimiento del periodo):
+          ≥90% → Cumple, ≥70% → Cumple Parcialmente, >0 → No Cumple, sino → No Aplica.
+      - Si no hay filas aplicables, pct=None, estado="Sin Reporte".
     """
     vacio = {
         "n_forms": 0,
-        "anual":   {"pct": None, "estado": "Sin Reporte", "n_forms": 0},
-        "por_trimestre": {t: {"pct": None, "estado": "Sin Reporte", "n_forms": 0}
+        "anual":   {"pct": None, "alc": None, "proy": None,
+                    "estado": "Sin Reporte", "n_forms": 0},
+        "por_trimestre": {t: {"pct": None, "alc": None, "proy": None,
+                              "estado": "Sin Reporte", "n_forms": 0}
                           for t in TRIMESTRES},
     }
     if df is None or len(df) == 0:
@@ -82,40 +87,33 @@ def _producto_metricas(df):
         df["periodo_reporte"] = "TRIMESTRE 1"
 
     df["_proy"] = _to_num_opt(df["pct_avance_proyectado"])
-    # Alcanzado faltante → 0 logrado (siempre que haya proyección)
     df["_alc"]  = _to_num_opt(df["pct_avance_alcanzado"]).fillna(0)
-    # Una fila aplica solo si tiene proyección reportada y > 0
     df["_aplica"] = df["_proy"].notna() & (df["_proy"] > 0)
 
-    por_trim = {}
-    for t in TRIMESTRES:
-        sub = df[(df["periodo_reporte"] == t) & df["_aplica"]]
+    def _metricas_subset(sub):
         if len(sub) == 0:
-            por_trim[t] = {"pct": None, "estado": "Sin Reporte", "n_forms": 0}
-        else:
-            sub_proy = float(sub["_proy"].sum())
-            sub_alc  = float(sub["_alc"].sum())
-            pct = (sub_alc / sub_proy * 100.0) if sub_proy > 0 else None
-            por_trim[t] = {
-                "pct":     round(pct, 2) if pct is not None else None,
-                "estado":  _estado(pct),
-                "n_forms": int(len(sub)),
-            }
+            return {"pct": None, "alc": None, "proy": None,
+                    "estado": "Sin Reporte", "n_forms": 0}
+        sub_proy = float(sub["_proy"].sum())
+        sub_alc  = float(sub["_alc"].sum())
+        # pct = avance del producto = SUMA de los alcanzados
+        pct = sub_alc
+        # estado se basa en el ratio (cumplimiento del proyectado)
+        ratio = (sub_alc / sub_proy * 100.0) if sub_proy > 0 else None
+        return {
+            "pct":     round(pct, 2),
+            "alc":     round(sub_alc, 2),
+            "proy":    round(sub_proy, 2),
+            "estado":  _estado(ratio),
+            "n_forms": int(len(sub)),
+        }
 
-    aplica_total = df[df["_aplica"]]
-    if len(aplica_total) == 0:
-        pct_anual = None
-    else:
-        tot_proy = float(aplica_total["_proy"].sum())
-        tot_alc  = float(aplica_total["_alc"].sum())
-        pct_anual = (tot_alc / tot_proy * 100.0) if tot_proy > 0 else None
+    por_trim = {t: _metricas_subset(df[(df["periodo_reporte"] == t) & df["_aplica"]])
+                for t in TRIMESTRES}
+    anual = _metricas_subset(df[df["_aplica"]])
     return {
         "n_forms": int(len(df)),
-        "anual":   {
-            "pct":     round(pct_anual, 2) if pct_anual is not None else None,
-            "estado":  _estado(pct_anual),
-            "n_forms": int(len(aplica_total)),
-        },
+        "anual":   anual,
         "por_trimestre": por_trim,
     }
 

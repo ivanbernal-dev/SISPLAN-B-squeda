@@ -41,35 +41,44 @@
           </button>
         </div>
 
-        <!-- Barra de avance promedio -->
-        <div v-if="!loading && promedioFinal !== null" class="mt-4">
+        <!-- Barra de avance del producto.
+             Texto grande = Σ alcanzado (lo logrado del 100% del producto).
+             Color/estado = ratio Σalc / Σproy (cumplimiento del proyectado). -->
+        <div v-if="!loading && productoMetricas" class="mt-4">
           <div class="flex items-center justify-between mb-1">
-            <span class="font-cuerpo text-xs text-gray-500 uppercase tracking-wide">% Avance final promedio</span>
-            <span class="font-cuerpo text-sm font-bold" :class="colorText(promedioFinal)">
-              {{ promedioFinal.toFixed(1) }}%
+            <span class="font-cuerpo text-xs text-gray-500 uppercase tracking-wide">
+              Avance del producto (suma alcanzado)
+            </span>
+            <span class="font-cuerpo text-sm font-bold" :class="colorText(productoMetricas.ratio ?? 0)">
+              {{ productoMetricas.avance!.toFixed(2) }}%
+              <span v-if="productoMetricas.sumProy > 0" class="text-gray-400 font-normal">
+                / {{ productoMetricas.sumProy.toFixed(2) }}% proyectado
+              </span>
             </span>
           </div>
           <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-700"
-              :class="colorBar(promedioFinal)"
-              :style="{ width: `${Math.min(100, promedioFinal)}%` }"
+              :class="colorBar(productoMetricas.ratio ?? 0)"
+              :style="{ width: `${Math.min(100, productoMetricas.avance ?? 0)}%` }"
             />
           </div>
-          <p class="mt-1 text-xs font-cuerpo" :class="colorText(promedioFinal)">
-            {{ scoreLabel(promedioFinal) }}
+          <p class="mt-1 text-xs font-cuerpo" :class="colorText(productoMetricas.ratio ?? 0)">
+            {{ estadoProducto }}<span v-if="productoMetricas.ratio !== null">
+              — {{ productoMetricas.ratio.toFixed(1) }}% del proyectado
+            </span>
           </p>
         </div>
       </div>
-      <!-- Badge estado -->
-      <div v-if="!loading && promedioFinal !== null"
+      <!-- Badge estado: muestra el AVANCE (suma alc) en grande. -->
+      <div v-if="!loading && productoMetricas"
         class="shrink-0 flex flex-col items-center justify-center
-               w-24 h-24 rounded-2xl border-2"
-        :class="colorBadgeBg(promedioFinal)">
-        <span class="font-montserrat text-2xl font-bold" :class="colorText(promedioFinal)">
-          {{ promedioFinal.toFixed(0) }}<span class="text-base">%</span>
+               w-28 h-24 rounded-2xl border-2"
+        :class="colorBadgeBg(productoMetricas.ratio ?? 0)">
+        <span class="font-montserrat text-xl font-bold" :class="colorText(productoMetricas.ratio ?? 0)">
+          {{ productoMetricas.avance!.toFixed(1) }}<span class="text-base">%</span>
         </span>
-        <span class="font-cuerpo text-xs mt-0.5" :class="colorText(promedioFinal)">avance</span>
+        <span class="font-cuerpo text-xs mt-0.5" :class="colorText(productoMetricas.ratio ?? 0)">avance</span>
       </div>
     </div>
 
@@ -280,12 +289,19 @@ const periodoLabel = computed(() =>
 )
 
 // Promedio de pct_avance_final (0-100)
-// Avance del PRODUCTO = Σ alcanzado / Σ proyectado × 100
-// (mismo número que el velocímetro de nivel 2). NO es el promedio de los
-// pct_avance_final por fila — esa fórmula daría "promedio de porcentajes"
-// que es estadísticamente distinto y subestima/sobrestima cuando las
-// actividades tienen pesos distintos.
-const promedioFinal = computed<number | null>(() => {
+// Avance del PRODUCTO = Σ alcanzado (suma directa).
+// Los pct_avance_proyectado/alcanzado de cada fila son CONTRIBUCIONES al
+// 100% del producto (pesos). Sumar los alcanzados da cuánto del producto
+// se completó. El "promedio_avance" muestra ese acumulado.
+// El RATIO Σalc/Σproy se usa para el estado (Cumple / Parcial / No Cumple)
+// — qué tan cerca quedó el alcanzado del proyectado del periodo.
+const productoMetricas = computed<{
+  avance: number | null
+  ratio:  number | null   // % del proyectado alcanzado
+  sumProy: number
+  sumAlc:  number
+  aplica:  number
+} | null>(() => {
   if (items.value.length === 0) return null
   let sumProy = 0
   let sumAlc  = 0
@@ -293,13 +309,31 @@ const promedioFinal = computed<number | null>(() => {
   for (const i of items.value) {
     const proy = toNum(i.datos_dinamicos?.['pct_avance_proyectado'])
     const alc  = toNum(i.datos_dinamicos?.['pct_avance_alcanzado'])
-    if (proy === null || proy <= 0) continue   // actividad no aplica este periodo
+    if (proy === null || proy <= 0) continue  // no aplica este periodo
     sumProy += proy
     sumAlc  += (alc ?? 0)
     aplica  += 1
   }
-  if (aplica === 0 || sumProy <= 0) return null
-  return (sumAlc / sumProy) * 100
+  if (aplica === 0) return null
+  const ratio = sumProy > 0 ? (sumAlc / sumProy) * 100 : null
+  return { avance: sumAlc, ratio, sumProy, sumAlc, aplica }
+})
+
+// promedioFinal compatible con el resto del template:
+//   se renderiza con .toFixed(1)%, y es el AVANCE (suma de alc), no el ratio.
+const promedioFinal = computed<number | null>(() => productoMetricas.value?.avance ?? null)
+
+// Estado del producto (Cumple / No Cumple) se evalúa con el RATIO,
+// no con el avance absoluto. Así un producto al 6.2% de su meta total
+// pero que cumplió 65% de lo proyectado del periodo se ve como "Cumple
+// Parcialmente" (consistente con el % final por fila).
+const estadoProducto = computed<string>(() => {
+  const r = productoMetricas.value?.ratio
+  if (r === null || r === undefined) return 'Sin Reporte'
+  if (r >= 90) return 'Cumple'
+  if (r >= 70) return 'Cumple Parcialmente'
+  if (r >  0)  return 'No Cumple'
+  return 'Sin Reporte'
 })
 
 // ── Helpers de datos PAI ──────────────────────────────────────
