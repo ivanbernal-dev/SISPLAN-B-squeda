@@ -390,11 +390,41 @@ async def run_script(
     with pipeline_run(mode=body.modo, user=current.username or current.email) as plog:
         plog.info("Script recibido: %d caracteres", len(body.codigo or ""))
 
+        # En modo PRODUCCIÓN siempre se ejecuta el script ACTIVO de la BD,
+        # NO lo que viene en el body. Esto evita que alguien ejecute por
+        # accidente un script viejo / de prueba en producción y machaque
+        # los KPIs que estaban bien (caso real: el editor cargó el ejemplo
+        # genérico y al pulsar Ejecutar borró las 6 líneas del PAI).
+        # En modo "test" se sigue ejecutando lo del body (para validar
+        # cambios antes de guardar).
+        code_to_run = body.codigo
+        if body.modo == "produccion":
+            active = await _get_active_script(db)
+            if active and active.codigo:
+                code_to_run = active.codigo
+                if code_to_run != body.codigo:
+                    plog.warning(
+                        "modo=produccion: ignorando el código del request y usando "
+                        "el script ACTIVO en BD ('%s', %d chars). Para cambiar el "
+                        "script activo, guárdalo primero.",
+                        active.nombre, len(active.codigo),
+                    )
+            else:
+                plog.error("modo=produccion sin script activo en BD — abortando")
+                return {
+                    "ok": False,
+                    "stdout": "",
+                    "stderr": "No hay un script activo guardado en la BD. Guarda primero (botón Guardar) y luego ejecuta.",
+                    "modo": body.modo,
+                    "guardado": False,
+                    "log_file": str(getattr(plog, "run_file", "")),
+                }
+
         dfs, template_meta = await _load_dataframes(db, plog=plog)
         combined = {"dfs": dfs, "meta": template_meta}
 
         plog.info("Ejecutando script (timeout 60s)...")
-        result = _run_script_sync(body.codigo, combined)
+        result = _run_script_sync(code_to_run, combined)
 
         output = result["stdout"]
         error = result["error"]
@@ -405,7 +435,7 @@ async def run_script(
                       len(output), output[:4000])
 
         if error:
-            annotated = annotate_script_error(body.codigo, error)
+            annotated = annotate_script_error(code_to_run, error)
             plog.error("El script falló:\n%s", annotated)
             return {
                 "ok": False,
@@ -493,42 +523,15 @@ async def run_script(
                                 payload_json=_payload(item),
                             ))
 
-                # ── Limpiar KPIs huérfanos ──────────────────────────────
-                # Cualquier kpi_key que YA existía en la BD pero NO fue
-                # producido por este run se considera huérfano (script anterior
-                # con keys distintas, p.ej. el ejemplo genérico que generaba
-                # kpi_cobertura, kpi_completitud, etc.). Se borra para que la
-                # tabla refleje exactamente lo que produjo el script activo.
-                current_keys: set[str] = set()
-                for it in nivel1_items:
-                    if it.get("key"):
-                        current_keys.add(it["key"])
-                for sub in nivel2_map.values():
-                    for it in sub:
-                        if it.get("key"):
-                            current_keys.add(it["key"])
-
-                from sqlalchemy import delete as sa_delete
-                if current_keys:
-                    purge = await db.execute(
-                        sa_delete(KpiResultado).where(
-                            KpiResultado.kpi_key.notin_(list(current_keys))
-                        )
-                    )
-                    n_purged = purge.rowcount or 0
-                else:
-                    n_purged = 0
-
                 await db.commit()
-                plog.info("Persistencia OK: KPIs guardados; %d huérfano(s) eliminados.", n_purged)
+                plog.info("Persistencia OK: %d nivel-1 + %d nivel-2 guardados.",
+                          len(nivel1_items),
+                          sum(len(v) for v in nivel2_map.values()))
                 output += f"\n\n✅ Producción: {len(nivel1_items)} KPIs nivel-1 y {sum(len(v) for v in nivel2_map.values())} KPIs nivel-2 guardados en la base de datos."
-                if n_purged:
-                    output += f"\n🧹 {n_purged} KPI(s) huérfano(s) de runs anteriores eliminados."
                 output += f"\n📝 Log: {getattr(plog, 'run_file', '')}"
                 return {
                     "ok": True, "stdout": output, "stderr": None,
                     "modo": body.modo, "guardado": True,
-                    "purged": n_purged,
                     "log_file": str(getattr(plog, "run_file", "")),
                 }
 
