@@ -636,35 +636,78 @@ async function uploadExcel() {
           zipErrors.value = (detail.zip_errors || []) as string[]
           estructuraErrors.value = (detail.estructura_errors || []) as string[]
           validationModalOpen.value = true
+
+          // Notificación con el detalle completo plegable
+          const flat: string[] = []
+          for (const e of excelErrors.value) {
+            const errs = Array.isArray(e.errores) ? e.errores : [String(e.errores)]
+            for (const m of errs) flat.push(`Fila ${e.fila}: ${m}`)
+          }
+          for (const m of zipErrors.value) flat.push(`ZIP: ${m}`)
+          for (const m of estructuraErrors.value) flat.push(`Estructura: ${m}`)
+          const total = flat.length
+          notifications.error(
+            `${total} error${total === 1 ? '' : 'es'} de validación`,
+            (detail.message as string) ||
+              'La carga fue rechazada y NINGÚN registro se creó. Corrige y vuelve a intentar.',
+            { details: flat, duration: 15000 },
+          )
           return
         }
         // Formato legacy: errores_por_fila
         if (detail.errores_por_fila) {
           excelErrors.value = detail.errores_por_fila as ExcelRowError[]
           validationModalOpen.value = true
+          const flat = excelErrors.value.flatMap((e) =>
+            (Array.isArray(e.errores) ? e.errores : [String(e.errores)])
+              .map((m: string) => `Fila ${e.fila}: ${m}`),
+          )
           notifications.error(
-            'Errores en el archivo',
-            `Se encontraron errores en ${excelErrors.value.length} fila(s).`,
+            `${flat.length} error(es) en el archivo`,
+            'Revisa los detalles y corrige el Excel.',
+            { details: flat, duration: 15000 },
           )
           return
         }
       }
-      notifications.error('Error de validación', typeof detail === 'string' ? detail : 'Revisa el archivo.')
+      notifications.error(
+        'Error de validación',
+        typeof detail === 'string' ? detail : 'Revisa el archivo.',
+        { duration: 10000 },
+      )
       return
     }
 
     if (!response.ok) {
-      const err = await response.json()
-      const msg = typeof err.detail === 'string' ? err.detail : 'Error al subir el archivo.'
-      notifications.error('Error', msg)
+      let detailText = `HTTP ${response.status}`
+      try {
+        const err = await response.json()
+        if (typeof err.detail === 'string') {
+          detailText = err.detail
+        } else if (err.detail) {
+          detailText = JSON.stringify(err.detail, null, 2)
+        }
+      } catch {
+        try { detailText = await response.text() } catch { /* noop */ }
+      }
+      notifications.error(
+        `Error ${response.status} al subir el archivo`,
+        detailText,
+        { duration: 12000 },
+      )
       return
     }
 
     const result = await response.json()
     notifications.success('¡Cargado!', result.mensaje ?? `${result.created} formulario(s) creado(s).`)
     router.push('/dependencia/inbox')
-  } catch {
-    notifications.error('Error', 'No se pudo conectar con el servidor. Intenta de nuevo.')
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+    notifications.error(
+      'No se pudo conectar con el servidor',
+      msg,
+      { duration: 12000 },
+    )
   } finally {
     uploadingExcel.value = false
   }
