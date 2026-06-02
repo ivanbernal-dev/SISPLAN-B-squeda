@@ -17,6 +17,7 @@
 #   backup             Backup manual de base de datos
 #   test               Ejecutar tests del backend
 #   reset-db           Eliminar BD y recrear (requiere ALLOW_DB_RESET=true en .env)
+#   reset-fresh        Reset TOTAL a estado de instalación limpia (frase + PIN)
 #
 # Ejemplos:
 #   ./scripts/prod.sh start
@@ -213,6 +214,12 @@ print('ausente')
         ./scripts/reset-db.sh
         ;;
 
+    reset-fresh)
+        header "Reset TOTAL a estado de instalación..."
+        chmod +x scripts/reset-fresh.sh
+        ./scripts/reset-fresh.sh
+        ;;
+
     help|--help|-h|*)
         echo ""
         echo "Uso: ./scripts/prod.sh <comando> [servicio]"
@@ -229,6 +236,9 @@ print('ausente')
         echo "  backup            Backup de base de datos"
         echo "  test              Ejecutar tests"
         echo "  reset-db          Resetear BD (requiere ALLOW_DB_RESET=true en .env)"
+        echo "  reset-fresh       Reset TOTAL a estado de instalación limpia"
+        echo "                    (pide frase 'BORRAR TODO' + PIN definido en .env"
+        echo "                     como RESET_PIN; borra postgres + minio + valkey)"
         echo ""
         echo "Servicios: nginx | backend | frontend | celery | celery-beat | postgres | valkey | minio"
         echo ""
