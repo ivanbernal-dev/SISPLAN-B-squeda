@@ -126,25 +126,43 @@ for codigo in LINEA_BY_TEMPLATE.keys():
 
 # 2) Promediar por Línea — ignora productos/trimestres SIN proyección reportada
 def _linea_metricas(linea_id):
+    """Avance de la línea = promedio aritmético de TODOS los velocímetros
+    de nivel 2 (productos de la línea). Los productos sin datos cuentan
+    como 0 — la línea no se beneficia de tener productos sin reportar.
+    """
     codigos = [c for c, l in LINEA_BY_TEMPLATE.items() if l == linea_id]
     plinea = [productos[c] for c in codigos]
     n_total = sum(p["n_forms"] for p in plinea)
-    # Solo se promedian productos cuyo anual.pct NO sea None (es decir, que
-    # tengan al menos una actividad con proyección reportada en el año).
-    pcts = [p["anual"]["pct"] for p in plinea if p["anual"]["pct"] is not None]
-    anual_pct = round(sum(pcts) / len(pcts), 2) if pcts else None
+
+    def _avg(values):
+        # values puede contener None (Sin Reporte) — se convierten a 0
+        # para que cuenten en el divisor (el promedio refleje TODOS los
+        # productos de la línea, no solo los que ya tienen datos).
+        if not values:
+            return None
+        nums = [v if v is not None else 0.0 for v in values]
+        return round(sum(nums) / len(nums), 2)
+
+    anual_pct = _avg([p["anual"]["pct"] for p in plinea])
     por_trim = {}
     for t in TRIMESTRES:
-        ts = [p["por_trimestre"][t]["pct"]
-              for p in plinea if p["por_trimestre"][t]["pct"] is not None]
-        ppct = round(sum(ts) / len(ts), 2) if ts else None
+        vals = [p["por_trimestre"][t]["pct"] for p in plinea]
+        ppct = _avg(vals)
         por_trim[t] = {"pct": ppct, "estado": _estado(ppct)}
+
+    # Estado de la línea anual: se basa en el AVANCE (mismo umbral que
+    # los productos). Si todos están en 0, marca "Sin Reporte".
+    if anual_pct is None or anual_pct == 0:
+        estado_anual = "Sin Reporte"
+    else:
+        estado_anual = _estado(anual_pct)
+
     return {
         "id":     linea_id,
         "key":    f"L{linea_id}",
         "label":  LINEA_NOMBRE[linea_id],
         "n_forms": n_total,
-        "anual":  {"pct": anual_pct, "estado": _estado(anual_pct)},
+        "anual":  {"pct": anual_pct, "estado": estado_anual},
         "por_trimestre": por_trim,
     }
 
