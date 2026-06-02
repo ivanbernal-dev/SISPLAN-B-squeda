@@ -409,15 +409,19 @@ async def run_script(
         # En modo "test" se sigue ejecutando lo del body (para validar
         # cambios antes de guardar).
         code_to_run = body.codigo
+        editor_difiere_de_activo = False
+        active_nombre = None
         if body.modo == "produccion":
             active = await _get_active_script(db)
             if active and active.codigo:
                 code_to_run = active.codigo
+                active_nombre = active.nombre
                 if code_to_run != body.codigo:
+                    editor_difiere_de_activo = True
                     plog.warning(
-                        "modo=produccion: ignorando el código del request y usando "
-                        "el script ACTIVO en BD ('%s', %d chars). Para cambiar el "
-                        "script activo, guárdalo primero.",
+                        "modo=produccion: ignorando el código del editor y usando "
+                        "el script ACTIVO en BD ('%s', %d chars). Para que tus "
+                        "cambios surtan efecto, GUARDA primero y luego Ejecuta.",
                         active.nombre, len(active.codigo),
                     )
             else:
@@ -538,11 +542,31 @@ async def run_script(
                 plog.info("Persistencia OK: %d nivel-1 + %d nivel-2 guardados.",
                           len(nivel1_items),
                           sum(len(v) for v in nivel2_map.values()))
+                # Aviso destacado si el editor tenía contenido distinto al
+                # script activo (frecuente: el usuario editó pero no guardó).
+                if editor_difiere_de_activo:
+                    output = (
+                        "⚠️  AVISO: tu editor tiene cambios SIN GUARDAR.\n"
+                        f"   Se ejecutó el script ACTIVO guardado ('{active_nombre}'),\n"
+                        "   NO lo que tienes en pantalla. Para correr tus cambios:\n"
+                        "     1) Pulsa 'Guardar'\n"
+                        "     2) Vuelve a pulsar 'Ejecutar en producción'\n\n"
+                    ) + output
                 output += f"\n\n✅ Producción: {len(nivel1_items)} KPIs nivel-1 y {sum(len(v) for v in nivel2_map.values())} KPIs nivel-2 guardados en la base de datos."
+                output += f"\n📝 Script ejecutado: '{active_nombre or 'Pipeline'}'"
                 output += f"\n📝 Log: {getattr(plog, 'run_file', '')}"
+                # Resumen explícito de los primeros KPIs guardados (para que
+                # el operador vea de un vistazo los valores que quedaron).
+                preview = []
+                for it in nivel1_items[:6]:
+                    preview.append(f"   N1  {it.get('key',''):4s} = {float(it.get('valor',0)):.2f}%")
+                if preview:
+                    output += "\n\n📊 KPIs nivel-1 guardados:\n" + "\n".join(preview)
                 return {
                     "ok": True, "stdout": output, "stderr": None,
                     "modo": body.modo, "guardado": True,
+                    "editor_difiere_de_activo": editor_difiere_de_activo,
+                    "script_activo_nombre": active_nombre,
                     "log_file": str(getattr(plog, "run_file", "")),
                 }
 
