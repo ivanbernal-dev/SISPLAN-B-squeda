@@ -82,15 +82,50 @@ show_urls() {
     echo ""
 }
 
+# Resumen de dónde quedan los archivos de log en disco. Se llama al hacer `start`
+# para que el operador sepa exactamente dónde buscar errores sin tener que
+# preguntar.
+show_log_paths() {
+    local base="${ROOT_DIR}/logs"
+    echo -e "  ${CYAN}────────────────────────────────────────────${NC}"
+    echo -e "  ${BOLD}📁  Logs en disco${NC}"
+    echo -e "  ${CYAN}────────────────────────────────────────────${NC}"
+    echo -e "  ${BOLD}Backend (app):${NC}"
+    echo "    ${base}/backend/app.log              (todo, INFO+)"
+    echo "    ${base}/backend/errors.log           (solo ERROR+)"
+    echo "    ${base}/backend/access.log           (peticiones HTTP)"
+    echo "    ${base}/backend/celery_worker.log    (Celery worker)"
+    echo "    ${base}/backend/celery_beat.log      (Celery beat)"
+    echo ""
+    echo -e "  ${BOLD}${YELLOW}Pipeline de indicadores (datos → KPIs):${NC}"
+    echo "    ${base}/backend/pipeline/pipeline.log         (histórico de ejecuciones)"
+    echo "    ${base}/backend/pipeline/pipeline_errors.log  (solo errores)"
+    echo "    ${base}/backend/pipeline/runs/                (un archivo por ejecución:"
+    echo "                                              run_<fecha>_<modo>_<id>.log)"
+    echo ""
+    echo -e "  ${BOLD}Nginx:${NC}"
+    echo "    ${base}/nginx/access.log             (accesos HTTP del proxy)"
+    echo "    ${base}/nginx/error.log              (errores del proxy)"
+    echo ""
+    echo -e "  ${CYAN}Ver logs en vivo:${NC}  ./scripts/prod.sh logs [servicio]"
+    echo -e "  ${CYAN}Tail del pipeline:${NC}  tail -f ${base}/backend/pipeline/pipeline.log"
+    echo ""
+}
+
 case "$CMD" in
 
     start|up)
         check_prerequisites
         header "Levantando servicios..."
+        # Asegurar que la carpeta de logs del pipeline existe antes de arrancar
+        # (los volúmenes se montan automáticamente, pero esto evita que el
+        # primer arranque escriba en una ruta inexistente en algunos hosts).
+        mkdir -p logs/backend/pipeline/runs logs/nginx 2>/dev/null || true
         $COMPOSE up -d $SERVICE
         echo ""
         echo -e "${GREEN}✅  Servicios levantados correctamente.${NC}"
         show_urls
+        show_log_paths
         ;;
 
     stop|down)

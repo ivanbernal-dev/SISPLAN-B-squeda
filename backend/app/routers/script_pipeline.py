@@ -15,12 +15,18 @@ Endpoints públicos (sin auth):
 """
 
 import io
+import logging
 import textwrap
 import threading
 import traceback
 import re
 from datetime import datetime, timezone
 from typing import Any, Optional
+
+from app.services.pipeline_logger import (
+    annotate_script_error,
+    pipeline_run,
+)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -263,16 +269,26 @@ def _run_script_sync(code: str, dfs: dict) -> dict[str, Any]:
     }
 
 
-async def _load_dataframes(db: AsyncSession) -> tuple[dict, dict]:
-    """Carga formularios aprobados como DataFrames y metadatos de templates."""
+async def _load_dataframes(
+    db: AsyncSession,
+    plog: logging.Logger | None = None,
+) -> tuple[dict, dict]:
+    """Carga formularios aprobados como DataFrames y metadatos de templates.
+
+    Si se pasa `plog`, registra detalle de qué se cargó (templates, filas,
+    columnas) para que cualquier discrepancia entre datos esperados y datos
+    procesados quede explícita en el log.
+    """
     try:
         import pandas as pd
     except ImportError:
+        if plog: plog.error("pandas no está disponible en el contenedor")
         return {}, {}
 
     from app.models.form import Form, FormStatus
     from app.models.template import Template
 
+    if plog: plog.info("Cargando formularios APROBADOS desde la BD...")
     rows = await db.execute(
         select(
             Form.datos_dinamicos,
@@ -283,16 +299,25 @@ async def _load_dataframes(db: AsyncSession) -> tuple[dict, dict]:
         .join(Template, Form.plantilla_id == Template.id)
         .where(Form.estado == FormStatus.approved)
     )
-    # Agrupar por CÓDIGO del template (estable + corto). Si un template no tiene
-    # código, cae al nombre como fallback.
     grouped: dict[str, list] = {}
     meta: dict[str, dict] = {}
+    total_rows = 0
     for datos, nombre, tid, codigo in rows.all():
         key = codigo or nombre
         grouped.setdefault(key, []).append(datos or {})
         meta[key] = {"id": str(tid), "nombre": nombre, "codigo": codigo}
+        total_rows += 1
 
-    dfs = {name: pd.DataFrame(rows) for name, rows in grouped.items()}
+    dfs = {name: pd.DataFrame(rs) for name, rs in grouped.items()}
+
+    if plog:
+        plog.info("Templates con datos: %d | filas totales aprobadas: %d",
+                  len(dfs), total_rows)
+        for tkey, df in sorted(dfs.items()):
+            plog.info("  · %s → %d filas, %d columnas", tkey, len(df), len(df.columns))
+        if not dfs:
+            plog.warning("No hay formularios aprobados en la BD: el pipeline "
+                         "no tendrá datos sobre los cuales calcular KPIs.")
     return dfs, meta
 
 
@@ -360,120 +385,147 @@ async def save_script(
 async def run_script(
     body: ScriptRunBody,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_admin_user),
+    current: User = Depends(get_admin_user),
 ):
-    dfs, template_meta = await _load_dataframes(db)
-    combined = {"dfs": dfs, "meta": template_meta}
-    result = _run_script_sync(body.codigo, combined)
+    with pipeline_run(mode=body.modo, user=current.username or current.email) as plog:
+        plog.info("Script recibido: %d caracteres", len(body.codigo or ""))
 
-    output = result["stdout"]
-    error = result["error"]
-    resultado = result["resultado"]
+        dfs, template_meta = await _load_dataframes(db, plog=plog)
+        combined = {"dfs": dfs, "meta": template_meta}
 
-    if error:
-        return {
-            "ok": False,
-            "stdout": output,
-            "stderr": error,
-            "modo": body.modo,
-            "guardado": False,
-        }
+        plog.info("Ejecutando script (timeout 60s)...")
+        result = _run_script_sync(body.codigo, combined)
 
-    # Validar estructura de resultado
-    if body.modo == "produccion":
-        if not isinstance(resultado, dict) or "nivel1" not in resultado:
+        output = result["stdout"]
+        error = result["error"]
+        resultado = result["resultado"]
+
+        if output:
+            plog.info("STDOUT del script (%d chars):\n%s",
+                      len(output), output[:4000])
+
+        if error:
+            annotated = annotate_script_error(body.codigo, error)
+            plog.error("El script falló:\n%s", annotated)
             return {
                 "ok": False,
                 "stdout": output,
-                "stderr": "Error: la variable 'resultado' no tiene la estructura esperada ({nivel1: [...], nivel2: {...}}).",
+                "stderr": annotated,
                 "modo": body.modo,
                 "guardado": False,
+                "log_file": str(getattr(plog, "run_file", "")),
             }
-        # Guardar en BD
-        try:
-            import json as _json
 
-            def _payload(item: dict) -> str | None:
-                """Extrae anual + por_trimestre como JSON si están presentes."""
-                extra = {k: v for k, v in item.items()
-                         if k in ("anual", "por_trimestre", "n_forms")}
-                return _json.dumps(extra, ensure_ascii=False) if extra else None
+        # Validar estructura de resultado
+        if body.modo == "produccion":
+            if not isinstance(resultado, dict) or "nivel1" not in resultado:
+                plog.error("La variable `resultado` no tiene la estructura esperada "
+                           "({nivel1:[...], nivel2:{...}}). Se recibió: %s",
+                           type(resultado).__name__)
+                return {
+                    "ok": False,
+                    "stdout": output,
+                    "stderr": "Error: la variable 'resultado' no tiene la estructura esperada ({nivel1: [...], nivel2: {...}}).",
+                    "modo": body.modo,
+                    "guardado": False,
+                    "log_file": str(getattr(plog, "run_file", "")),
+                }
+            # Guardar en BD
+            try:
+                import json as _json
 
-            nivel1_items = resultado.get("nivel1", [])
-            nivel2_map = resultado.get("nivel2", {})
+                def _payload(item: dict) -> str | None:
+                    extra = {k: v for k, v in item.items()
+                             if k in ("anual", "por_trimestre", "n_forms")}
+                    return _json.dumps(extra, ensure_ascii=False) if extra else None
 
-            # Upsert nivel 1
-            for item in nivel1_items:
-                key = item.get("key", "")
-                existing = await db.execute(
-                    select(KpiResultado).where(KpiResultado.kpi_key == key)
-                )
-                kpi = existing.scalar_one_or_none()
-                if kpi:
-                    kpi.kpi_label = item.get("label", key)
-                    kpi.valor = float(item.get("valor", 0.0))
-                    kpi.descripcion = item.get("descripcion")
-                    kpi.payload_json = _payload(item)
-                    kpi.updated_at = datetime.now(timezone.utc)
-                else:
-                    db.add(KpiResultado(
-                        nivel=1, kpi_key=key,
-                        kpi_label=item.get("label", key),
-                        valor=float(item.get("valor", 0.0)),
-                        descripcion=item.get("descripcion"),
-                        payload_json=_payload(item),
-                    ))
+                nivel1_items = resultado.get("nivel1", [])
+                nivel2_map = resultado.get("nivel2", {})
+                plog.info("Guardando KPIs: nivel1=%d, nivel2_grupos=%d (total nivel2=%d)",
+                          len(nivel1_items), len(nivel2_map),
+                          sum(len(v) for v in nivel2_map.values()))
 
-            # Upsert nivel 2
-            for parent_key, sub_items in nivel2_map.items():
-                for item in sub_items:
+                for item in nivel1_items:
                     key = item.get("key", "")
                     existing = await db.execute(
                         select(KpiResultado).where(KpiResultado.kpi_key == key)
                     )
                     kpi = existing.scalar_one_or_none()
-                    tid = item.get("template_id")
                     if kpi:
                         kpi.kpi_label = item.get("label", key)
                         kpi.valor = float(item.get("valor", 0.0))
-                        kpi.nivel1_key = parent_key
+                        kpi.descripcion = item.get("descripcion")
                         kpi.payload_json = _payload(item)
-                        if tid:
-                            kpi.template_id = str(tid)
                         kpi.updated_at = datetime.now(timezone.utc)
                     else:
                         db.add(KpiResultado(
-                            nivel=2, kpi_key=key,
+                            nivel=1, kpi_key=key,
                             kpi_label=item.get("label", key),
                             valor=float(item.get("valor", 0.0)),
-                            nivel1_key=parent_key,
-                            template_id=str(tid) if tid else None,
+                            descripcion=item.get("descripcion"),
                             payload_json=_payload(item),
                         ))
+                    plog.info("  · N1 %s = %.2f", key, float(item.get("valor", 0.0)))
 
-            await db.commit()
-            output += f"\n\n✅ Producción: {len(nivel1_items)} KPIs nivel-1 y {sum(len(v) for v in nivel2_map.values())} KPIs nivel-2 guardados en la base de datos."
-            return {"ok": True, "stdout": output, "stderr": None, "modo": body.modo, "guardado": True}
+                for parent_key, sub_items in nivel2_map.items():
+                    for item in sub_items:
+                        key = item.get("key", "")
+                        existing = await db.execute(
+                            select(KpiResultado).where(KpiResultado.kpi_key == key)
+                        )
+                        kpi = existing.scalar_one_or_none()
+                        tid = item.get("template_id")
+                        if kpi:
+                            kpi.kpi_label = item.get("label", key)
+                            kpi.valor = float(item.get("valor", 0.0))
+                            kpi.nivel1_key = parent_key
+                            kpi.payload_json = _payload(item)
+                            if tid:
+                                kpi.template_id = str(tid)
+                            kpi.updated_at = datetime.now(timezone.utc)
+                        else:
+                            db.add(KpiResultado(
+                                nivel=2, kpi_key=key,
+                                kpi_label=item.get("label", key),
+                                valor=float(item.get("valor", 0.0)),
+                                nivel1_key=parent_key,
+                                template_id=str(tid) if tid else None,
+                                payload_json=_payload(item),
+                            ))
 
-        except Exception as exc:
-            await db.rollback()
-            return {
-                "ok": False,
-                "stdout": output,
-                "stderr": f"Error guardando en BD: {exc}",
-                "modo": body.modo,
-                "guardado": False,
-            }
+                await db.commit()
+                plog.info("Persistencia OK: KPIs guardados y visibles en /estadisticas")
+                output += f"\n\n✅ Producción: {len(nivel1_items)} KPIs nivel-1 y {sum(len(v) for v in nivel2_map.values())} KPIs nivel-2 guardados en la base de datos."
+                output += f"\n📝 Log: {getattr(plog, 'run_file', '')}"
+                return {
+                    "ok": True, "stdout": output, "stderr": None,
+                    "modo": body.modo, "guardado": True,
+                    "log_file": str(getattr(plog, "run_file", "")),
+                }
 
-    # Modo prueba: solo devolver output
-    return {
-        "ok": True,
-        "stdout": output,
-        "stderr": None,
-        "modo": body.modo,
-        "guardado": False,
-        "resultado_preview": resultado,
-    }
+            except Exception as exc:
+                await db.rollback()
+                plog.exception("Falló la persistencia de KPIs en BD")
+                return {
+                    "ok": False,
+                    "stdout": output,
+                    "stderr": f"Error guardando en BD: {exc}",
+                    "modo": body.modo,
+                    "guardado": False,
+                    "log_file": str(getattr(plog, "run_file", "")),
+                }
+
+        # Modo prueba: solo devolver output (sin persistir)
+        plog.info("Modo prueba — KPIs NO se guardan en BD")
+        return {
+            "ok": True,
+            "stdout": output,
+            "stderr": None,
+            "modo": body.modo,
+            "guardado": False,
+            "resultado_preview": resultado,
+            "log_file": str(getattr(plog, "run_file", "")),
+        }
 
 
 # ── Admin: GET tablas de BD ───────────────────────────────────────────────────
