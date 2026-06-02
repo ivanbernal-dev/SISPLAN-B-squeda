@@ -48,6 +48,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # 4. Crear indicadores de la Línea Estratégica 1 si no existen
     await _seed_indicators()
 
+    # 5. Sembrar script PAI 2026 como activo si pipeline_scripts está vacía
+    await _seed_pai_pipeline()
+
     yield
 
     logger.info("UBPD Backend apagándose.")
@@ -138,6 +141,52 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+async def _seed_pai_pipeline() -> None:
+    """Si la tabla pipeline_scripts está vacía, inserta el script PAI 2026
+    (leído de app/seeds/pipeline_pai_default.py) como activo. Idempotente:
+    si ya hay cualquier script en la tabla NO toca nada."""
+    from pathlib import Path
+    from sqlalchemy import select, func
+    from app.database import AsyncSessionLocal
+    from app.models.kpi import PipelineScript
+
+    async with AsyncSessionLocal() as db:
+        n = await db.scalar(select(func.count(PipelineScript.id)))
+        if (n or 0) > 0:
+            logger.debug("pipeline_scripts ya tiene %d fila(s); no se siembra.", n)
+            return
+
+        seed_path = Path(__file__).parent / "seeds" / "pipeline_pai_default.py"
+        if not seed_path.exists():
+            logger.warning(
+                "No se sembró el pipeline PAI: no existe %s", seed_path,
+            )
+            return
+        try:
+            codigo = seed_path.read_text(encoding="utf-8")
+            # Validación rápida: que compile como Python
+            compile(codigo, str(seed_path), "exec")
+        except (OSError, SyntaxError) as exc:
+            logger.warning("No se sembró el pipeline PAI: %s", exc)
+            return
+
+        script = PipelineScript(
+            codigo=codigo,
+            nombre="Pipeline PAI 2026 (seed)",
+            activo=True,
+        )
+        db.add(script)
+        try:
+            await db.commit()
+            logger.info(
+                "Pipeline PAI 2026 sembrado como activo (%d chars) — listo para Ejecutar.",
+                len(codigo),
+            )
+        except Exception as exc:
+            await db.rollback()
+            logger.warning("Falló sembrar pipeline PAI: %s", exc)
 
 
 # ── Routers ───────────────────────────────────────────────────────────────────

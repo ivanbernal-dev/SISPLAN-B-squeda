@@ -336,8 +336,19 @@ async def get_script(
     _: User = Depends(get_admin_user),
 ):
     script = await _get_active_script(db)
-    codigo = script.codigo if script else EJEMPLO_SCRIPT
-    nombre = script.nombre if script else "Pipeline Principal"
+    if script:
+        codigo, nombre = script.codigo, script.nombre
+    else:
+        # Fallback: leer el PAI default del filesystem del backend en vez de
+        # caer en EJEMPLO_SCRIPT (genérico). Si tampoco existe el seed,
+        # usar el ejemplo.
+        from pathlib import Path
+        seed = Path(__file__).resolve().parent.parent / "seeds" / "pipeline_pai_default.py"
+        if seed.exists():
+            codigo = seed.read_text(encoding="utf-8")
+            nombre = "Pipeline PAI 2026 (default)"
+        else:
+            codigo, nombre = EJEMPLO_SCRIPT, "Pipeline Principal"
 
     # KPIs actuales
     kpis_res = await db.execute(
