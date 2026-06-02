@@ -42,7 +42,10 @@ def recalc_auto_fields(
     """
     fields_list = list(fields)
 
-    # Paso 1: cualquier ratio_alcanzado_proyectado
+    # Paso 1: cualquier ratio_alcanzado_proyectado.
+    # IMPORTANTE: pct_avance_final se guarda como PORCENTAJE (0..100), no
+    # como fracción (0..1). Eso coincide con cómo se muestra en la UI y en
+    # los Excel ("67%" = 67), evitando que la celda renderice como "1%".
     for f in fields_list:
         if f.get("auto_calculate") != "ratio_alcanzado_proyectado":
             continue
@@ -54,24 +57,21 @@ def recalc_auto_fields(
         if proj is None or alc is None or proj <= 0:
             datos[name] = None   # → "No Aplica"
         else:
-            datos[name] = round(alc / proj, 4)
+            datos[name] = round(alc / proj * 100.0, 2)
 
-    # Paso 2: estados que dependen de pct_avance_final ya calculado
+    # Paso 2: estados que dependen de pct_avance_final (ya en escala 0..100)
     for f in fields_list:
         if f.get("auto_calculate") != "estado_cumplimiento_from_pct_final":
             continue
         name = f.get("name")
         if not name:
             continue
-        v = datos.get("pct_avance_final")
-        pct_f = _to_float(v)
-        if pct_f is None:
+        pct = _to_float(datos.get("pct_avance_final"))
+        if pct is None:
             datos[name] = "No Aplica"
-        else:
-            pct = pct_f * 100.0
-            if   pct >= 90: datos[name] = "Cumple"
-            elif pct >= 70: datos[name] = "Cumple Parcialmente"
-            elif pct >  0:  datos[name] = "No Cumple"
-            else:           datos[name] = "No Aplica"
+        elif pct >= 90: datos[name] = "Cumple"
+        elif pct >= 70: datos[name] = "Cumple Parcialmente"
+        elif pct >  0:  datos[name] = "No Cumple"
+        else:           datos[name] = "No Aplica"
 
     return datos

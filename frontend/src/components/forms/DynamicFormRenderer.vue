@@ -198,6 +198,8 @@ function applyAutoCalculate(values: Record<string, unknown>): Record<string, unk
   const fields = props.schema.fields as Array<FieldConfig & { auto_calculate?: string }>
 
   // Paso 1: ratio alcanzado / proyectado → pct_avance_final
+  // Se guarda como PORCENTAJE (0..100), no fracción (0..1), para que la UI
+  // y el Excel muestren "67%" en vez de "1%".
   for (const f of fields) {
     if (f.auto_calculate !== 'ratio_alcanzado_proyectado') continue
     const proj = toNum(next['pct_avance_proyectado'])
@@ -205,23 +207,19 @@ function applyAutoCalculate(values: Record<string, unknown>): Record<string, unk
     if (proj === null || alc === null || proj <= 0) {
       next[f.name] = null
     } else {
-      next[f.name] = Number((alc / proj).toFixed(4))
+      next[f.name] = Number(((alc / proj) * 100).toFixed(2))
     }
   }
 
-  // Paso 2: estado cumplimiento desde pct_avance_final
+  // Paso 2: estado cumplimiento desde pct_avance_final (ya en escala 0..100)
   for (const f of fields) {
     if (f.auto_calculate !== 'estado_cumplimiento_from_pct_final') continue
-    const pctF = toNum(next['pct_avance_final'])
-    if (pctF === null) {
-      next[f.name] = 'No Aplica'
-    } else {
-      const pct = pctF * 100
-      if      (pct >= 90) next[f.name] = 'Cumple'
-      else if (pct >= 70) next[f.name] = 'Cumple Parcialmente'
-      else if (pct >  0)  next[f.name] = 'No Cumple'
-      else                next[f.name] = 'No Aplica'
-    }
+    const pct = toNum(next['pct_avance_final'])
+    if (pct === null)         next[f.name] = 'No Aplica'
+    else if (pct >= 90)       next[f.name] = 'Cumple'
+    else if (pct >= 70)       next[f.name] = 'Cumple Parcialmente'
+    else if (pct >  0)        next[f.name] = 'No Cumple'
+    else                      next[f.name] = 'No Aplica'
   }
   return next
 }

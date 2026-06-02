@@ -276,13 +276,26 @@ const periodoLabel = computed(() =>
 )
 
 // Promedio de pct_avance_final (0-100)
+// Avance del PRODUCTO = Σ alcanzado / Σ proyectado × 100
+// (mismo número que el velocímetro de nivel 2). NO es el promedio de los
+// pct_avance_final por fila — esa fórmula daría "promedio de porcentajes"
+// que es estadísticamente distinto y subestima/sobrestima cuando las
+// actividades tienen pesos distintos.
 const promedioFinal = computed<number | null>(() => {
   if (items.value.length === 0) return null
-  const vals = items.value
-    .map((i) => getPctFinal(i.datos_dinamicos))
-    .filter((v): v is number => v !== null)
-  if (vals.length === 0) return null
-  return vals.reduce((a, b) => a + b, 0) / vals.length
+  let sumProy = 0
+  let sumAlc  = 0
+  let aplica  = 0
+  for (const i of items.value) {
+    const proy = toNum(i.datos_dinamicos?.['pct_avance_proyectado'])
+    const alc  = toNum(i.datos_dinamicos?.['pct_avance_alcanzado'])
+    if (proy === null || proy <= 0) continue   // actividad no aplica este periodo
+    sumProy += proy
+    sumAlc  += (alc ?? 0)
+    aplica  += 1
+  }
+  if (aplica === 0 || sumProy <= 0) return null
+  return (sumAlc / sumProy) * 100
 })
 
 // ── Helpers de datos PAI ──────────────────────────────────────
