@@ -40,8 +40,9 @@ LINEA_NOMBRE = {
 TRIMESTRES = ["TRIMESTRE 1", "TRIMESTRE 2", "TRIMESTRE 3", "TRIMESTRE 4"]
 
 
-def _to_num(s):
-    return pd.to_numeric(s, errors="coerce").fillna(0)
+def _to_num_opt(s):
+    """Convierte a número manteniendo NaN para vacíos (no rellena con 0)."""
+    return pd.to_numeric(s, errors="coerce")
 
 
 def _estado(pct):
@@ -53,45 +54,68 @@ def _estado(pct):
 
 
 def _producto_metricas(df):
+    """Calcula avance por trimestre y anual de un producto.
+
+    Regla clave: una actividad/fila SOLO entra al cálculo si
+    `pct_avance_proyectado` está reportado y > 0. Si la celda está vacía
+    (o el proyectado es 0) significa que esa actividad NO APLICA ese
+    periodo → se omite por completo. Si `pct_avance_alcanzado` está vacío
+    pero el proyectado existe → cuenta como 0 logrado (no aplica = 0%).
+
+    Si en un trimestre/anual no queda NINGUNA fila con proyección válida,
+    el resultado es `pct: None, estado: "Sin Reporte"`. Esos productos NO
+    deben entrar al promedio de la línea (se filtran en _linea_metricas).
+    """
+    vacio = {
+        "n_forms": 0,
+        "anual":   {"pct": None, "estado": "Sin Reporte", "n_forms": 0},
+        "por_trimestre": {t: {"pct": None, "estado": "Sin Reporte", "n_forms": 0}
+                          for t in TRIMESTRES},
+    }
     if df is None or len(df) == 0:
-        return {
-            "n_forms": 0,
-            "anual":   {"pct": 0.0, "estado": "Sin Reporte", "n_forms": 0},
-            "por_trimestre": {t: {"pct": 0.0, "estado": "Sin Reporte", "n_forms": 0}
-                              for t in TRIMESTRES},
-        }
+        return vacio
     df = df.copy()
     for col in ("pct_avance_alcanzado", "pct_avance_proyectado"):
         if col not in df.columns:
-            df[col] = 0
+            df[col] = None
     if "periodo_reporte" not in df.columns:
         df["periodo_reporte"] = "TRIMESTRE 1"
 
-    df["_alc"]  = _to_num(df["pct_avance_alcanzado"])
-    df["_proy"] = _to_num(df["pct_avance_proyectado"])
+    df["_proy"] = _to_num_opt(df["pct_avance_proyectado"])
+    # Alcanzado faltante → 0 logrado (siempre que haya proyección)
+    df["_alc"]  = _to_num_opt(df["pct_avance_alcanzado"]).fillna(0)
+    # Una fila aplica solo si tiene proyección reportada y > 0
+    df["_aplica"] = df["_proy"].notna() & (df["_proy"] > 0)
 
     por_trim = {}
     for t in TRIMESTRES:
-        sub = df[df["periodo_reporte"] == t]
+        sub = df[(df["periodo_reporte"] == t) & df["_aplica"]]
         if len(sub) == 0:
-            por_trim[t] = {"pct": 0.0, "estado": "Sin Reporte", "n_forms": 0}
+            por_trim[t] = {"pct": None, "estado": "Sin Reporte", "n_forms": 0}
         else:
             sub_proy = float(sub["_proy"].sum())
             sub_alc  = float(sub["_alc"].sum())
-            pct = (sub_alc / sub_proy * 100.0) if sub_proy > 0 else 0.0
+            pct = (sub_alc / sub_proy * 100.0) if sub_proy > 0 else None
             por_trim[t] = {
-                "pct":     round(pct, 2),
+                "pct":     round(pct, 2) if pct is not None else None,
                 "estado":  _estado(pct),
                 "n_forms": int(len(sub)),
             }
 
-    tot_proy = float(df["_proy"].sum())
-    tot_alc  = float(df["_alc"].sum())
-    pct_anual = (tot_alc / tot_proy * 100.0) if tot_proy > 0 else 0.0
+    aplica_total = df[df["_aplica"]]
+    if len(aplica_total) == 0:
+        pct_anual = None
+    else:
+        tot_proy = float(aplica_total["_proy"].sum())
+        tot_alc  = float(aplica_total["_alc"].sum())
+        pct_anual = (tot_alc / tot_proy * 100.0) if tot_proy > 0 else None
     return {
         "n_forms": int(len(df)),
-        "anual":   {"pct": round(pct_anual, 2), "estado": _estado(pct_anual),
-                    "n_forms": int(len(df))},
+        "anual":   {
+            "pct":     round(pct_anual, 2) if pct_anual is not None else None,
+            "estado":  _estado(pct_anual),
+            "n_forms": int(len(aplica_total)),
+        },
         "por_trimestre": por_trim,
     }
 
@@ -102,18 +126,20 @@ for codigo in LINEA_BY_TEMPLATE.keys():
     productos[codigo] = _producto_metricas(dfs.get(codigo))
 
 
-# 2) Promediar por Línea
+# 2) Promediar por Línea — ignora productos/trimestres SIN proyección reportada
 def _linea_metricas(linea_id):
     codigos = [c for c, l in LINEA_BY_TEMPLATE.items() if l == linea_id]
     plinea = [productos[c] for c in codigos]
     n_total = sum(p["n_forms"] for p in plinea)
-    pcts = [p["anual"]["pct"] for p in plinea if p["n_forms"] > 0]
-    anual_pct = round(sum(pcts) / len(pcts), 2) if pcts else 0.0
+    # Solo se promedian productos cuyo anual.pct NO sea None (es decir, que
+    # tengan al menos una actividad con proyección reportada en el año).
+    pcts = [p["anual"]["pct"] for p in plinea if p["anual"]["pct"] is not None]
+    anual_pct = round(sum(pcts) / len(pcts), 2) if pcts else None
     por_trim = {}
     for t in TRIMESTRES:
         ts = [p["por_trimestre"][t]["pct"]
-              for p in plinea if p["por_trimestre"][t]["n_forms"] > 0]
-        ppct = round(sum(ts) / len(ts), 2) if ts else 0.0
+              for p in plinea if p["por_trimestre"][t]["pct"] is not None]
+        ppct = round(sum(ts) / len(ts), 2) if ts else None
         por_trim[t] = {"pct": ppct, "estado": _estado(ppct)}
     return {
         "id":     linea_id,
@@ -145,12 +171,19 @@ for linea_id in LINEA_NOMBRE:
     nivel2_dict[key] = items
 
 
-# 3) Formato plano compatible con /stats/kpis (valor=anual.pct)
+# 3) Formato plano compatible con /stats/kpis. La columna valor del KPI
+#    debe ser numérica (Float en la BD): si anual.pct es None ("Sin Reporte")
+#    se guarda como 0.0 — el payload_json preserva el None para que la UI
+#    pueda distinguir "0% logrado" vs "no aplica / sin reporte".
+def _v(x):
+    return float(x) if x is not None else 0.0
+
+
 nivel1_plano = [
     {
         "key":         n["key"],
         "label":       n["label"],
-        "valor":       n["anual"]["pct"],
+        "valor":       _v(n["anual"]["pct"]),
         "descripcion": f"{n['n_forms']} formularios aprobados",
         "anual":       n["anual"],
         "por_trimestre": n["por_trimestre"],
@@ -164,7 +197,7 @@ for k, items in nivel2_dict.items():
         {
             "key":         i["key"],
             "label":       i["label"],
-            "valor":       i["anual"]["pct"],
+            "valor":       _v(i["anual"]["pct"]),
             "descripcion": f"{i['n_forms']} formularios",
             "anual":       i["anual"],
             "por_trimestre": i["por_trimestre"],

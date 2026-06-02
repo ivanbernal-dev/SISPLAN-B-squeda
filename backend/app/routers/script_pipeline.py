@@ -526,8 +526,22 @@ def _valor_por_periodo(kpi: KpiResultado, periodo: str | None) -> tuple[float, d
     Dado un KpiResultado y un período (None|anual|trim1..trim4) devuelve
     (valor, payload_dict). Si no hay payload_json o el período no aplica,
     devuelve el valor plano original.
+
+    Si el payload trae `pct: None` (significa "Sin Reporte" — el pipeline
+    omitió actividades sin proyección) devuelve 0.0 para no romper el
+    velocímetro, pero conserva el payload para que la UI pueda mostrar el
+    estado "Sin Reporte" si lo necesita.
     """
     import json as _json
+
+    def _num(v, fallback=0.0):
+        if v is None:
+            return float(fallback)
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return float(fallback)
+
     payload = None
     if kpi.payload_json:
         try:
@@ -536,18 +550,18 @@ def _valor_por_periodo(kpi: KpiResultado, periodo: str | None) -> tuple[float, d
             payload = None
 
     if not payload:
-        return (float(kpi.valor or 0), None)
+        return (_num(kpi.valor), None)
 
     if periodo in (None, "anual", "year", ""):
         anual = payload.get("anual") or {}
-        return (float(anual.get("pct", kpi.valor or 0)), payload)
+        return (_num(anual.get("pct"), fallback=_num(kpi.valor)), payload)
 
     trim_key = _PERIODO_TRIM.get((periodo or "").lower())
     if not trim_key:
-        return (float(kpi.valor or 0), payload)
+        return (_num(kpi.valor), payload)
 
     pt = (payload.get("por_trimestre") or {}).get(trim_key) or {}
-    return (float(pt.get("pct", 0.0)), payload)
+    return (_num(pt.get("pct")), payload)
 
 
 @public_router.get("")
