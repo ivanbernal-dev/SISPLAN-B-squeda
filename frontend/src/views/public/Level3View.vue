@@ -284,26 +284,50 @@ function isAplica(dd: Record<string, unknown>): boolean {
   return proy !== null && proy > 0
 }
 
+// Ordenamiento natural por el numeral de la actividad ("1.1 X" → [1,1]).
+function _orderKey(text: string): number[] {
+  if (!text) return [Number.MAX_SAFE_INTEGER]
+  const m = text.match(/^\s*(\d+(?:\.\d+)*)/)
+  if (!m) return [Number.MAX_SAFE_INTEGER]
+  return m[1].split('.').map((s) => parseInt(s, 10))
+}
+function _cmpOrder(a: number[], b: number[]): number {
+  const n = Math.max(a.length, b.length)
+  for (let i = 0; i < n; i++) {
+    const av = a[i] ?? 0, bv = b[i] ?? 0
+    if (av !== bv) return av - bv
+  }
+  return 0
+}
+
 // Filas que NO aplican (proy vacío o 0) salen al final con estado "No aplica"
 // y NO entran al cálculo de avance del producto. Se siguen mostrando en la
 // tabla con marca clara — el operador puede verlas pero sabe que se omiten.
-const tableRows = computed(() =>
-  items.value.map((item) => {
+const tableRows = computed(() => {
+  const rows = items.value.map((item) => {
     const dd = (item.datos_dinamicos ?? {}) as Record<string, unknown>
     const aplica = isAplica(dd)
     const pctFinal = aplica ? liveFinal(dd) : null
+    const actividad = (dd['actividad_clave'] as string) || (dd['indicador'] as string) || (dd['entregable_trimestre'] as string) || '—'
     return {
       id: item.id,
       dependencia: item.dependencia,
-      actividad: (dd['actividad_clave'] as string) || (dd['indicador'] as string) || (dd['entregable_trimestre'] as string) || '—',
+      actividad,
       trimestre: (dd['periodo_reporte'] as string) || (dd['trimestre'] as string) || '—',
       pct_final: pctFinal,
       estado: aplica ? liveEstado(pctFinal) : 'No aplica',
       aplica,
       archivos_count: item.archivos_count,
+      _orderKey: _orderKey(actividad),
     }
-  }),
-)
+  })
+  // Ordenar: primero aplicables, luego por numeral (1, 1.1, 1.2, 2, 2.1...)
+  rows.sort((a, b) => {
+    if (a.aplica !== b.aplica) return a.aplica ? -1 : 1
+    return _cmpOrder(a._orderKey, b._orderKey)
+  })
+  return rows
+})
 
 function colorBar(pct: number) {
   if (pct >= 90) return 'bg-ubpd-verde'

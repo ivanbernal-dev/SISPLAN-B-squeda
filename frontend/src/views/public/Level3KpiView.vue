@@ -114,10 +114,11 @@
         <div class="col-span-2 text-center">Estado</div>
       </div>
 
-      <!-- Filas. Las que tienen proy<=0/vacío salen atenuadas y NO se suman
-           al avance del producto (badge / barra de arriba). -->
+      <!-- Filas ordenadas por numeral de actividad (1, 1.1, 1.2, 2, 2.1...).
+           Las que tienen proy<=0/vacío salen al final, atenuadas, y NO se
+           suman al avance del producto (badge / barra de arriba). -->
       <div
-        v-for="item in items"
+        v-for="item in sortedItems"
         :key="item.id"
         class="grid grid-cols-12 gap-3 px-6 py-4 border-b border-gray-50
                hover:bg-ubpd-teal/5 transition cursor-pointer items-center text-sm font-cuerpo"
@@ -327,6 +328,22 @@ const productoMetricas = computed<{
   return { avance: sumAlc, ratio, sumProy, sumAlc, aplica }
 })
 
+// Items ordenados por el numeral inicial de la actividad (1, 1.1, 1.2,
+// 2, 2.1, ...). Las filas no aplicables (proy<=0) se empujan al final
+// para no estorbar la lectura, pero siguen visibles atenuadas.
+const sortedItems = computed(() => {
+  const arr = [...items.value]
+  arr.sort((a, b) => {
+    const aA = isAplica(a.datos_dinamicos)
+    const aB = isAplica(b.datos_dinamicos)
+    if (aA !== aB) return aA ? -1 : 1  // aplicables primero
+    const ka = _activityOrderKey(getActividad(a.datos_dinamicos))
+    const kb = _activityOrderKey(getActividad(b.datos_dinamicos))
+    return _cmpOrderKeys(ka, kb)
+  })
+  return arr
+})
+
 // promedioFinal compatible con el resto del template:
 //   se renderiza con .toFixed(1)%, y es el AVANCE (suma de alc), no el ratio.
 const promedioFinal = computed<number | null>(() => productoMetricas.value?.avance ?? null)
@@ -381,6 +398,25 @@ function isAplica(dd: Record<string, any> | null): boolean {
   if (!dd) return false
   const proy = toNum(dd['pct_avance_proyectado'])
   return proy !== null && proy > 0
+}
+
+// Extrae el numeral inicial de "1.1 Definir...", "2 Alguna cosa",
+// "1.2.3 Otra..." y devuelve un array de enteros para ordenar
+// naturalmente: 1 < 1.1 < 1.2 < 2 < 2.1.
+function _activityOrderKey(text: string): number[] {
+  if (!text) return [Number.MAX_SAFE_INTEGER]
+  const m = text.match(/^\s*(\d+(?:\.\d+)*)/)
+  if (!m) return [Number.MAX_SAFE_INTEGER]
+  return m[1].split('.').map((s) => parseInt(s, 10))
+}
+function _cmpOrderKeys(a: number[], b: number[]): number {
+  const n = Math.max(a.length, b.length)
+  for (let i = 0; i < n; i++) {
+    const av = a[i] ?? 0
+    const bv = b[i] ?? 0
+    if (av !== bv) return av - bv
+  }
+  return 0
 }
 
 // Versión LIVE: siempre calcula desde alcanzado/proyectado. Devuelve el

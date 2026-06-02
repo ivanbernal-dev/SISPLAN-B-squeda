@@ -152,6 +152,20 @@ def _linea_metricas(linea_id):
 nivel1_list = [_linea_metricas(lid) for lid in sorted(LINEA_NOMBRE)]
 
 nivel2_dict = {}
+# template_meta llega como variable global del sandbox (inyectado por
+# _load_dataframes). Lo usamos para conseguir el NOMBRE LARGO del template
+# (p. ej. "L6-P2-DPE-2026 — SISPLAN - BÚSQUEDA: ...") en lugar de
+# mostrar solo el código. Si no está disponible, cae al código.
+try:
+    _META = template_meta or {}
+except NameError:
+    _META = {}
+
+def _label_producto(codigo):
+    info = _META.get(codigo) or {}
+    nombre = (info.get("nombre") or "").strip()
+    return nombre if nombre else codigo
+
 for linea_id in LINEA_NOMBRE:
     key = f"L{linea_id}"
     items = []
@@ -161,7 +175,7 @@ for linea_id in LINEA_NOMBRE:
         p = productos[codigo]
         items.append({
             "key":     codigo,
-            "label":   codigo,
+            "label":   _label_producto(codigo),
             "n_forms": p["n_forms"],
             "anual":   p["anual"],
             "por_trimestre": p["por_trimestre"],
