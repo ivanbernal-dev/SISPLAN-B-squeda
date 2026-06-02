@@ -16,6 +16,8 @@
 #   migrate            Aplicar migraciones de base de datos
 #   backup             Backup manual de base de datos
 #   test               Ejecutar tests del backend
+#   pipeline-sync [run] Sincroniza pipeline_pai.py del repo como script activo
+#                       en la BD. 'run' además lo ejecuta en producción.
 #   reset-db           Eliminar BD y recrear (requiere ALLOW_DB_RESET=true en .env)
 #   reset-fresh        Reset TOTAL a estado de instalación limpia (frase + PIN)
 #   destroy [all]      DESTRUIR contenedores, imágenes y volúmenes (frase + PIN).
@@ -274,6 +276,37 @@ print('ausente')
         ./scripts/reset-fresh.sh
         ;;
 
+    pipeline-sync)
+        header "Sincronizando pipeline_pai.py → BD (script activo)..."
+        # El backend ya tiene psycopg2 + requests instalados. Copiamos los 2
+        # archivos al contenedor y ejecutamos ahí (resuelve postgres por
+        # nombre de servicio del compose, no hace falta IP).
+        RUN_FLAG=""
+        if [ "${SERVICE:-}" = "--run" ] || [ "${SERVICE:-}" = "run" ]; then
+            RUN_FLAG="--run"
+            info "Modo --run: tras guardar se ejecutará el pipeline en producción."
+        fi
+        # Crear estructura temporal en el contenedor
+        $COMPOSE exec -T backend mkdir -p /tmp/pai_sync || true
+        $COMPOSE cp scripts/pai_2026/pipeline_pai.py        backend:/tmp/pai_sync/pipeline_pai.py
+        $COMPOSE cp scripts/pai_2026/sync_pipeline_to_db.py backend:/tmp/pai_sync/sync_pipeline_to_db.py
+        # Stub del .env adentro del contenedor: las credenciales reales están
+        # en las variables de entorno del contenedor; el script las puede leer
+        # con os.environ.
+        $COMPOSE exec -T \
+            -e POSTGRES_HOST=postgres \
+            -e POSTGRES_PORT=5432 \
+            -e UBPD_BASE_URL=http://nginx \
+            backend sh -c "cd /tmp/pai_sync && cp /app/.env . 2>/dev/null || (cat > .env <<EOF
+POSTGRES_USER=\$POSTGRES_USER
+POSTGRES_PASSWORD=\$POSTGRES_PASSWORD
+POSTGRES_DB=\$POSTGRES_DB
+INITIAL_ADMIN_USERNAME=\$INITIAL_ADMIN_USERNAME
+INITIAL_ADMIN_PASSWORD=\$INITIAL_ADMIN_PASSWORD
+EOF
+) && mkdir -p ./scripts/pai_2026 && cp pipeline_pai.py ./scripts/pai_2026/ && python sync_pipeline_to_db.py $RUN_FLAG"
+        ;;
+
     destroy|nuke)
         header "DESTRUCCIÓN TOTAL de Docker (UBPD)..."
         chmod +x scripts/destroy-all.sh
@@ -302,6 +335,11 @@ print('ausente')
         echo "  backup            Backup de base de datos"
         echo "  test              Ejecutar tests"
         echo "  reset-db          Resetear BD (requiere ALLOW_DB_RESET=true en .env)"
+        echo "  pipeline-sync [run]"
+        echo "                    Sincroniza scripts/pai_2026/pipeline_pai.py"
+        echo "                    como el script ACTIVO del pipeline en BD."
+        echo "                    Añade 'run' para además ejecutarlo en producción"
+        echo "                    (refresca los KPIs visibles en /estadisticas)."
         echo "  reset-fresh       Reset TOTAL a estado de instalación limpia"
         echo "                    (pide frase 'BORRAR TODO' + PIN definido en .env"
         echo "                     como RESET_PIN; borra postgres + minio + valkey)"
