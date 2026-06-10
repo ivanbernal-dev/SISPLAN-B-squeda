@@ -1,51 +1,103 @@
-# Variables de entorno — NUNCA commitear
+# ============================================================
+# .gitignore — Sistema UBPD
+# Solo se versiona código fuente, scripts, documentación y schemas.
+# Datos, exportes, generated files y entornos locales quedan fuera.
+# ============================================================
+
+# ── Variables de entorno (NUNCA commitear) ──────────────────
 .env
 .env.local
 .env.production
+.env.*.local
 
-# Certificados SSL
+# ── Certificados SSL ────────────────────────────────────────
 nginx/certs/
 
-# Dependencias Node
+# ── Dependencias Node ───────────────────────────────────────
 frontend/node_modules/
 frontend/dist/
+frontend/.vite/
 
-# Caché Python
-backend/__pycache__/
-backend/**/__pycache__/
-backend/*.pyc
-backend/.venv/
-backend/venv/
+# ── Caché y entornos Python ─────────────────────────────────
 **/__pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+backend/.venv/
+backend/venv/
+.venv/
+venv/
 .ipynb_checkpoints/
 analitica_bi/.venv/
 
-# Migraciones generadas (opcional, depende del equipo)
+# ── Wheels y vendor ─────────────────────────────────────────
+vendor/
+*.whl
+
+# ── Migraciones generadas (opcional) ────────────────────────
 # backend/alembic/versions/
 
-# Archivos temporales de Docker
+# ── Artefactos Docker ───────────────────────────────────────
 *.tar
 *.tar.gz
+docker-volumes/
 
-# Backups de base de datos
+# ── Backups y dumps de base de datos ────────────────────────
 backups/
+*.sql
 *.sql.gz
+*.dump
 
-# Logs del sistema (generados en tiempo de ejecución)
+# ── Logs en tiempo de ejecución ─────────────────────────────
 logs/
 
-# IDEs
+# ── IDEs y editores ─────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
 
-# macOS
+# ── Sistema operativo ───────────────────────────────────────
 .DS_Store
+Thumbs.db
+desktop.ini
 
-# Wheels Python (vendor)
-vendor/
+# ── Config local del asistente / herramientas ───────────────
+.claude/
 
-# Referencias BI (archivos locales grandes)
+# ── Datos y archivos generados (NO son código) ─────────────
+# Archivos Excel en cualquier ruta — generados o de carga, no versionar
+*.xlsx
+*.xlsm
+*.xls
+*.csv
+# Pero sí queremos los ejemplos canónicos de scripts/pai_2026/examples/
+!scripts/pai_2026/examples/*.xlsx
+# Word, PDFs, PowerPoint generados (excepto docs/ que sí versionamos)
+*.docx
+*.pdf
+*.pptx
+!docs/**/*.docx
+!docs/**/*.pdf
+!docs/**/*.pptx
+
+# ── Carpetas locales con datos / referencias / pruebas ─────
+referencias/
 referencias_BI/
 DATOS_FORMULARIOS_2/
+test-data/
+analitica_bi/datos/
+analitica_bi/output/
+
+# ── MinIO / Postgres / Valkey volumes locales ──────────────
+minio/data/
+postgres/data/
+valkey/data/
+
+# ── Otros temporales ────────────────────────────────────────
+*.tmp
+*.bak
+*.log
+*.pid
