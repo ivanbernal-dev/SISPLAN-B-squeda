@@ -51,24 +51,54 @@ nano .env
 ```bash
 SERVER_IP=192.168.1.100        # IP del servidor en la intranet
 
-# Generar con: python3 -c "import secrets; print(secrets.token_hex(64))"
-SECRET_KEY=CAMBIAR_POR_CLAVE_LARGA_ALEATORIA
+# Base de datos
+POSTGRES_USER=ubpd_user
+POSTGRES_PASSWORD=<contraseña_robusta_min_16>
+POSTGRES_DB=ubpd
 
-POSTGRES_PASSWORD=contraseña_segura
-VALKEY_PASSWORD=contraseña_segura
-MINIO_ROOT_PASSWORD=min8chars
+# MinIO (almacenamiento de archivos)
+MINIO_ROOT_USER=ubpd_minio_admin
+MINIO_ROOT_PASSWORD=<contraseña_min_12>
+MINIO_BUCKET_NAME=ubpd-formularios
 
+# Valkey (Redis) — caché y colas Celery
+VALKEY_PASSWORD=<contraseña_robusta>
+
+# Seguridad
+# Generar con: python3 -c "import secrets; print(secrets.token_hex(32))"
+JWT_SECRET_KEY=<cadena_aleatoria_64_caracteres>
+
+# Admin inicial (se crea automáticamente en el primer arranque)
 INITIAL_ADMIN_USERNAME=admin
-INITIAL_ADMIN_PASSWORD=Admin@UBPD2024!
+INITIAL_ADMIN_PASSWORD=<contraseña_admin>
 INITIAL_ADMIN_EMAIL=admin@ubpd.gov.co
+INITIAL_ADMIN_NOMBRE=Administrador UBPD
 
-CORS_ORIGINS=http://127.0.0.1,http://localhost,http://192.168.1.100,http://localhost:5173
+# CORS — agregar TODA IP/dominio desde el que se acceda
+CORS_ORIGINS=http://127.0.0.1,http://localhost,http://192.168.1.100
+
+# PIN para autorizar comandos destructivos (reset-fresh, destroy)
+# 4-8 dígitos. Sin esta variable, esos comandos se niegan a ejecutar.
+RESET_PIN=<pin_numerico>
+```
+
+### Generar secretos seguros
+
+Linux / macOS:
+```bash
+openssl rand -hex 32         # JWT_SECRET_KEY (64 caracteres)
+openssl rand -base64 24      # contraseñas robustas
+```
+
+Windows (PowerShell):
+```powershell
+[Convert]::ToBase64String((New-Object byte[] 24 | % { Get-Random -Max 255 }))
 ```
 
 ### Logging
 
 ```bash
-LOG_DIR=/app/logs   # montado en ./logs/backend del host
+LOG_DIR=/app/logs   # se monta en ./logs/backend del host
 LOG_LEVEL=INFO      # DEBUG activa logs SQL y detallados
 ```
 
@@ -81,6 +111,7 @@ LOG_LEVEL=INFO      # DEBUG activa logs SQL y detallados
 | `STATS_RECALC_INTERVAL_SECONDS` | 600 | Frecuencia de recálculo (segundos) |
 | `APP_ENV` | production | `development` activa logging SQL |
 | `ALLOW_DB_RESET` | false | Habilita `reset-db` (solo desarrollo) |
+| `RESET_PIN` | _(sin valor)_ | Obligatorio para `reset-fresh` y `destroy`. Sin él, esos comandos abortan. |
 
 ---
 
@@ -137,14 +168,14 @@ Todo se maneja con un único script:
 # ── Ciclo de vida ──────────────────────────────────────────
 ./scripts/prod.sh start              # levantar todos los servicios
 ./scripts/prod.sh stop               # detener (datos preservados en volúmenes)
-./scripts/prod.sh restart            # reiniciar todo
-./scripts/prod.sh restart <servicio> # reiniciar uno solo
-./scripts/prod.sh ps                 # estado de contenedores + URLs
+./scripts/prod.sh restart [svc]      # reinicia y recrea contenedor (aplica imagen nueva)
+./scripts/prod.sh status             # estado de contenedores + URLs + rutas de logs
 
-# ── Build / Rebuild ────────────────────────────────────────
-./scripts/prod.sh build              # construir todas las imágenes
-./scripts/prod.sh rebuild backend    # reconstruir sin caché y reiniciar
-./scripts/prod.sh rebuild frontend   # reconstruir sin caché y reiniciar
+# ── Build (construye Y aplica) ─────────────────────────────
+./scripts/prod.sh build              # build + up -d (despliega imagen nueva)
+./scripts/prod.sh build backend      # solo el backend
+./scripts/prod.sh build frontend     # solo el frontend
+./scripts/prod.sh rebuild [svc]      # igual que build pero sin caché de Docker
 
 # ── Observabilidad ─────────────────────────────────────────
 ./scripts/prod.sh logs               # logs en tiempo real (todos)
@@ -152,13 +183,24 @@ Todo se maneja con un único script:
 
 # ── Base de datos ──────────────────────────────────────────
 ./scripts/prod.sh migrate            # aplicar migraciones Alembic
-./scripts/prod.sh backup             # backup manual de BD
-./scripts/prod.sh reset-db           # reset completo (requiere ALLOW_DB_RESET=true)
+./scripts/prod.sh backup             # backup manual de BD → ./backups/
+
+# ── Pipeline de indicadores (KPIs) ─────────────────────────
+./scripts/prod.sh pipeline-reset     # restaura el pipeline al seed oficial + ejecuta
+                                     # (úsalo si los velocímetros no se actualizan)
+./scripts/prod.sh pipeline-sync run  # carga scripts/pai_2026/pipeline_pai.py + ejecuta
+
+# ── Comandos destructivos (requieren RESET_PIN en .env) ────
+./scripts/prod.sh reset-db           # eliminar y recrear BD (necesita ALLOW_DB_RESET=true)
+./scripts/prod.sh reset-fresh        # reset TOTAL a instalación limpia (frase + PIN)
+./scripts/prod.sh destroy            # destruye contenedores+imagenes+volumenes (frase + PIN)
+./scripts/prod.sh destroy all        # incluso imágenes 3rd party (postgres, nginx, ...)
 
 # ── Depuración ─────────────────────────────────────────────
 ./scripts/prod.sh shell              # shell en el backend
 ./scripts/prod.sh shell <servicio>   # shell en otro servicio
 ./scripts/prod.sh test               # ejecutar tests del backend
+./scripts/prod.sh help               # lista completa de comandos
 ```
 
 **URLs de acceso** (reemplazar con la IP del servidor):

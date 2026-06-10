@@ -1,17 +1,41 @@
 # Scripts de Reseteo de Datos — UBPD
 
-Documentación de los scripts de administración para limpiar datos del sistema de forma controlada.
-Todos los scripts se encuentran en la carpeta `scripts/` y requieren que los contenedores Docker estén corriendo.
+Documentación de los scripts y comandos de administración para limpiar datos del
+sistema de forma controlada. La mayoría se ejecutan a través del CLI unificado
+`./scripts/prod.sh <comando>`.
+
+---
+
+## Visión general — niveles de "limpieza"
+
+De menos a más destructivo:
+
+| # | Comando | Borra registros | Borra templates | Borra imágenes | Borra volúmenes | Vuelve a levantar | Requiere PIN |
+|---|---------|-----------------|-----------------|----------------|-----------------|-------------------|--------------|
+| 1 | `./scripts/prod.sh pipeline-reset` | KPIs y script de pipeline | ❌ | ❌ | ❌ | ❌ (no apaga nada) | ❌ |
+| 2 | `./scripts/reset-formularios.sh` | ✅ (forms + adjuntos) | ❌ | ❌ | ❌ | ❌ | ❌ |
+| 3 | `./scripts/reset-templates.sh` | ✅ + templates | ✅ | ❌ | ❌ | ❌ | ❌ |
+| 4 | `./scripts/reset-users.sh` | usuarios | ❌ | ❌ | ❌ | ❌ | ❌ |
+| 5 | `./scripts/reset-all-data.sh` | TODO el contenido | ✅ | ❌ | ❌ | ❌ | frase |
+| 6 | `./scripts/prod.sh reset-db` | recrea BD | ✅ | ❌ | ✅ (postgres) | ✅ | flag `.env` |
+| 7 | **`./scripts/prod.sh reset-fresh`** | **TODO** | ✅ | ❌ | ✅ (3 volúmenes) | ✅ | **frase + PIN** |
+| 8 | **`./scripts/prod.sh destroy [all]`** | **TODO** | ✅ | **✅** | ✅ | ❌ (queda apagado) | **frase + PIN** |
+
+> 🟡 **Los comandos 7 y 8 requieren `RESET_PIN=<pin>` en `.env`**. Sin esa variable
+> el script aborta con instrucciones — protección contra borrados accidentales.
 
 ---
 
 ## Índice
 
 - [Requisitos previos](#requisitos-previos)
+- [prod.sh pipeline-reset — Restaurar pipeline](#prodsh-pipeline-reset--restaurar-pipeline)
 - [reset-formularios.sh — Borrar formularios](#reset-formulariossh--borrar-formularios)
 - [reset-templates.sh — Borrar templates](#reset-templatessh--borrar-templates)
 - [reset-users.sh — Borrar usuarios](#reset-userssh--borrar-usuarios)
-- [reset-all-data.sh — Borrar todo](#reset-all-datash--borrar-todo)
+- [reset-all-data.sh — Borrar todo (sin tocar contenedores)](#reset-all-datash--borrar-todo)
+- [prod.sh reset-fresh — Reset a instalación limpia](#prodsh-reset-fresh--reset-a-instalación-limpia)
+- [prod.sh destroy — Destruir Docker del proyecto](#prodsh-destroy--destruir-docker-del-proyecto)
 - [Qué se elimina en cada script](#qué-se-elimina-en-cada-script)
 - [Orden de ejecución recomendado](#orden-de-ejecución-recomendado)
 - [Solución de problemas](#solución-de-problemas)
@@ -257,6 +281,120 @@ Al reiniciar el backend, el sistema recrea automáticamente:
 
 ```bash
 ./scripts/prod.sh restart backend
+```
+
+---
+
+## `prod.sh pipeline-reset` — Restaurar pipeline
+
+**Comando:** `./scripts/prod.sh pipeline-reset`
+
+Reinstala el pipeline de cálculo de KPIs a la versión por defecto y lo ejecuta.
+Es **no destructivo para los formularios y templates** — solo regenera la tabla
+`kpi_resultados` y el script activo en `pipeline_scripts`.
+
+### Cuándo usarlo
+
+- Los velocímetros de `/estadisticas` muestran valores incorrectos o desactualizados.
+- Aparecen KPIs viejos que ya no corresponden al PAI 2026.
+- Después de cargar formularios nuevos y querer refrescar los indicadores.
+
+### Qué hace internamente
+
+1. Borra TODOS los `pipeline_scripts` e inserta el seed `backend/app/seeds/pipeline_pai_default.py` como único activo.
+2. Borra TODOS los `kpi_resultados`.
+3. Ejecuta el seed in-process (sin pasar por el editor).
+4. Imprime los KPIs recién guardados con sus valores y labels para verificación.
+
+### Salida típica
+
+```
+✅ Reset OK
+   Seed: /app/app/seeds/pipeline_pai_default.py (8123 chars)
+   Scripts viejos borrados: 3
+   KPIs viejos borrados:    11
+
+📊 KPIs nivel-1 guardados:
+   L1   valor=  0.00  label=Línea 1 — Investigación Humanitaria y Extrajudicial
+   ...
+   L6   valor=  5.93  label=Línea 6 — Soporte Estratégico y Operativo
+
+📊 KPIs nivel-2 guardados:
+   L6-P2-DPE-2026  valor= 23.70  label=L6-P2-DPE-2026 — SISPLAN - BÚSQUEDA: ...
+```
+
+---
+
+## `prod.sh reset-fresh` — Reset a instalación limpia
+
+**Comando:** `./scripts/prod.sh reset-fresh`
+
+Devuelve el sistema al estado de "recién instalado": **borra todos los datos, archivos
+y caché**, recrea el esquema y siembra el admin inicial automáticamente.
+
+### Requisitos
+
+- `RESET_PIN=<pin>` definido en `.env` (PIN numérico de 4-8 dígitos).
+- Sin esa variable el comando aborta con instrucciones.
+
+### Confirmación triple
+
+1. Escribir literalmente: `BORRAR TODO`
+2. Confirmar el alcance escribiendo: `si`
+3. Ingresar el PIN (oculto, como `sudo`)
+
+### Qué hace
+
+1. Hace **backup preventivo** automático (`pg_dump` → `backups/pre-reset/`).
+2. `docker compose down --remove-orphans`.
+3. Borra los 3 volúmenes: `ubpd_postgres_data`, `ubpd_minio_data`, `ubpd_valkey_data`.
+4. Levanta `postgres + minio + valkey` limpios.
+5. Levanta `backend` → recrea esquema, siembra admin inicial y pipeline PAI.
+6. Levanta el resto de servicios.
+
+### Modo automatizado (CI)
+
+```bash
+RESET_AUTO_CONFIRM=yes RESET_AUTO_PIN=472918 ./scripts/prod.sh reset-fresh
+```
+
+---
+
+## `prod.sh destroy` — Destruir Docker del proyecto
+
+**Comando:** `./scripts/prod.sh destroy [all]`
+
+Elimina del entorno Docker **todo lo asociado al proyecto** (scope acotado, no
+afecta otros proyectos en la misma máquina). A diferencia de `reset-fresh`, **no
+vuelve a levantar el sistema** — para volver a usarlo hay que reconstruir.
+
+### Qué borra
+
+| Recurso | Modo normal | Modo `all` |
+|---------|-------------|------------|
+| Contenedores del compose + `ubpd_*` huérfanos | ✅ | ✅ |
+| Imágenes locales `ubpd-app-backend`, `ubpd-app-frontend` | ✅ | ✅ |
+| Volúmenes `ubpd_postgres_data`, `ubpd_minio_data`, `ubpd_valkey_data` | ✅ | ✅ |
+| Red `ubpd_network` | ✅ | ✅ |
+| Imágenes 3rd party (postgres, nginx, minio, valkey) | ❌ | ✅ |
+
+### Triple confirmación
+
+1. Escribir literalmente: `DESTRUIR TODO`
+2. Confirmar alcance escribiendo: `si`
+3. Ingresar el PIN
+
+### Para volver a levantarlo
+
+```bash
+./scripts/prod.sh build && ./scripts/prod.sh start
+```
+
+### Modo automatizado (CI)
+
+```bash
+DESTROY_AUTO_CONFIRM=yes DESTROY_AUTO_PIN=472918 DESTROY_INCLUDE_3RD=yes \
+  ./scripts/prod.sh destroy all
 ```
 
 ---
