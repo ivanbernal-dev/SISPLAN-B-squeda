@@ -1,0 +1,186 @@
+/* ============================================================
+ * UBPD Frontend — Estilos Globales
+ * Paleta según Manual de Identidad UBPD V4
+ * ============================================================ */
+
+/* Fuentes instaladas localmente vía @fontsource (sin CDN externo) */
+@import '@fontsource/barlow/400.css';
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
+@import '@fontsource/montserrat/600.css';
+@import '@fontsource/montserrat/700.css';
+@import '@fontsource/playfair-display/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Variables CSS globales ────────────────────────────────── */
+:root {
+  /* Colores institucionales */
+  --color-lila:    #A97CC9;
+  --color-verde:   #52ABAB;
+  --color-teal:    #3E818F;
+  --color-morado:  #8351CC;
+  --color-naranja: #FF6900;
+  --color-gris:    #323232;
+
+  /* Fondo y bordes */
+  --color-bg:          #FFFFFF;
+  --color-bg-readonly: #F5F5F5;
+  --color-border:      #E0E0E0;
+}
+
+/* ── Base Layer ────────────────────────────────────────────── */
+@layer base {
+  html {
+    font-family: 'Barlow', system-ui, sans-serif;
+    color: var(--color-gris);
+    background-color: var(--color-bg);
+  }
+
+  h1, h2, h3 {
+    font-family: 'Montserrat', serif;
+    font-weight: 700;
+  }
+
+  h4, h5, h6 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 600;
+  }
+
+  button {
+    font-family: 'Barlow', sans-serif;
+    font-weight: 600;
+  }
+
+  label {
+    font-family: 'Barlow', sans-serif;
+    font-weight: 500;
+  }
+}
+
+/* ── Componentes Reutilizables ─────────────────────────────── */
+@layer components {
+
+  /* ─ Campos de formulario ─ */
+  .form-input {
+    @apply w-full rounded border border-ubpd-gris-borde bg-white px-3 py-2 text-sm text-ubpd-gris
+           transition-colors focus:outline-none focus:ring-2 focus:border-ubpd-verde;
+    focus-ring-color: rgba(82, 171, 171, 0.2);
+  }
+
+  .form-input:focus {
+    border-color: var(--color-verde);
+    box-shadow: 0 0 0 2px rgba(82, 171, 171, 0.2);
+  }
+
+  .form-input-active {
+    border-color: var(--color-verde);
+  }
+
+  .form-input-readonly {
+    background-color: var(--color-bg-readonly);
+    cursor: not-allowed;
+    color: #666666;
+    border-color: var(--color-border);
+  }
+
+  /* ─ Botones ─ */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded px-4 py-2 text-sm font-semibold text-white
+           bg-ubpd-teal hover:bg-opacity-90 active:scale-95 transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-ubpd-teal focus:ring-offset-2;
+  }
+
+  .btn-success {
+    @apply inline-flex items-center gap-2 rounded px-4 py-2 text-sm font-semibold text-white
+           bg-ubpd-verde hover:bg-opacity-90 active:scale-95 transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-ubpd-verde focus:ring-offset-2;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center gap-2 rounded px-4 py-2 text-sm font-semibold text-white
+           bg-ubpd-naranja hover:bg-opacity-90 active:scale-95 transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-ubpd-naranja focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded border border-ubpd-teal px-4 py-2 text-sm
+           font-semibold text-ubpd-teal bg-transparent hover:bg-ubpd-teal hover:text-white
+           active:scale-95 transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-ubpd-teal focus:ring-offset-2;
+  }
+
+  .btn-delete {
+    @apply inline-flex items-center gap-2 rounded px-4 py-2 text-sm font-semibold text-white
+           bg-red-700 hover:bg-red-800 active:scale-95 transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-red-700 focus:ring-offset-2;
+  }
+
+  /* ─ Badges de estado ─ */
+  .status-draft {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+           bg-ubpd-gris-borde text-ubpd-gris;
+  }
+
+  .status-pending {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+           bg-ubpd-teal text-white;
+  }
+
+  .status-rejected {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+           bg-ubpd-naranja text-white;
+  }
+
+  .status-approved {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium
+           bg-ubpd-verde text-white;
+  }
+
+  /* ─ Sidebar ─ */
+  .sidebar-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/80
+           hover:bg-white/10 hover:text-white transition-colors cursor-pointer;
+  }
+
+  .sidebar-item-active {
+    @apply bg-white/20 text-white;
+  }
+
+  /* ─ Cards ─ */
+  .card {
+    @apply rounded-xl bg-white shadow-sm border border-ubpd-gris-borde p-6;
+  }
+
+  /* ─ Tabla ─ */
+  .table-th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider
+           text-ubpd-gris/70 bg-ubpd-gris-claro border-b border-ubpd-gris-borde;
+  }
+
+  .table-td {
+    @apply px-4 py-3 text-sm text-ubpd-gris border-b border-ubpd-gris-borde;
+  }
+}
+
+/* ── Utilidades ────────────────────────────────────────────── */
+@layer utilities {
+  /* Transición suave para los gauges ECharts */
+  .gauge-transition {
+    transition: all 0.6s ease;
+  }
+
+  /* Trama topográfica sutil para fondos (fondo dashboard público) */
+  .bg-topo-pattern {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg stroke='%23A97CC9' stroke-width='0.5'%3E%3Ccircle cx='30' cy='30' r='10'/%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3Ccircle cx='30' cy='30' r='28'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-size: 60px 60px;
+    opacity: 0.05;
+  }
+
+  /* Scroll suave */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+}
