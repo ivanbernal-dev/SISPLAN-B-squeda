@@ -93,6 +93,21 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
 
+  // ── Visor público de Indicadores de Comité Directivo ───────────────
+  {
+    path: '/comite-directivo',
+    component: () => import('../layouts/ComiteDirectivoLayout.vue'),
+    meta: { requiresAuth: false },
+    children: [
+      {
+        path: '',
+        name: 'ComiteDirectivoPublico',
+        component: () => import('../modules/comite-directivo/IndicadoresComiteDirectivo.vue'),
+        meta: { requiresAuth: false },
+      },
+    ],
+  },
+
   // ── Rutas Admin ────────────────────────────────────────
   {
     path: '/admin',
@@ -183,24 +198,24 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/admin/PipelineEditorView.vue'),
         meta: { requiresAuth: true, roles: ['admin'] },
       },
-      {
-        path: 'indicadores',
-        name: 'IndicadoresAdmin',
-        component: () => import('../views/admin/IndicadoresView.vue'),
-        meta: { requiresAuth: true, roles: ['admin'] },
-      },
-      {
-        path: 'bi-dashboard',
-        name: 'AdminBiDashboard',
-        component: () => import('../views/admin/BiDashboardView.vue'),
-        meta: { requiresAuth: true, roles: ['admin'] },
-      },
-      {
-        path: 'audit',
-        name: 'AdminAudit',
-        component: () => import('../views/admin/AuditView.vue'),
-        meta: { requiresAuth: true, roles: ['admin'] },
-      },
+ {
+  path: 'indicadores',
+  name: 'IndicadoresAdmin',
+  component: () => import('../views/admin/IndicadoresView.vue'),
+  meta: { requiresAuth: true, roles: ['admin'] },
+},
+{
+  path: 'bi-dashboard',
+  name: 'AdminBiDashboard',
+  component: () => import('../views/admin/BiDashboardView.vue'),
+  meta: { requiresAuth: true, roles: ['admin'] },
+},
+{
+  path: 'audit',
+  name: 'AdminAudit',
+  component: () => import('../views/admin/AuditView.vue'),
+  meta: { requiresAuth: true, roles: ['admin'] },
+},
       {
         path: 'registros',
         name: 'AdminRegistros',

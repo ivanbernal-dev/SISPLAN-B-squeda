@@ -192,6 +192,7 @@ async def _seed_pai_pipeline() -> None:
 # ── Routers ───────────────────────────────────────────────────────────────────
 from app.routers import auth, admin, templates, forms, files, validation, stats
 from app.routers import indicadores, pipeline_definitions, forms_excel, admin_backup
+from app.routers import comite_directivo
 from app.routers.script_pipeline import admin_router as script_admin_router
 from app.routers.script_pipeline import public_router as script_public_router
 from app.routers import test_data as test_data_router
@@ -206,6 +207,7 @@ app.include_router(files.router, prefix="/api")
 app.include_router(validation.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(indicadores.router, prefix="/api")
+app.include_router(comite_directivo.router, prefix="/api")
 app.include_router(pipeline_definitions.router, prefix="/api")
 app.include_router(forms_excel.router, prefix="/api")
 app.include_router(admin_backup.router, prefix="/api")
