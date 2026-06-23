@@ -1,14 +1,15 @@
 {
   "name": "ubpd-frontend",
   "version": "1.0.0",
-  "description": "UBPD - Sistema de Formularios y Estadísticas (Frontend Vue.js)",
+  "description": "UBPD - SISPLAN-Búsqueda (Frontend Vue.js)",
   "private": true,
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.ts --fix",
-    "type-check": "vue-tsc --noEmit"
+    "lint:check": "eslint . --ext .vue,.js,.ts",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@codemirror/lang-python": "^6.2.1",

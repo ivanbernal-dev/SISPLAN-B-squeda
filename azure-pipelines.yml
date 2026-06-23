@@ -1,0 +1,171 @@
+name: sisplan-$(Date:yyyyMMdd).$(Rev:r)
+
+parameters:
+  - name: useSelfHosted
+    displayName: Usar agente local institucional
+    type: boolean
+    default: false
+  - name: selfHostedPool
+    displayName: Pool del agente local
+    type: string
+    default: Default
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - release
+      - release/*
+      - hotfix/*
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+      - release
+      - release/*
+
+variables:
+  pythonVersion: '3.12'
+  nodeVersion: '20.x'
+  PIP_CACHE_DIR: '$(Pipeline.Workspace)/.pip'
+  npm_config_cache: '$(Pipeline.Workspace)/.npm'
+
+stages:
+  - stage: Quality
+    displayName: Calidad y pruebas
+    jobs:
+      - job: Backend
+        displayName: Backend - pruebas, análisis estático y seguridad
+        pool:
+          ${{ if eq(parameters.useSelfHosted, true) }}:
+            name: ${{ parameters.selfHostedPool }}
+          ${{ else }}:
+            vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            clean: true
+            fetchDepth: 0
+
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(pythonVersion)
+
+          - task: Cache@2
+            inputs:
+              key: 'pip | "$(Agent.OS)" | backend/requirements.txt | backend/requirements-test.txt'
+              restoreKeys: 'pip | "$(Agent.OS)"'
+              path: $(PIP_CACHE_DIR)
+
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt -r requirements-test.txt
+              pip install ruff bandit pip-audit
+            workingDirectory: backend
+            displayName: Instalar dependencias
+
+          - script: ruff check app tests --select E9,F63,F7,F82
+            workingDirectory: backend
+            displayName: Análisis estático Python
+
+          - script: bandit -r app -x app/seeds -ll
+            workingDirectory: backend
+            displayName: Análisis de seguridad del código Python
+
+          - script: pip-audit -r requirements.txt
+            workingDirectory: backend
+            displayName: Auditoría de dependencias Python
+            continueOnError: true
+
+          - script: pytest --junitxml=$(Common.TestResultsDirectory)/backend-tests.xml
+            workingDirectory: backend
+            displayName: Pruebas unitarias backend
+
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: '$(Common.TestResultsDirectory)/backend-tests.xml'
+              testRunTitle: Backend SISPLAN
+
+      - job: Frontend
+        displayName: Frontend - tipos, lint, compilación y seguridad
+        pool:
+          ${{ if eq(parameters.useSelfHosted, true) }}:
+            name: ${{ parameters.selfHostedPool }}
+          ${{ else }}:
+            vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            clean: true
+
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(nodeVersion)
+
+          - task: Cache@2
+            inputs:
+              key: 'npm | "$(Agent.OS)" | frontend/package-lock.json'
+              restoreKeys: 'npm | "$(Agent.OS)"'
+              path: $(npm_config_cache)
+
+          - script: npm ci
+            workingDirectory: frontend
+            displayName: Instalar dependencias
+
+          - script: npm run type-check
+            workingDirectory: frontend
+            displayName: Verificar TypeScript y Vue
+
+          - script: npm run lint:check
+            workingDirectory: frontend
+            displayName: Análisis estático frontend
+
+          - script: npm audit --audit-level=high
+            workingDirectory: frontend
+            displayName: Auditoría de dependencias frontend
+            continueOnError: true
+
+          - script: npm run build
+            workingDirectory: frontend
+            displayName: Compilar frontend
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: frontend/dist
+              artifact: frontend-dist
+
+  - stage: Containers
+    displayName: Verificación de imágenes Docker
+    dependsOn: Quality
+    condition: |
+      and(
+        succeeded(),
+        or(
+          eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/release'),
+          startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'),
+          startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/')
+        )
+      )
+    jobs:
+      - job: DockerBuild
+        displayName: Construir frontend y backend
+        pool:
+          ${{ if eq(parameters.useSelfHosted, true) }}:
+            name: ${{ parameters.selfHostedPool }}
+          ${{ else }}:
+            vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            clean: true
+          - script: docker build -t sisplan-frontend:$(Build.BuildId) frontend
+            displayName: Imagen frontend
+          - script: docker build -t sisplan-backend:$(Build.BuildId) backend
+            displayName: Imagen backend
+
+  # Los despliegues se configuran en Azure DevOps con Environments, grupos de
+  # variables secretos y agentes institucionales. No se incluyen credenciales
+  # ni conexiones de Kubernetes/registro dentro del repositorio.

@@ -14,8 +14,13 @@
 nginx/certs/
 
 # ── Dependencias Node ───────────────────────────────────────
-frontend/node_modules/
-frontend/dist/
+# Dependencias y compilados de cualquier aplicacion web del repositorio.
+# El package-lock.json de cada proyecto SI se versiona; los archivos internos
+# node_modules/.package-lock.json NO se suben porque node_modules queda excluido.
+node_modules/
+**/node_modules/
+dist/
+**/dist/
 frontend/.vite/
 
 # ── Caché y entornos Python ─────────────────────────────────
@@ -58,6 +63,7 @@ logs/
 *.swp
 *.swo
 *~
+*.lnk
 
 # ── Sistema operativo ───────────────────────────────────────
 .DS_Store
@@ -101,3 +107,4 @@ valkey/data/
 *.bak
 *.log
 *.pid
+tmp/

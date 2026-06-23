@@ -2,9 +2,30 @@
 
 **Unidad de Búsqueda de Personas Dadas por Desaparecidas**
 
-Sistema para diligenciar, validar y publicar estadísticas de formularios del **PAI 2026**
-(6 líneas estratégicas y 14 productos). Funciona en intranet con un único entorno Docker,
-sin dependencia de servicios externos.
+Sistema para diligenciar, validar y publicar información del **Plan de Acción
+Institucional 2026** y de los indicadores institucionales. Funciona en intranet
+con un único entorno Docker, sin dependencia de servicios externos.
+
+## Componentes incluidos
+
+### Visores independientes
+
+| Visor | Ruta | Fuente |
+|------|------|--------|
+| Plan de Acción Institucional 2026 | `/estadisticas` | Formularios PAI aprobados y pipeline oficial |
+| Indicadores Comité Directivo | `/comite-directivo` | Catálogo anual y formularios mensuales aprobados |
+| Visor BI | `/bi` | Dataset BI cargado por el administrador |
+
+### Módulos de gestión
+
+| Perfil | Ruta principal | Función |
+|--------|----------------|---------|
+| Administrador | `/admin` | Usuarios, dependencias, templates, pipeline, auditoría y respaldos |
+| Validador OAP | `/validator` | Revisión, comentarios OAP, aprobación y rechazo |
+| Dependencia | `/dependencia` | Diligenciamiento, soportes y envío de formularios |
+
+Los visores son rutas separadas y de solo lectura. Los módulos de gestión
+alimentan la misma base de datos mediante los flujos de aprobación existentes.
 
 ---
 
@@ -27,7 +48,9 @@ nano .env                            # editar contraseñas, SERVER_IP, JWT_SECRE
 ./scripts/prod.sh status             # verifica el estado y muestra URLs + ubicación de logs
 ```
 
-Abrir `http://127.0.0.1/estadisticas` (portal público) y `http://127.0.0.1` (login).
+Abrir `http://127.0.0.1/estadisticas` (PAI 2026),
+`http://127.0.0.1/comite-directivo` (Comité Directivo),
+`http://127.0.0.1/bi` (BI) y `http://127.0.0.1` (login).
 Credenciales iniciales definidas en `.env` (`INITIAL_ADMIN_USERNAME` / `INITIAL_ADMIN_PASSWORD`).
 
 > 📄 **Guía de instalación completa**: [`docs/INSTALACION.docx`](docs/INSTALACION.docx)
@@ -104,3 +127,25 @@ logs/nginx/access.log  /  logs/nginx/error.log
 | [`docs/FLUJO_PIPELINE_PROCESAMIENTO.md`](docs/FLUJO_PIPELINE_PROCESAMIENTO.md) | Cálculo de KPIs nivel 1 / nivel 2 / por trimestre. |
 | [`docs/SCRIPTS_RESET.md`](docs/SCRIPTS_RESET.md) | Comandos destructivos (`reset-db`, `reset-fresh`, `destroy`). |
 | [`scripts/pai_2026/README.md`](scripts/pai_2026/README.md) | Setup del PAI 2026 (14 templates, 6 líneas). |
+| [`docs/ENTREGA_GITHUB_AZURE.md`](docs/ENTREGA_GITHUB_AZURE.md) | Alcance del repositorio y entrega de GitHub a Azure DevOps. |
+| [`docs/GOBIERNO_AZURE_DEVOPS.md`](docs/GOBIERNO_AZURE_DEVOPS.md) | GitFlow, permisos, PR, CI/CD, MFA y Seguridad Digital. |
+
+---
+
+## Entrega de GitHub a Azure DevOps
+
+El área de TI puede importar el repositorio directamente desde GitHub o clonarlo
+y publicarlo en Azure DevOps:
+
+```bash
+git clone https://github.com/<ORGANIZACION>/<REPOSITORIO>.git
+cd <REPOSITORIO>
+git remote add azure https://dev.azure.com/<ORGANIZACION>/<PROYECTO>/_git/<REPOSITORIO>
+git push azure --all
+git push azure --tags
+```
+
+Antes del primer despliegue se debe crear `.env` desde `.env.example`, asignar
+secretos institucionales y ejecutar `./scripts/prod.sh build`. La base de datos,
+los respaldos, los archivos cargados y cualquier `.env` están excluidos del
+repositorio.
