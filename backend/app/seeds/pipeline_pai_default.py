@@ -5,7 +5,7 @@ Consolida los formularios aprobados de cada template (= Producto del PAI)
 y produce velocímetros en dos niveles para el dashboard público de
 /estadisticas:
 
-  Nivel 1 → Línea Estratégica  (L1..L6) — velocímetro promedio de productos
+  Nivel 1 → Línea Estratégica  (L1..L6) — promedio del avance real de TODOS sus productos
   Nivel 2 → Producto del PAI   (uno por hoja del Excel) — velocímetro propio
 
 Cada nivel se calcula por TRIMESTRE (T1..T4) y como ANUAL (acumulado).
@@ -140,6 +140,9 @@ def _linea_metricas(linea_id):
         # productos de la línea, no solo los que ya tienen datos).
         if not values:
             return None
+        # IMPORTANTE: se promedian los avances reales (`pct`) del producto,
+        # nunca su ratio de cumplimiento alc/proy. Ejemplo Línea 6:
+        # [0, 0, 0, 23.7] / 4 productos = 5.925%, no 87.8%.
         nums = [v if v is not None else 0.0 for v in values]
         return round(sum(nums) / len(nums), 2)
 

@@ -4,7 +4,7 @@
 
     <!-- Breadcrumb ───────────────────────────────────────────── -->
     <nav class="flex items-center gap-2 text-sm font-barlow text-gray-500 flex-wrap" aria-label="Navegación">
-      <RouterLink to="/estadisticas" class="hover:text-ubpd-teal transition-colors">Estadísticas</RouterLink>
+      <RouterLink to="/estadisticas" class="hover:text-ubpd-teal transition-colors">Plan de Acción Institucional 2026</RouterLink>
       <span>›</span>
       <RouterLink :to="`/estadisticas/${kpiKey}`" class="hover:text-ubpd-teal transition-colors">
         {{ route.query.kpiLabel || kpiKey }}

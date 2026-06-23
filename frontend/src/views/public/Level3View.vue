@@ -3,7 +3,7 @@
     <!-- Breadcrumb -->
     <nav class="flex items-center gap-2 text-sm font-barlow text-gray-500" aria-label="Navegación">
       <RouterLink to="/estadisticas" class="hover:text-ubpd-teal transition-colors">
-        Estadísticas
+        Plan de Acción Institucional 2026
       </RouterLink>
       <span aria-hidden="true">›</span>
       <RouterLink

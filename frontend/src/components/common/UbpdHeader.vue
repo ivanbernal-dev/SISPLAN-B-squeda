@@ -6,7 +6,7 @@
     style="padding: 10px;"
   >
     <img
-      src="/logo-ubpd-placeholder.svg"
+      src="/logo-ubpd.png"
       alt="UBPD — Unidad de Búsqueda de Personas dadas por Desaparecidas"
       class="h-10 w-auto object-contain"
     />

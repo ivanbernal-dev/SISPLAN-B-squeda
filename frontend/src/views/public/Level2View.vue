@@ -6,7 +6,7 @@
       <div class="max-w-6xl mx-auto px-6 py-6">
         <nav class="flex items-center gap-2 text-sm font-barlow text-gray-400 mb-4">
           <RouterLink to="/estadisticas" class="hover:text-ubpd-teal transition-colors">
-            Estadísticas
+            Plan de Acción Institucional 2026
           </RouterLink>
           <span>›</span>
           <span class="text-ubpd-gris font-semibold">{{ kpiLabel }}</span>

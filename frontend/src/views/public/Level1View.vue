@@ -5,10 +5,10 @@
     <div class="bg-white border-b border-gray-100 shadow-sm">
       <div class="max-w-6xl mx-auto px-6 py-8 text-center">
         <h1 class="text-3xl font-bold font-montserrat text-ubpd-gris">
-          Estadísticas de la Unidad de Búsqueda
+          Plan de Acción Institucional 2026
         </h1>
         <p class="text-sm font-barlow text-gray-500 mt-2">
-          Indicadores principales del proceso de búsqueda
+          Avance de las líneas estratégicas y sus productos
           <span v-if="updatedAt" class="ml-2 text-gray-400">— Actualizado: {{ updatedAt }}</span>
         </p>
 

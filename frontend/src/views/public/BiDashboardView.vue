@@ -5,7 +5,7 @@
     <header class="border-b border-gray-200 bg-white">
       <div class="max-w-[1400px] mx-auto px-6 py-4 flex items-center justify-between gap-4">
         <div class="flex items-center gap-4">
-          <img src="/logo-ubpd-placeholder.svg" alt="UBPD" class="h-12 w-auto" />
+          <img src="/logo-ubpd.png" alt="UBPD" class="h-12 w-auto" />
           <div>
             <h1 class="font-subtitulo font-bold text-base text-[#5B2B5E] tracking-wide">
               UNIDAD DE BÚSQUEDA DE PERSONAS DESAPARECIDAS

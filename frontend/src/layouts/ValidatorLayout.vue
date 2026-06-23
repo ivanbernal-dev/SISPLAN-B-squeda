@@ -25,9 +25,9 @@
       <div class="flex flex-col gap-2 px-5 pt-6 pb-4 border-b border-white/20">
         <router-link to="/validator/inbox" class="block">
           <img
-            src="/logo-ubpd-placeholder.svg"
+            src="/logo-ubpd.png"
             alt="UBPD — Unidad de Búsqueda"
-            class="h-10 w-auto"
+            class="h-auto w-full rounded-lg bg-white p-2 object-contain"
           />
         </router-link>
         <div class="mt-1">
@@ -105,7 +105,7 @@
         >
           <PhList :size="24" aria-hidden="true" />
         </button>
-        <img src="/logo-ubpd-placeholder.svg" alt="UBPD" class="h-8 w-auto" />
+        <img src="/logo-ubpd.png" alt="UBPD" class="h-8 w-auto" />
       </header>
 
       <main class="flex-1 overflow-y-auto">

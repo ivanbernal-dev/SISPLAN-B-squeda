@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <!-- Breadcrumb -->
     <nav class="flex items-center gap-2 text-sm font-barlow text-gray-500 flex-wrap" aria-label="Navegación">
-      <RouterLink to="/estadisticas" class="hover:text-ubpd-teal transition-colors">Estadísticas</RouterLink>
+      <RouterLink to="/estadisticas" class="hover:text-ubpd-teal transition-colors">Plan de Acción Institucional 2026</RouterLink>
       <span aria-hidden="true">›</span>
       <RouterLink
         v-if="route.params.indicador_id"
@@ -158,7 +158,7 @@
     <div v-else-if="!loading" class="text-center py-16">
       <p class="text-base font-barlow text-gray-400">No se encontró el formulario solicitado.</p>
       <RouterLink to="/estadisticas" class="text-ubpd-teal hover:underline text-sm font-barlow mt-2 inline-block">
-        Volver a estadísticas
+        Volver al Plan de Acción Institucional 2026
       </RouterLink>
     </div>
   </div>

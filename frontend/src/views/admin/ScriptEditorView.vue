@@ -47,6 +47,17 @@
         Guardar
       </button>
 
+      <button
+        @click="resetPaiOfficial"
+        :disabled="resetting || running"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-cuerpo font-medium
+               border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100
+               disabled:opacity-50 transition"
+        title="Instala y ejecuta la fórmula oficial del PAI 2026"
+      >
+        {{ resetting ? 'Restableciendo…' : 'Restablecer PAI 2026' }}
+      </button>
+
       <!-- Download -->
       <button
         @click="downloadScript"
@@ -212,6 +223,7 @@ const notifications = useNotificationsStore()
 const code = ref('')
 const running = ref(false)
 const saving = ref(false)
+const resetting = ref(false)
 const loadingTables = ref(true)
 const consoleOutput = ref('')
 const consoleHeight = ref(220)
@@ -256,6 +268,35 @@ async function saveScript() {
     notifications.error('No se pudo guardar el script')
   } finally {
     saving.value = false
+  }
+}
+
+// ── Restablecer la fórmula institucional del PAI 2026 ─────────
+async function resetPaiOfficial() {
+  const accepted = window.confirm(
+    'Se reemplazará el pipeline activo y se recalcularán todos los velocímetros con la fórmula oficial del PAI 2026. ¿Deseas continuar?',
+  )
+  if (!accepted) return
+
+  resetting.value = true
+  consoleOutput.value = '> Instalando y ejecutando la fórmula oficial del PAI 2026…\n'
+  try {
+    const result = await post<{
+      ok: boolean
+      stdout: string
+      new_kpis: { nivel1: Array<{ key: string; valor: number }> }
+    }>('/admin/script-pipeline/reset-to-default', {})
+    const active = await get<{ codigo: string }>('/admin/script-pipeline')
+    code.value = active.codigo
+    consoleOutput.value = result.stdout || '> Pipeline oficial instalado correctamente.'
+    lastRun.value = { ok: result.ok, modo: 'PAI 2026', time: new Date().toLocaleTimeString('es-CO') }
+    notifications.success('PAI 2026 recalculado con la fórmula oficial')
+  } catch (err: any) {
+    consoleOutput.value = `> No fue posible restablecer el PAI 2026: ${err?.message ?? err}`
+    lastRun.value = { ok: false, modo: 'PAI 2026', time: new Date().toLocaleTimeString('es-CO') }
+    notifications.error('No se pudo restablecer el PAI 2026')
+  } finally {
+    resetting.value = false
   }
 }
 
