@@ -1,0 +1,3962 @@
+[
+  {
+    "codigo": "L1-P1-DPE-2026",
+    "nombre": "L1-P1-DPE-2026 — Modelo operativo descentralizado de búsqueda humanitaria y extrajudicial fortale",
+    "descripcion": "Consolidar la coherencia operativa del despliegue nacional mediante la integración de las capacidades regionales y territoriales, incorporando las particularidades del territorio; de modo que la planeación diferenciada asegure el cumplimiento armonizado de la estrategia institucional.",
+    "linea_num": 1,
+    "producto_full": "Modelo operativo descentralizado de búsqueda humanitaria y extrajudicial fortalecido",
+    "linea_full": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)",
+    "objetivo": "Consolidar la coherencia operativa del despliegue nacional mediante la integración de las capacidades regionales y territoriales, incorporando las particularidades del territorio; de modo que la planeación diferenciada asegure el cumplimiento armonizado de la estrategia institucional.",
+    "codigo_markdown": "# L1-P1-DPE-2026\n\n**Producto:** Modelo operativo descentralizado de búsqueda humanitaria y extrajudicial fortalecido\n\n**Línea estratégica:** Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 1. Investigación Humanitaria y Extrajudicial |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R1. La investigación humanitaria y extrajudicial,  |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | Un modelo de búsqueda humanitaria y extrajudicial  |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L1-P1-DPE-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Modelo operativo descentralizado de búsqueda human |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Consolidar la coherencia operativa del despliegue  |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Subdirección General Técnica y Territorial (Líder) |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | Grupos Internos de Trabajo Regional\nGrupos Interno |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 1 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 1 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.28 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R1. La investigación humanitaria y extrajudicial, aplicada, participativa y territorial, sustentada en el fortalecimiento de las capacidades y competencias en procesos forenses de prospección, recuperación, identificación y las nuevas metodologías forenses implementadas en la UBPD, agilizan e impulsan la búsqueda para encontrar a las PDD y responder a las personas, familias y OCMP que buscan, garantizando su derecho al acceso a la información."
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Un modelo de búsqueda humanitaria y extrajudicial territorializado donde la estrategia nacional se traduce en acciones locales pertinentes, logrando una respuesta institucional ágil, articulada y con capacidad técnica suficiente para abordar las particularidades de la búsqueda en cada contexto regional."
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L1-P1-DPE-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Modelo operativo descentralizado de búsqueda humanitaria y extrajudicial fortalecido"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Consolidar la coherencia operativa del despliegue nacional mediante la integración de las capacidades regionales y territoriales, incorporando las particularidades del territorio; de modo que la planeación diferenciada asegure el cumplimiento armonizado de la estrategia institucional."
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Subdirección General Técnica y Territorial (Líder)"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Grupos Internos de Trabajo Regional\nGrupos Internos de Trabajo Territorial\n\nOficina Asesora de Planeación (Corresponsable)"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.28"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L1-P1-IHE-2026",
+    "nombre": "L1-P1-IHE-2026 — Estrategia para la planificación de la IHE Fortalecida",
+    "descripcion": "Sistematizar el ciclo de diseño y planificación investigativa mediante la implementación de modelos de investigación dinámicos (esquemas procedimentales flexibles) y modelos de análisis retrospectivo con enfoque predictivo (modelado de escenarios de búsqueda), que permitan la validación técnica de nuevas hipótesis y aseguren la rigurosidad científica, la trazabilidad de la información y la interoperabilidad de los procesos en escenarios de alta complejidad.",
+    "linea_num": 1,
+    "producto_full": "Estrategia para la planificación de la IHE Fortalecida",
+    "linea_full": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)",
+    "objetivo": "Sistematizar el ciclo de diseño y planificación investigativa mediante la implementación de modelos de investigación dinámicos (esquemas procedimentales flexibles) y modelos de análisis retrospectivo con enfoque predictivo (modelado de escenarios de búsqueda), que permitan la validación técnica de nuevas hipótesis y aseguren la rigurosidad científica, la trazabilidad de la información y la interoperabilidad de los procesos en escenarios de alta complejidad.",
+    "codigo_markdown": "# L1-P1-IHE-2026\n\n**Producto:** Estrategia para la planificación de la IHE Fortalecida\n\n**Línea estratégica:** Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 1. Investigación Humanitaria y Extrajudicial |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R1. La investigación humanitaria y extrajudicial,  |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | Planes Regionales de Búsqueda fortalecidos técnica |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L1-P1-IHE-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Estrategia para la planificación de la IHE Fortale |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Sistematizar el ciclo de diseño y planificación in |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Subdirección Técnica de Investigación Humanitaria |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | • GIT Metodología e Innovación para la búsqueda (L |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 1 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | #REF! |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | #REF! | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.334 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R1. La investigación humanitaria y extrajudicial, aplicada, participativa y territorial, sustentada en el fortalecimiento de las capacidades y competencias en procesos forenses de prospección, recuperación, identificación y las nuevas metodologías forenses implementadas en la UBPD, agilizan e impulsan la búsqueda para encontrar a las PDD y responder a las personas, familias y OCMP que buscan, garantizando su derecho al acceso a la información."
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Planes Regionales de Búsqueda fortalecidos técnicamente mediante la adopción de esquemas de planificación dinámicos y herramientas de análisis retrospectivo predictivo, garantizando la gestión sistematizada de la información para agilizar las investigaciones territoriales."
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L1-P1-IHE-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Estrategia para la planificación de la IHE Fortalecida"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Sistematizar el ciclo de diseño y planificación investigativa mediante la implementación de modelos de investigación dinámicos (esquemas procedimentales flexibles) y modelos de análisis retrospectivo con enfoque predictivo (modelado de escenarios de búsqueda), que permitan la validación técnica de nuevas hipótesis y aseguren la rigurosidad científica, la trazabilidad de la información y la interoperabilidad de los procesos en escenarios de alta complejidad."
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Subdirección Técnica de Investigación Humanitaria"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• GIT Metodología e Innovación para la búsqueda (Líder)\n\n• GITT Ciencia de  Datos para la Búsqueda (Corresponsable)"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "#REF!"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "#REF!",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.334"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L1-P2-IHE-2026",
+    "nombre": "L1-P2-IHE-2026 — Sistema de Información Misional SIM Busquemos versión 2.0 Implementado",
+    "descripcion": "Potenciar la investigación humanitaria y extrajudicial de búsqueda mediante la implementación del SIM 2.0, consolidando un ecosistema de información unificado que garantice la trazabilidad, integridad y análisis de datos (ciclo de vida de la información) sobre personas dadas por desaparecidas, personas buscadoras,  sitios de interés forense, acciones de recuperación de cuerpos con fines de identificación y acciones de participación con enfoque diferencial.",
+    "linea_num": 1,
+    "producto_full": "Sistema de Información Misional SIM Busquemos versión 2.0 Implementado",
+    "linea_full": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)",
+    "objetivo": "Potenciar la investigación humanitaria y extrajudicial de búsqueda mediante la implementación del SIM 2.0, consolidando un ecosistema de información unificado que garantice la trazabilidad, integridad y análisis de datos (ciclo de vida de la información) sobre personas dadas por desaparecidas, personas buscadoras,  sitios de interés forense, acciones de recuperación de cuerpos con fines de identificación y acciones de participación con enfoque diferencial.",
+    "codigo_markdown": "# L1-P2-IHE-2026\n\n**Producto:** Sistema de Información Misional SIM Busquemos versión 2.0 Implementado\n\n**Línea estratégica:** Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 1. Investigación Humanitaria y Extrajudicial |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R1. La investigación humanitaria y extrajudicial,  |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | Los procesos de investigación humanitaria e identi |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L1-P2-IHE-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Sistema de Información Misional SIM Busquemos vers |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Potenciar la investigación humanitaria y extrajudi |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Subdirección Técnica de Investigación Humanitaria |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | • GIT Sistema de Información Misional (Líder)\n\n• G |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 0.8757142857142857 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple Parcialmente | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 0.935710119047619 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.17499960000000003 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R1. La investigación humanitaria y extrajudicial, aplicada, participativa y territorial, sustentada en el fortalecimiento de las capacidades y competencias en procesos forenses de prospección, recuperación, identificación y las nuevas metodologías forenses implementadas en la UBPD, agilizan e impulsan la búsqueda para encontrar a las PDD y responder a las personas, familias y OCMP que buscan, garantizando su derecho al acceso a la información."
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Los procesos de investigación humanitaria e identificación forense son mas agiles y eficientes, garantizando la trazabilidad, calidad y análisis estratégico de la información de las personas dadas por desaparecidas, para ofrecer respuestas oportunas y certeras a las familias desde una operación territorial fortalecida."
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L1-P2-IHE-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Sistema de Información Misional SIM Busquemos versión 2.0 Implementado"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Potenciar la investigación humanitaria y extrajudicial de búsqueda mediante la implementación del SIM 2.0, consolidando un ecosistema de información unificado que garantice la trazabilidad, integridad y análisis de datos (ciclo de vida de la información) sobre personas dadas por desaparecidas, personas buscadoras,  sitios de interés forense, acciones de recuperación de cuerpos con fines de identificación y acciones de participación con enfoque diferencial."
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Subdirección Técnica de Investigación Humanitaria"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• GIT Sistema de Información Misional (Líder)\n\n• GIT Ciencia de Datos para la Búsqueda (Corresponsable)"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.8757142857142857",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple Parcialmente",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.935710119047619"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.17499960000000003"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L1-P3-IHE-2026",
+    "nombre": "L1-P3-IHE-2026 — Estrategia de Gestión Integral del Dato y Soporte de Analítica avanzada para la ",
+    "descripcion": "Implementar un modelo de gestión integral de datos y analítica avanzada (Ecosistema de Inteligencia de Datos) que garantice la integridad de los datos y habilite capacidades analíticas retrospectivas con enfoque predictivo, optimizando la toma de decisiones estratégicas en la investigación humanitaria",
+    "linea_num": 1,
+    "producto_full": "Estrategia de Gestión Integral del Dato y Soporte de Analítica avanzada para la Investigación Humanitaria",
+    "linea_full": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)",
+    "objetivo": "Implementar un modelo de gestión integral de datos y analítica avanzada (Ecosistema de Inteligencia de Datos) que garantice la integridad de los datos y habilite capacidades analíticas retrospectivas con enfoque predictivo, optimizando la toma de decisiones estratégicas en la investigación humanitaria",
+    "codigo_markdown": "# L1-P3-IHE-2026\n\n**Producto:** Estrategia de Gestión Integral del Dato y Soporte de Analítica avanzada para la Investigación Humanitaria\n\n**Línea estratégica:** Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 1. Investigación Humanitaria y Extrajudicial |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R1. La investigación humanitaria y extrajudicial,  |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | La investigación humanitaria y los procesos forens |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L1-P3-IHE-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Estrategia de Gestión Integral del Dato y Soporte  |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Implementar un modelo de gestión integral de datos |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Subdirección Técnica de Investigación Humanitaria |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | •  GITT Ciencia de datos para la Búsqueda (Líder)\n |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 0.6499999999999999 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | No Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 0.7295454545454546 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple Parcialmente | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.22199999999999998 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R1. La investigación humanitaria y extrajudicial, aplicada, participativa y territorial, sustentada en el fortalecimiento de las capacidades y competencias en procesos forenses de prospección, recuperación, identificación y las nuevas metodologías forenses implementadas en la UBPD, agilizan e impulsan la búsqueda para encontrar a las PDD y responder a las personas, familias y OCMP que buscan, garantizando su derecho al acceso a la información."
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "La investigación humanitaria y los procesos forenses de recuperación e identificación se fortalecen mediante modelos de análisis retrospectivo y predictivo basados en datos íntegros y de alta calidad, optimizando la respuesta institucional y el cumplimiento de los estándares de investigación."
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L1-P3-IHE-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Estrategia de Gestión Integral del Dato y Soporte de Analítica avanzada para la Investigación Humanitaria"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Implementar un modelo de gestión integral de datos y analítica avanzada (Ecosistema de Inteligencia de Datos) que garantice la integridad de los datos y habilite capacidades analíticas retrospectivas con enfoque predictivo, optimizando la toma de decisiones estratégicas en la investigación humanitaria"
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Subdirección Técnica de Investigación Humanitaria"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "•  GITT Ciencia de datos para la Búsqueda (Líder)\n\n• GITT Metodología e Innovación para la Búsqueda (Corresponsable)\n\n• GITT SIM (Corresponsable)"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.6499999999999999",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "No Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.7295454545454546"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple Parcialmente",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.22199999999999998"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L1-P4-IHE-2026",
+    "nombre": "L1-P4-IHE-2026 — Estrategia Aportantes Consolidada",
+    "descripcion": "Implementar y consolidar un modelo integral de relacionamiento y gestión de la información con personas que participaron en las hostilidades, sistematizando la recolección, valoración y análisis de sus aportes técnicos y testimoniales, para cualificar los insumos de la Investigación Humanitaria y Extrajudicial orientada a la búsqueda, localización e identificación de personas dadas por desaparecidas.",
+    "linea_num": 1,
+    "producto_full": "Estrategia Aportantes Consolidada",
+    "linea_full": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)",
+    "objetivo": "Implementar y consolidar un modelo integral de relacionamiento y gestión de la información con personas que participaron en las hostilidades, sistematizando la recolección, valoración y análisis de sus aportes técnicos y testimoniales, para cualificar los insumos de la Investigación Humanitaria y Extrajudicial orientada a la búsqueda, localización e identificación de personas dadas por desaparecidas.",
+    "codigo_markdown": "# L1-P4-IHE-2026\n\n**Producto:** Estrategia Aportantes Consolidada\n\n**Línea estratégica:** Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 1. Investigación Humanitaria y Extrajudicial |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R1. La investigación humanitaria y extrajudicial,  |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | La Investigación Humanitaria y Extrajudicial se fo |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L1-P4-IHE-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Estrategia Aportantes Consolidada |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Implementar y consolidar un modelo integral de rel |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Subdirección Técnica de Investigación Humanitaria |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | • GIT Gestión de Fuentes y Custodia de la Informac |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 1 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 1 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.18000000000000002 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R1. La investigación humanitaria y extrajudicial, aplicada, participativa y territorial, sustentada en el fortalecimiento de las capacidades y competencias en procesos forenses de prospección, recuperación, identificación y las nuevas metodologías forenses implementadas en la UBPD, agilizan e impulsan la búsqueda para encontrar a las PDD y responder a las personas, familias y OCMP que buscan, garantizando su derecho al acceso a la información."
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "La Investigación Humanitaria y Extrajudicial se fortalece a través de la contribución estructurada de la información técnica y testimonial aportada por personas que participaron directa o indirectamente en las hostilidades sobre ubicación de sitios de interés forense, personas dadas por desaparecidas, etc.,"
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L1-P4-IHE-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Estrategia Aportantes Consolidada"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Implementar y consolidar un modelo integral de relacionamiento y gestión de la información con personas que participaron en las hostilidades, sistematizando la recolección, valoración y análisis de sus aportes técnicos y testimoniales, para cualificar los insumos de la Investigación Humanitaria y Extrajudicial orientada a la búsqueda, localización e identificación de personas dadas por desaparecidas."
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Subdirección Técnica de Investigación Humanitaria"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• GIT Gestión de Fuentes y Custodia de la Información"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.18000000000000002"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L1-P5-IHE-2026",
+    "nombre": "L1-P5-IHE-2026 — Estrategia Misión identificación",
+    "descripcion": "Impulsar la identificación ágil de los cuerpos recuperados por la UBPD, disminuyendo el rezago forense nacional a través de un modelo de convergencia multimodal que integre la lofoscopia forense, la verificación de correspondencia in situ, el abordaje antropológico y la aplicación de tecnología avanzada en genética. Este modelo posiciona a los CIAFI como centros técnicos, capaces de dinamizar el procesamiento y ofrecer respuestas efectivas en contextos complejos.",
+    "linea_num": 1,
+    "producto_full": "Estrategia Misión identificación",
+    "linea_full": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)",
+    "objetivo": "Impulsar la identificación ágil de los cuerpos recuperados por la UBPD, disminuyendo el rezago forense nacional a través de un modelo de convergencia multimodal que integre la lofoscopia forense, la verificación de correspondencia in situ, el abordaje antropológico y la aplicación de tecnología avanzada en genética. Este modelo posiciona a los CIAFI como centros técnicos, capaces de dinamizar el procesamiento y ofrecer respuestas efectivas en contextos complejos.",
+    "codigo_markdown": "# L1-P5-IHE-2026\n\n**Producto:** Estrategia Misión identificación\n\n**Línea estratégica:** Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 1. Investigación Humanitaria y Extrajudicial |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R1. La investigación humanitaria y extrajudicial,  |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | Para finales de 2026, el resultado estratégico de  |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L1-P5-IHE-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Estrategia Misión identificación |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Impulsar la identificación ágil de los cuerpos rec |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Subdirección Técnica Forense |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No |  |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 1 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 0.95 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.149 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 1. Investigación Humanitaria y Extrajudicial (Gestión de información e Investigación para la Búsqueda)"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R1. La investigación humanitaria y extrajudicial, aplicada, participativa y territorial, sustentada en el fortalecimiento de las capacidades y competencias en procesos forenses de prospección, recuperación, identificación y las nuevas metodologías forenses implementadas en la UBPD, agilizan e impulsan la búsqueda para encontrar a las PDD y responder a las personas, familias y OCMP que buscan, garantizando su derecho al acceso a la información."
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Para finales de 2026, el resultado estratégico de la Estrategia Misión Identificación es la transición hacia un modelo de identificación multimodal . Este modelo garantiza que el rezago en la intervención forense se gestione mediante un flujo técnico continuo, donde cada hallazgo es sometido"
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L1-P5-IHE-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Estrategia Misión identificación"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Impulsar la identificación ágil de los cuerpos recuperados por la UBPD, disminuyendo el rezago forense nacional a través de un modelo de convergencia multimodal que integre la lofoscopia forense, la verificación de correspondencia in situ, el abordaje antropológico y la aplicación de tecnología avanzada en genética. Este modelo posiciona a los CIAFI como centros técnicos, capaces de dinamizar el procesamiento y ofrecer respuestas efectivas en contextos complejos."
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Subdirección Técnica Forense"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.95"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.149"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L2-P1-CP-2026",
+    "nombre": "L2-P1-CP-2026 — Estrategia de Memoria y Legado para la Búsqueda Humanitaria y Extrajudicial",
+    "descripcion": "Posicionar la memoria sobre la desaparición y la trayectoria de la búsqueda como activos sociales y metodológicos que, mediante la transferencia de saberes, institucionalicen estándares de actuación garantes de derechos y blinden la sostenibilidad del Legado de la Búsqueda Humanitaria y Extrajudicial",
+    "linea_num": 2,
+    "producto_full": "Estrategia de Memoria y Legado para la Búsqueda Humanitaria y Extrajudicial",
+    "linea_full": "Línea 2. Gestión del conocimiento y preservación de memoria",
+    "objetivo": "Posicionar la memoria sobre la desaparición y la trayectoria de la búsqueda como activos sociales y metodológicos que, mediante la transferencia de saberes, institucionalicen estándares de actuación garantes de derechos y blinden la sostenibilidad del Legado de la Búsqueda Humanitaria y Extrajudicial",
+    "codigo_markdown": "# L2-P1-CP-2026\n\n**Producto:** Estrategia de Memoria y Legado para la Búsqueda Humanitaria y Extrajudicial\n\n**Línea estratégica:** Línea 2. Gestión del conocimiento y preservación de memoria\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 2. Gestión del conocimiento y preservación d |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R2. Las decisiones para la búsqueda se toman consi |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | La Memoria y el Legado de la Búsqueda Humanitaria  |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L2-P1-CP-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Estrategia de Memoria y Legado para la Búsqueda Hu |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Posicionar la memoria sobre la desaparición y la t |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Oficina Asesora de Comunicación y Pedagogía |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | • Asesor Directora General |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 1 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 1 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 1 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 2. Gestión del conocimiento y preservación de memoria"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R2. Las decisiones para la búsqueda se toman considerando lecciones aprendidas, buenas prácticas y un diálogo reflexivo como fundamento"
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "La Memoria y el Legado de la Búsqueda Humanitaria y Extrajudicial se han consolidado como instrumentos rectores de la práctica institucional, materializándose en la actualización efectiva de los estándares de búsqueda y en la apropiación social de saberes que garantizan la continuidad técnica desde el enfoque humanitario del proceso de búsqueda"
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L2-P1-CP-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Estrategia de Memoria y Legado para la Búsqueda Humanitaria y Extrajudicial"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Posicionar la memoria sobre la desaparición y la trayectoria de la búsqueda como activos sociales y metodológicos que, mediante la transferencia de saberes, institucionalicen estándares de actuación garantes de derechos y blinden la sostenibilidad del Legado de la Búsqueda Humanitaria y Extrajudicial"
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Oficina Asesora de Comunicación y Pedagogía"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• Asesor Directora General"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L3-P1-DPE-2026",
+    "nombre": "L3-P1-DPE-2026 — Plan de Consolidación de la Articulación Interinstitucional e  Intersectorial pa",
+    "descripcion": "Consolidar el modelo de gobernanza y coordinación interinstitucional e intersectorial para la búsqueda de personas dadas por desaparecidas (PDD), mediante la implementación territorial de políticas públicas y planes de articulación que aseguren la eficiencia operativa y el impacto social de las intervenciones en el marco del Sistema Nacional de Búsqueda (SNB).",
+    "linea_num": 3,
+    "producto_full": "Plan de Consolidación de la Articulación Interinstitucional e  Intersectorial para la respuesta Integral en la Búsqueda",
+    "linea_full": "Línea 3. Articulación interinstitucional e intersectorial para el fortalecimiento de las acciones de búsqueda humanitaria y extrajudicial",
+    "objetivo": "Consolidar el modelo de gobernanza y coordinación interinstitucional e intersectorial para la búsqueda de personas dadas por desaparecidas (PDD), mediante la implementación territorial de políticas públicas y planes de articulación que aseguren la eficiencia operativa y el impacto social de las intervenciones en el marco del Sistema Nacional de Búsqueda (SNB).",
+    "codigo_markdown": "# L3-P1-DPE-2026\n\n**Producto:** Plan de Consolidación de la Articulación Interinstitucional e  Intersectorial para la respuesta Integral en la Búsqueda\n\n**Línea estratégica:** Línea 3. Articulación interinstitucional e intersectorial para el fortalecimiento de las acciones de búsqueda humanitaria y extrajudicial\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 3. Articulación interinstitucional e interse |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R3. La UBPD fortalece las condiciones de trabajo c |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | Consolidar la búsqueda humanitaria y extrajudicial |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L3-P1-DPE-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Plan de Consolidación de la Articulación Interinst |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Consolidar el modelo de gobernanza y coordinación  |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Oficina Asesora de Planeación |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | • Dirección General (Asesor relacionamiento y arti |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 0 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | No Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 0.5 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | No Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.0875 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 3. Articulación interinstitucional e intersectorial para el fortalecimiento de las acciones de búsqueda humanitaria y extrajudicial"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R3. La UBPD fortalece las condiciones de trabajo conjunto y coordinado con actores corresponsables  en el proceso de búsqueda humanitaria y extrajudicial en el ámbito local, nacional e internacional para facilitar su actuación y aumentar el impacto de su intervención"
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Consolidar la búsqueda humanitaria y extrajudicial y la sostenibilidad del proceso, a través de alianzas estratégicas basadas en la complementariedad técnica y financiera, y la implementación de una Política Pública Integral territorializada y co-creada que garantice la corresponsabilidad de los actores del SNB"
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L3-P1-DPE-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Plan de Consolidación de la Articulación Interinstitucional e  Intersectorial para la respuesta Integral en la Búsqueda"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Consolidar el modelo de gobernanza y coordinación interinstitucional e intersectorial para la búsqueda de personas dadas por desaparecidas (PDD), mediante la implementación territorial de políticas públicas y planes de articulación que aseguren la eficiencia operativa y el impacto social de las intervenciones en el marco del Sistema Nacional de Búsqueda (SNB)."
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Oficina Asesora de Planeación"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• Dirección General (Asesor relacionamiento y articulación)"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "No Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.5"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "No Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.0875"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L4-P1-CP-2026",
+    "nombre": "L4-P1-CP-2026 — Estrategia Integral de Comunicaciones y Pedagogía 2026",
+    "descripcion": "Implementar una estrategia convergente con enfoque territorial y diferencial que consolide a la UBPD como líder legítimo en la acción humanitaria, mediante una Comunicación Masiva que posicione los logros de la búsqueda; una Comunicación Pedagógica que impulse la participación social y posicione la prioridad de la identificación y una Comunicación Interna que alinee al talento humano garantizando la coherencia institucional necesaria para aliviar el sufrimiento de las familias",
+    "linea_num": 4,
+    "producto_full": "Estrategia Integral de Comunicaciones y Pedagogía 2026",
+    "linea_full": "Línea 4. Sensibilización, información y comunicación para la búsqueda",
+    "objetivo": "Implementar una estrategia convergente con enfoque territorial y diferencial que consolide a la UBPD como líder legítimo en la acción humanitaria, mediante una Comunicación Masiva que posicione los logros de la búsqueda; una Comunicación Pedagógica que impulse la participación social y posicione la prioridad de la identificación y una Comunicación Interna que alinee al talento humano garantizando la coherencia institucional necesaria para aliviar el sufrimiento de las familias",
+    "codigo_markdown": "# L4-P1-CP-2026\n\n**Producto:** Estrategia Integral de Comunicaciones y Pedagogía 2026\n\n**Línea estratégica:** Línea 4. Sensibilización, información y comunicación para la búsqueda\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 4. Sensibilización, información y comunicaci |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R4. La UBPD es reconocida como la entidad líder en |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | La UBPD ha logrado posicionar social y mediáticame |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L4-P1-CP-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Estrategia Integral de Comunicaciones y Pedagogía  |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Implementar una estrategia convergente con enfoque |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Oficina Asesora de Comunicaciones y Pedagogía |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | • Enlaces de Comunicación en Territorio\n•GITT |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 1 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 1 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.0926 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 4. Sensibilización, información y comunicación para la búsqueda"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R4. La UBPD es reconocida como la entidad líder en la búsqueda humanitaria, extrajudicial y participativa generando confianza y credibilidad, y aumentando la conciencia pública sobre el fenómeno de la desaparición."
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "La UBPD ha logrado posicionar social y mediáticamente al 2026 como 'el año de la identificación', aumentando la conciencia pública sobre la urgencia de la investigación humanitaria y forense para brindar respuestas a las familias. Asimismo, cuenta con un talento humano alineado y cohesionado bajo la premisa 'Con el corazón en la búsqueda', garantizando una gestión coherente que contribuye de manera efectiva a la construcción de paz y al alivio del sufrimiento de las víctimas a diez años de la firma del Acuerdo."
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L4-P1-CP-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Estrategia Integral de Comunicaciones y Pedagogía 2026"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Implementar una estrategia convergente con enfoque territorial y diferencial que consolide a la UBPD como líder legítimo en la acción humanitaria, mediante una Comunicación Masiva que posicione los logros de la búsqueda; una Comunicación Pedagógica que impulse la participación social y posicione la prioridad de la identificación y una Comunicación Interna que alinee al talento humano garantizando la coherencia institucional necesaria para aliviar el sufrimiento de las familias"
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Oficina Asesora de Comunicaciones y Pedagogía"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• Enlaces de Comunicación en Territorio\n•GITT"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.0926"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L5-P1-PED-2026",
+    "nombre": "L5-P1-PED-2026 — Macro-estrategia de participación diferencial y fortalecimiento del tejido comun",
+    "descripcion": "Vincular estructuralmente la participación de personas, familias y organizaciones buscadoras mediante una macro-estrategia de enfoque diferencial (étnico, de género y territorial) que operacionalice el acceso a la información y el derecho a saber, transformando sus saberes y redes de apoyo en el motor técnico-social para la exigibilidad y efectividad del derecho a la búsqueda",
+    "linea_num": 5,
+    "producto_full": "Macro-estrategia de participación diferencial y fortalecimiento del tejido comunitario para la garantía del derecho a la búsqueda",
+    "linea_full": "Línea 5. Participación integral con enfoque diferencial: Plataforma de acción para la búsqueda",
+    "objetivo": "Vincular estructuralmente la participación de personas, familias y organizaciones buscadoras mediante una macro-estrategia de enfoque diferencial (étnico, de género y territorial) que operacionalice el acceso a la información y el derecho a saber, transformando sus saberes y redes de apoyo en el motor técnico-social para la exigibilidad y efectividad del derecho a la búsqueda",
+    "codigo_markdown": "# L5-P1-PED-2026\n\n**Producto:** Macro-estrategia de participación diferencial y fortalecimiento del tejido comunitario para la garantía del derecho a la búsqueda\n\n**Línea estratégica:** Línea 5. Participación integral con enfoque diferencial: Plataforma de acción para la búsqueda\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 5. Participación integral con enfoque difere |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R5. Las personas, familias y OCMP participan de ma |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | Víctimas y organizaciones buscadoras ejercen una p |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L5-P1-PED-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Macro-estrategia de participación diferencial y fo |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Vincular estructuralmente la participación de pers |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Subdirección Técnica de Participación y Enfoques D |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | • GIT SIM\n• GIT TIC |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 0 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | No Aplica | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 1 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.052500000000000005 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 5. Participación integral con enfoque diferencial: Plataforma de acción para la búsqueda"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R5. Las personas, familias y OCMP participan de manera activa, diferenciada y efectiva en el proceso de búsqueda"
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Víctimas y organizaciones buscadoras ejercen una participación incidente y autónoma, soportada en redes territoriales consolidadas y rutas de acceso técnico-social que eliminan barreras de información y garantizan la aplicación de los enfoques diferencial, de género e interseccional en el proceso de búsqueda"
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L5-P1-PED-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Macro-estrategia de participación diferencial y fortalecimiento del tejido comunitario para la garantía del derecho a la búsqueda"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Vincular estructuralmente la participación de personas, familias y organizaciones buscadoras mediante una macro-estrategia de enfoque diferencial (étnico, de género y territorial) que operacionalice el acceso a la información y el derecho a saber, transformando sus saberes y redes de apoyo en el motor técnico-social para la exigibilidad y efectividad del derecho a la búsqueda"
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Subdirección Técnica de Participación y Enfoques Diferenciales"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• GIT SIM\n• GIT TIC"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "No Aplica",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.052500000000000005"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L6-P1-DPE-2026",
+    "nombre": "L6-P1-DPE-2026 — MOP 360: Radar de Gestión",
+    "descripcion": "Implementar una herramienta de articulación estratégica que centralice el seguimiento y la actualización de los Planes de Mejoramiento, facilitando la evolución y mejora continua del Modelo de Operación por Procesos (MOP) en el nivel central y territorial, para asegurar una gestión misional adaptable, eficiente y basada en resultados",
+    "linea_num": 6,
+    "producto_full": "MOP 360: Radar de Gestión",
+    "linea_full": "Línea 6. Soporte para la búsqueda",
+    "objetivo": "Implementar una herramienta de articulación estratégica que centralice el seguimiento y la actualización de los Planes de Mejoramiento, facilitando la evolución y mejora continua del Modelo de Operación por Procesos (MOP) en el nivel central y territorial, para asegurar una gestión misional adaptable, eficiente y basada en resultados",
+    "codigo_markdown": "# L6-P1-DPE-2026\n\n**Producto:** MOP 360: Radar de Gestión\n\n**Línea estratégica:** Línea 6. Soporte para la búsqueda\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 6. Soporte para la búsqueda |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R6. La gestión institucional y territorial es ágil |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No |  |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L6-P1-DPE-2026 |  |\n| producto | Producto | textarea | Sí | No | No | MOP 360: Radar de Gestión |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Implementar una herramienta de articulación estrat |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | • Oficina Asesora de Planeación |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | • Dependencias del nivel central\n• GITT Regionales |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 1 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 1 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.30000000000000004 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 6. Soporte para la búsqueda"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R6. La gestión institucional y territorial es ágil, eficiente y coordinada en la prestación de servicios de búsqueda de personas dadas por desaparecidas"
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L6-P1-DPE-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "MOP 360: Radar de Gestión"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Implementar una herramienta de articulación estratégica que centralice el seguimiento y la actualización de los Planes de Mejoramiento, facilitando la evolución y mejora continua del Modelo de Operación por Procesos (MOP) en el nivel central y territorial, para asegurar una gestión misional adaptable, eficiente y basada en resultados"
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• Oficina Asesora de Planeación"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• Dependencias del nivel central\n• GITT Regionales\n• GITT Territoriales"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.30000000000000004"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L6-P1-GAF-2026",
+    "nombre": "L6-P1-GAF-2026 — Modelo Integrado de Gestión Administrativa y Operativa para el Soporte a la Búsq",
+    "descripcion": "Optimizar la capacidad de respuesta operativa para la búsqueda de personas dadas por desaparecidas, mediante la estandarización y armonización de los procesos de soporte administrativo, financiero y tecnológico en el territorio; asegurando que el control de costos regionalizado, la gestión logística y de transporte multimodal; y la transformación tecnológica permitan una ejecución oportuna de los recursos y una supervisión integral de la gestión institucional.",
+    "linea_num": 6,
+    "producto_full": "Modelo Integrado de Gestión Administrativa y Operativa para el Soporte a la Búsqueda",
+    "linea_full": "Línea 6. Soporte para la búsqueda",
+    "objetivo": "Optimizar la capacidad de respuesta operativa para la búsqueda de personas dadas por desaparecidas, mediante la estandarización y armonización de los procesos de soporte administrativo, financiero y tecnológico en el territorio; asegurando que el control de costos regionalizado, la gestión logística y de transporte multimodal; y la transformación tecnológica permitan una ejecución oportuna de los recursos y una supervisión integral de la gestión institucional.",
+    "codigo_markdown": "# L6-P1-GAF-2026\n\n**Producto:** Modelo Integrado de Gestión Administrativa y Operativa para el Soporte a la Búsqueda\n\n**Línea estratégica:** Línea 6. Soporte para la búsqueda\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 6. Soporte para la búsqueda |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R6. La gestión institucional y territorial es ágil |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | El seguimiento, monitoreo y evaluación permite tom |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L6-P1-GAF-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Modelo Integrado de Gestión Administrativa y Opera |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Optimizar la capacidad de respuesta operativa para |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Secretaría General |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | • Subdirección Administrativa\n• Subdirección Finan |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | No Aplica |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | No Aplica | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 1 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.2614 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 6. Soporte para la búsqueda"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R6. La gestión institucional y territorial es ágil, eficiente y coordinada en la prestación de servicios de búsqueda de personas dadas por desaparecidas"
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "El seguimiento, monitoreo y evaluación permite tomar decisiones basadas en evidencia para impulsar la búsqueda de las personas dadas por desaparecidas, soportado en un modelo de operación eficiente, con recursos optimizados (Central de Costos) y soporte tecnológico ajustado a las necesidades de la Entidad"
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L6-P1-GAF-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Modelo Integrado de Gestión Administrativa y Operativa para el Soporte a la Búsqueda"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Optimizar la capacidad de respuesta operativa para la búsqueda de personas dadas por desaparecidas, mediante la estandarización y armonización de los procesos de soporte administrativo, financiero y tecnológico en el territorio; asegurando que el control de costos regionalizado, la gestión logística y de transporte multimodal; y la transformación tecnológica permitan una ejecución oportuna de los recursos y una supervisión integral de la gestión institucional."
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Secretaría General"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "• Subdirección Administrativa\n• Subdirección Financiera\n• GIT Gestión Contractual\n• GIT Tecnología y Comunicaciones"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "No Aplica",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "No Aplica",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.2614"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L6-P1-SGH-2026",
+    "nombre": "L6-P1-SGH-2026 — Plan de Fortalecimiento SIBICU",
+    "descripcion": "Fortalecer el Sistema de Bienestar y Cuidado (SIBICU) rediseñando los planes de incentivos y salud ocupacional, para mejorar la calidad de vida laboral y mitigar riesgos psicosociales del equipo.",
+    "linea_num": 6,
+    "producto_full": "Plan de Fortalecimiento SIBICU",
+    "linea_full": "Línea 6. Soporte para la búsqueda",
+    "objetivo": "Fortalecer el Sistema de Bienestar y Cuidado (SIBICU) rediseñando los planes de incentivos y salud ocupacional, para mejorar la calidad de vida laboral y mitigar riesgos psicosociales del equipo.",
+    "codigo_markdown": "# L6-P1-SGH-2026\n\n**Producto:** Plan de Fortalecimiento SIBICU\n\n**Línea estratégica:** Línea 6. Soporte para la búsqueda\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 6. Soporte para la búsqueda |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R6. La gestión institucional y territorial es ágil |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | Un Sistema de Bienestar y Cuidado (SIBICU) plename |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L6-P1-SGH-2026 |  |\n| producto | Producto | textarea | Sí | No | No | Plan de Fortalecimiento SIBICU |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Fortalecer el Sistema de Bienestar y Cuidado (SIBI |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Subdirección de Gestión Humana |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | Subdirección de Gestión Humana |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 0.9279999999999999 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 0.964 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.16640000000000002 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 6. Soporte para la búsqueda"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R6. La gestión institucional y territorial es ágil, eficiente y coordinada en la prestación de servicios de búsqueda de personas dadas por desaparecidas"
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Un Sistema de Bienestar y Cuidado (SIBICU) plenamente operativo que ha logrado institucionalizar una cultura de prevención y cuidado integral, reduciendo significativamente los factores de riesgo y optimizando la salud ocupacional."
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L6-P1-SGH-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Plan de Fortalecimiento SIBICU"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Fortalecer el Sistema de Bienestar y Cuidado (SIBICU) rediseñando los planes de incentivos y salud ocupacional, para mejorar la calidad de vida laboral y mitigar riesgos psicosociales del equipo."
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Subdirección de Gestión Humana"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Subdirección de Gestión Humana"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.9279999999999999",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.964"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.16640000000000002"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  },
+  {
+    "codigo": "L6-P2-DPE-2026",
+    "nombre": "L6-P2-DPE-2026 — SISPLAN - BÚSQUEDA: Sistema de Seguimiento y Monitoreo a la planeación de la bús",
+    "descripcion": "Articular integralmente el ciclo de planeación de la Búsqueda Humanitaria y Extrajudicial, sistematizando las labores de monitoreo para proveer datos de alta calidad orientados a la toma de decisiones estratégicas",
+    "linea_num": 6,
+    "producto_full": "SISPLAN - BÚSQUEDA: Sistema de Seguimiento y Monitoreo a la planeación de la búsqueda",
+    "linea_full": "Línea 6. Soporte para la búsqueda",
+    "objetivo": "Articular integralmente el ciclo de planeación de la Búsqueda Humanitaria y Extrajudicial, sistematizando las labores de monitoreo para proveer datos de alta calidad orientados a la toma de decisiones estratégicas",
+    "codigo_markdown": "# L6-P2-DPE-2026\n\n**Producto:** SISPLAN - BÚSQUEDA: Sistema de Seguimiento y Monitoreo a la planeación de la búsqueda\n\n**Línea estratégica:** Línea 6. Soporte para la búsqueda\n\n\n| Campo | Etiqueta | Tipo | Bloqueado | Requerido | Solo Validador | Default | Opciones |\n|---|---|---|---|---|---|---|---|\n| periodo_reporte | Periodo de Reporte | select | No | Sí | No |  | TRIMESTRE 1,TRIMESTRE 2,TRIMESTRE 3,TRIMESTRE 4 |\n| linea_estrategica | Línea estratégica | textarea | Sí | No | No | Línea 6. Soporte para la búsqueda |  |\n| resultado_estrategico | Resultados Estratégico 2024 - 2028 | textarea | Sí | No | No | R6. La gestión institucional y territorial es ágil |  |\n| resultado_2026 | Resultado 2026 | textarea | Sí | No | No | SISPLAN-BÚSQUEDA operando como la herramienta de a |  |\n| codigo_producto | Código del Producto | text | Sí | No | No | L6-P2-DPE-2026 |  |\n| producto | Producto | textarea | Sí | No | No | SISPLAN - BÚSQUEDA: Sistema de Seguimiento y Monit |  |\n| objetivo_producto | Objetivo del Producto | textarea | Sí | No | No | Articular integralmente el ciclo de planeación de  |  |\n| area_responsable | Área Responsable | textarea | Sí | No | No | Oficina Asesora de Planeación |  |\n| area_implementadora | Área implementadora o corresponsable | textarea | Sí | No | No | GIT Tecnología y Comunicaciones |  |\n| eje | Ejes | text | No | Sí | No |  |  |\n| peso_actividad | Peso de la actividad en la medición | number | No | Sí | No |  |  |\n| peso_trimestre | Peso para el trimestre | number | No | Sí | No |  |  |\n| actividad_clave | Actividades Clave | textarea | No | Sí | No |  |  |\n| indicador | Indicador | textarea | No | Sí | No |  |  |\n| meta_anual | Meta Anual | textarea | No | Sí | No |  |  |\n| entregable_total | Entregable Total | textarea | No | Sí | No |  |  |\n| entregable_trimestre | Entregable trimestre | textarea | No | Sí | No |  |  |\n| pct_avance_proyectado | % Avance acumulado Proyectado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_alcanzado | % Avance acumulado Alcanzado de la actividad | number | No | Sí | No |  |  |\n| pct_avance_final | % Avance final del periodo de la actividad | number | Sí | No | No | 1 |  |\n| estado_actividad | Estado de Cumplimiento de la actividad | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_ponderado | % Avance trimestral ponderado del producto | number | Sí | No | No | 1 |  |\n| estado_ponderado | Estado de Cumplimiento ponderado del producto | select | Sí | No | No | Cumple | Cumple,Cumple Parcialmente,No Cumple,No Aplica,Sin Reporte |\n| pct_avance_anual | % Avance anual del producto | number | Sí | No | No | 0.27 |  |\n| avances_logros | Avances y logros | textarea | No | No | No |  |  |\n| retrasos_dificultades | Retrasos o dificultades | textarea | No | No | No |  |  |\n| comentarios_extra | Comentarios adicionales | textarea | No | No | No |  |  |\n| obs_oap | Observaciones y Recomendaciones OAP | textarea | No | Sí | Sí |  |  |\n| obs_oap_estado | Observaciones OAP respecto al Estado de Cumplimiento ponderado | textarea | No | Sí | Sí |  |  |",
+    "configuracion_campos": {
+      "fields": [
+        {
+          "name": "periodo_reporte",
+          "label": "Periodo de Reporte",
+          "type": "select",
+          "readonly": false,
+          "required": true,
+          "validator_only": false,
+          "options": [
+            "TRIMESTRE 1",
+            "TRIMESTRE 2",
+            "TRIMESTRE 3",
+            "TRIMESTRE 4"
+          ]
+        },
+        {
+          "name": "linea_estrategica",
+          "label": "Línea estratégica",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Línea 6. Soporte para la búsqueda"
+        },
+        {
+          "name": "resultado_estrategico",
+          "label": "Resultados Estratégico 2024 - 2028",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "R6. La gestión institucional y territorial es ágil, eficiente y coordinada en la prestación de servicios de búsqueda de personas dadas por desaparecidas"
+        },
+        {
+          "name": "resultado_2026",
+          "label": "Resultado 2026",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "SISPLAN-BÚSQUEDA operando como la herramienta de articulación y seguimiento que consolida la planeación orientada a resultados, sistematizando sus insumos para garantizar una trazabilidad unificada y generar reportes analíticos claves para la dirección estratégica de la Búsqueda"
+        },
+        {
+          "name": "codigo_producto",
+          "label": "Código del Producto",
+          "type": "text",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "L6-P2-DPE-2026"
+        },
+        {
+          "name": "producto",
+          "label": "Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "SISPLAN - BÚSQUEDA: Sistema de Seguimiento y Monitoreo a la planeación de la búsqueda"
+        },
+        {
+          "name": "objetivo_producto",
+          "label": "Objetivo del Producto",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Articular integralmente el ciclo de planeación de la Búsqueda Humanitaria y Extrajudicial, sistematizando las labores de monitoreo para proveer datos de alta calidad orientados a la toma de decisiones estratégicas"
+        },
+        {
+          "name": "area_responsable",
+          "label": "Área Responsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Oficina Asesora de Planeación"
+        },
+        {
+          "name": "area_implementadora",
+          "label": "Área implementadora o corresponsable",
+          "type": "textarea",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "GIT Tecnología y Comunicaciones"
+        },
+        {
+          "name": "eje",
+          "label": "Ejes",
+          "type": "text",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_actividad",
+          "label": "Peso de la actividad en la medición",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "peso_trimestre",
+          "label": "Peso para el trimestre",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "actividad_clave",
+          "label": "Actividades Clave",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "indicador",
+          "label": "Indicador",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "meta_anual",
+          "label": "Meta Anual",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_total",
+          "label": "Entregable Total",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "entregable_trimestre",
+          "label": "Entregable trimestre",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_proyectado",
+          "label": "% Avance acumulado Proyectado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_alcanzado",
+          "label": "% Avance acumulado Alcanzado de la actividad",
+          "type": "number",
+          "readonly": false,
+          "required": true,
+          "validator_only": false
+        },
+        {
+          "name": "pct_avance_final",
+          "label": "% Avance final del periodo de la actividad",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1",
+          "auto_calculate": "ratio_alcanzado_proyectado"
+        },
+        {
+          "name": "estado_actividad",
+          "label": "Estado de Cumplimiento de la actividad",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ],
+          "auto_calculate": "estado_cumplimiento_from_pct_final"
+        },
+        {
+          "name": "pct_avance_ponderado",
+          "label": "% Avance trimestral ponderado del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "1"
+        },
+        {
+          "name": "estado_ponderado",
+          "label": "Estado de Cumplimiento ponderado del producto",
+          "type": "select",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "Cumple",
+          "options": [
+            "Cumple",
+            "Cumple Parcialmente",
+            "No Cumple",
+            "No Aplica",
+            "Sin Reporte"
+          ]
+        },
+        {
+          "name": "pct_avance_anual",
+          "label": "% Avance anual del producto",
+          "type": "number",
+          "readonly": true,
+          "required": false,
+          "validator_only": false,
+          "default": "0.27"
+        },
+        {
+          "name": "avances_logros",
+          "label": "Avances y logros",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "retrasos_dificultades",
+          "label": "Retrasos o dificultades",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "comentarios_extra",
+          "label": "Comentarios adicionales",
+          "type": "textarea",
+          "readonly": false,
+          "required": false,
+          "validator_only": false
+        },
+        {
+          "name": "obs_oap",
+          "label": "Observaciones y Recomendaciones OAP",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        },
+        {
+          "name": "obs_oap_estado",
+          "label": "Observaciones OAP respecto al Estado de Cumplimiento ponderado",
+          "type": "textarea",
+          "readonly": false,
+          "required": true,
+          "validator_only": true
+        }
+      ]
+    },
+    "version": 1,
+    "activo": true
+  }
+]
